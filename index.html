@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f6f7f2">
     <meta
       name="description"
-      content="Estimate common Uganda tax obligations under FY 2026/27 tax rules with clear tax breakdowns."
+      content="Estimate Uganda personal, business, import and export taxes under FY 2026/27 rules with clear breakdowns."
     >
     <title>TaxComp Uganda | Tax calculators</title>
     <link rel="stylesheet" href="styles.css">
@@ -36,8 +36,8 @@
           <p class="eyebrow"><span class="eyebrow-dot"></span> UGANDA · FY 2026/27</p>
           <h1 id="page-title">A clearer picture<br>of your <span>taxes.</span></h1>
           <p class="hero-description">
-            Estimate common tax obligations, explore a transparent breakdown,
-            and understand the assumptions behind each result.
+            Estimate common taxes and customs charges, explore a transparent
+            breakdown, and understand the assumptions behind each result.
           </p>
           <div class="trust-note">
             <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -78,6 +78,7 @@
           <button class="tax-tab" id="tab-rental" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="rental" tabindex="-1">Rental income</button>
           <button class="tax-tab" id="tab-withholding" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="withholding" tabindex="-1">Withholding tax</button>
           <button class="tax-tab" id="tab-presumptive" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="presumptive" tabindex="-1">Presumptive tax</button>
+          <button class="tax-tab" id="tab-customs" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="customs" tabindex="-1">Imports &amp; exports</button>
         </div>
 
         <div class="estimator-grid">
@@ -273,6 +274,94 @@
               </div>
             </div>
 
+            <div class="tax-fields" data-fields="customs" hidden>
+              <div class="field">
+                <label for="customs-direction">Trade direction</label>
+                <select id="customs-direction">
+                  <option value="import">Importing goods into Uganda</option>
+                  <option value="export">Exporting goods from Uganda</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="customs-goods">Goods description <span>(optional)</span></label>
+                <input class="text-input" id="customs-goods" type="text" maxlength="120" placeholder="e.g. packaged coffee">
+              </div>
+              <div class="field">
+                <label for="customs-hs-code">HS / tariff code <span>(optional)</span></label>
+                <input class="text-input" id="customs-hs-code" type="text" maxlength="20" placeholder="Enter the code from your customs documents">
+                <p class="field-help">Rates depend on correct classification and origin. This estimator does not look up or classify tariff codes.</p>
+              </div>
+
+              <div class="customs-mode-fields" data-customs-mode="import">
+                <div class="field">
+                  <label for="import-origin">Country of origin <span>(optional)</span></label>
+                  <input class="text-input" id="import-origin" type="text" maxlength="80" placeholder="Country where goods originate">
+                </div>
+                <div class="field">
+                  <label for="import-customs-value">Customs value (UGX)</label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="import-customs-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Use value from customs assessment" data-required="true"></div>
+                  <p class="field-help">Use the customs-assessed value, including any valuation adjustments required for your shipment.</p>
+                </div>
+                <div class="field">
+                  <label for="import-duty-rate">Customs duty rate (%)</label>
+                  <div class="input-wrap"><input id="import-duty-rate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Confirm for HS code and origin" data-required="true"><span class="currency-prefix" aria-hidden="true">%</span></div>
+                  <p class="field-help">Confirm the rate for the exact HS code and country of origin with <a href="https://singlewindow.go.ug/stp/#/" target="_blank" rel="noopener noreferrer">URA’s Electronic Single Window</a> or a licensed customs agent.</p>
+                </div>
+                <div class="field">
+                  <label for="import-excise-duty">Excise duty from tariff / assessment <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="import-excise-duty" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter total assessed excise duty"></div>
+                  <p class="field-help">Excise may use product-specific or per-unit rates; enter the amount calculated from the applicable schedule.</p>
+                </div>
+                <div class="field">
+                  <label for="import-vat-treatment">Import VAT treatment</label>
+                  <select id="import-vat-treatment">
+                    <option value="standard">Standard-rated (18%)</option>
+                    <option value="zero-rated">Zero-rated (only if confirmed eligible)</option>
+                    <option value="exempt">Exempt (only if confirmed eligible)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="import-withholding-rate">Import withholding-tax rate (%) <span>(optional)</span></label>
+                  <div class="input-wrap"><input id="import-withholding-rate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Enter applicable rate, or leave blank"><span class="currency-prefix" aria-hidden="true">%</span></div>
+                  <p class="field-help">Use only if withholding applies to your import; exemptions and the statutory tax base must be checked.</p>
+                </div>
+                <div class="field">
+                  <label for="import-other-charges">Other assessed import charges <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="import-other-charges" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter total amount from assessment"></div>
+                  <p class="field-help">Enter other applicable levies or fees from your customs assessment; do not duplicate duty, excise, VAT or withholding above.</p>
+                </div>
+              </div>
+
+              <div class="customs-mode-fields" data-customs-mode="export" hidden>
+                <div class="field">
+                  <label for="export-customs-value">Export / sale value (UGX)</label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="export-customs-value" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 10000000" data-required="true"></div>
+                </div>
+                <div class="field">
+                  <label for="export-vat-treatment">Export VAT treatment</label>
+                  <select id="export-vat-treatment">
+                    <option value="zero-rated">Zero-rated export (confirm eligibility and evidence)</option>
+                    <option value="standard">Standard-rated (18%)</option>
+                    <option value="exempt">Exempt (only if confirmed eligible)</option>
+                  </select>
+                  <p class="field-help">Export zero-rating requires the transaction to qualify and supporting evidence.</p>
+                </div>
+                <div class="field">
+                  <label for="export-levy-rate">Export duty / levy rate (%) <span>(optional)</span></label>
+                  <div class="input-wrap"><input id="export-levy-rate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Enter applicable tariff rate, or leave blank"><span class="currency-prefix" aria-hidden="true">%</span></div>
+                  <p class="field-help">Only enter a rate confirmed for your product and destination; export levies apply to specific goods.</p>
+                </div>
+                <div class="field">
+                  <label for="export-excise-duty">Export excise duty / levy amount <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="export-excise-duty" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter assessed amount if applicable"></div>
+                </div>
+                <div class="field">
+                  <label for="export-other-charges">Other assessed export charges <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="export-other-charges" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter assessed amount"></div>
+                </div>
+              </div>
+            </div>
+
             <button class="calculate-button" type="submit">
               <span id="calculate-label">Calculate my estimate</span>
               <span aria-hidden="true">→</span>
@@ -353,7 +442,7 @@
         </div>
         <ul>
           <li><strong>Excise duty</strong><span>Goods and services use product-specific rates, sometimes per unit.</span></li>
-          <li><strong>Customs and import taxes</strong><span>Rates depend on tariff classification, origin and applicable EAC rules.</span></li>
+          <li><strong>Customs tariff rates</strong><span>Import/export estimates use rates you confirm from the HS classification, origin and current EAC schedule. The site does not look up or classify goods.</span></li>
           <li><strong>Stamp duty</strong><span>Duty varies by instrument, transaction and any exemption.</span></li>
           <li><strong>Local Service Tax</strong><span>Employment-related amounts depend on the local authority's schedule.</span></li>
           <li><strong>NSSF</strong><span>PAYE results show employee and employer contributions separately; NSSF is not income tax.</span></li>
