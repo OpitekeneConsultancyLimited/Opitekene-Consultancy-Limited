@@ -147,6 +147,112 @@
     };
   }
 
+  function calculateCustomsEstimate({
+    direction,
+    customsValue,
+    customsDutyRate = 0,
+    importExciseDuty = 0,
+    importWithholdingRate = 0,
+    importOtherCharges = 0,
+    importVatTreatment = "standard",
+    exportVatTreatment = "zero-rated",
+    exportVatRate = 0,
+    exportLevyRate = 0,
+    exportExciseDuty = 0,
+    exportOtherCharges = 0,
+  }) {
+    requireNonNegative(customsValue, "Customs or export value");
+
+    const requireRate = (rate, name) => {
+      requireNonNegative(rate, name);
+      if (rate > 100) {
+        throw new RangeError(`${name} must not exceed 100%.`);
+      }
+    };
+
+    const rows = [];
+    let totalCharges;
+
+    if (direction === "import") {
+      requireRate(customsDutyRate, "Customs duty rate");
+      requireRate(importWithholdingRate, "Import withholding tax rate");
+      requireNonNegative(importExciseDuty, "Import excise duty");
+      requireNonNegative(importOtherCharges, "Other import charges");
+
+      const customsDuty = customsValue * customsDutyRate / 100;
+      const importVatRate = importVatTreatmentRate(importVatTreatment);
+      const importVatBase = customsValue + customsDuty + importExciseDuty;
+      const importVat = importVatBase * importVatRate;
+      const importWithholding = customsValue * importWithholdingRate / 100;
+      totalCharges = customsDuty + importExciseDuty + importVat +
+        importWithholding + importOtherCharges;
+
+      rows.push(
+        { label: "Customs value (as assessed)", rate: null, amount: customsValue },
+        { label: "Customs duty", rate: customsDutyRate / 100, amount: customsDuty },
+        { label: "Excise duty entered", rate: null, amount: importExciseDuty },
+        { label: "Import VAT", rate: importVatRate, amount: importVat },
+        { label: "Import withholding tax (entered rate)", rate: importWithholdingRate / 100, amount: importWithholding },
+        { label: "Other import charges entered", rate: null, amount: importOtherCharges },
+        { label: "Estimated total border taxes and charges", rate: null, amount: totalCharges },
+        { label: "Estimated landed cost before local delivery", rate: null, amount: customsValue + totalCharges },
+      );
+
+      return {
+        direction,
+        customsValue,
+        totalCharges,
+        landedCost: customsValue + totalCharges,
+        importVat,
+        breakdown: rows,
+      };
+    }
+
+    if (direction === "export") {
+      requireRate(exportVatRate, "Export VAT rate");
+      requireRate(exportLevyRate, "Export duty or levy rate");
+      requireNonNegative(exportExciseDuty, "Export excise duty");
+      requireNonNegative(exportOtherCharges, "Other export charges");
+      if (!["standard", "zero-rated", "exempt"].includes(exportVatTreatment)) {
+        throw new RangeError("Choose a valid export VAT treatment.");
+      }
+
+      const vatRate = exportVatTreatment === "standard"
+        ? exportVatRate / 100
+        : 0;
+      const exportVat = customsValue * vatRate;
+      const exportLevy = customsValue * exportLevyRate / 100;
+      totalCharges = exportVat + exportLevy + exportExciseDuty + exportOtherCharges;
+
+      rows.push(
+        { label: "Export value entered", rate: null, amount: customsValue },
+        { label: "Export VAT", rate: vatRate, amount: exportVat },
+        { label: "Export duty or levy (entered rate)", rate: exportLevyRate / 100, amount: exportLevy },
+        { label: "Excise duty entered", rate: null, amount: exportExciseDuty },
+        { label: "Other export charges entered", rate: null, amount: exportOtherCharges },
+        { label: "Estimated total export taxes and charges", rate: null, amount: totalCharges },
+        { label: "Estimated proceeds after entered charges", rate: null, amount: customsValue - totalCharges },
+      );
+
+      return {
+        direction,
+        customsValue,
+        totalCharges,
+        netProceeds: customsValue - totalCharges,
+        exportVat,
+        breakdown: rows,
+      };
+    }
+
+    throw new RangeError("Choose whether the goods are being imported or exported.");
+  }
+
+  function importVatTreatmentRate(treatment) {
+    if (treatment === "standard") return 0.18;
+    if (treatment === "zero-rated" || treatment === "exempt") return 0;
+    throw new RangeError("Choose a valid import VAT treatment.");
+  }
+
   function calculateVat({
     standardRatedSales,
     salesIncludeVat = false,
@@ -304,6 +410,7 @@
 
   return {
     calculateChargeableIncome,
+    calculateCustomsEstimate,
     calculateIndividualIncomeTax,
     calculatePaye,
     calculateCompanyIncomeTax,
