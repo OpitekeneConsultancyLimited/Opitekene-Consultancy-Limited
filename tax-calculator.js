@@ -131,18 +131,45 @@
     };
   }
 
-  function calculateCompanyIncomeTax(chargeableIncome, taxPaid = 0) {
+  function calculateCompanyIncomeTax(chargeableIncome, taxPaid = 0, withholdingCredits = 0) {
     requireNonNegative(chargeableIncome, "Chargeable company income");
     requireNonNegative(taxPaid, "Tax already paid");
+    requireNonNegative(withholdingCredits, "Creditable withholding tax");
     const tax = chargeableIncome * 0.3;
+    const balance = tax - taxPaid - withholdingCredits;
 
     return {
       tax,
-      balance: tax - taxPaid,
+      provisionalTaxPaid: taxPaid,
+      withholdingCredits,
+      totalCredits: taxPaid + withholdingCredits,
+      balance,
       effectiveRate: chargeableIncome === 0 ? 0 : tax / chargeableIncome,
       breakdown: [
         { label: "Chargeable company income", rate: null, amount: chargeableIncome },
         { label: "Company income tax", rate: 0.3, amount: tax },
+      ],
+    };
+  }
+
+  function calculateCapitalAllowance(taxBase, ratePercent) {
+    requireNonNegative(taxBase, "Capital allowance tax basis");
+    if (!Number.isFinite(ratePercent) || ratePercent < 0 || ratePercent > 100) {
+      throw new RangeError("The capital allowance rate must be between 0 and 100 percent.");
+    }
+
+    const rate = ratePercent / 100;
+    const allowance = taxBase * rate;
+
+    return {
+      taxBase,
+      rate,
+      allowance,
+      closingTaxValue: taxBase - allowance,
+      breakdown: [
+        { label: "Tax basis entered", rate: null, amount: taxBase },
+        { label: "Capital allowance at user-confirmed rate", rate, amount: allowance },
+        { label: "Illustrative closing tax value", rate: null, amount: taxBase - allowance },
       ],
     };
   }
@@ -410,6 +437,7 @@
 
   return {
     calculateChargeableIncome,
+    calculateCapitalAllowance,
     calculateCustomsEstimate,
     calculateIndividualIncomeTax,
     calculatePaye,

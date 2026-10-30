@@ -10,8 +10,9 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   UGX 5,820,001–120,000,000 at 30%, and income above UGX 120,000,000 at 40%.
   Non-resident individual bands are different and can be selected. PAYE
   annualizes monthly taxable pay; for residents, UGX 335,000 per month is the
-  zero-rate threshold. PAYE does not include benefits, reliefs or Local Service
-  Tax. Employee and employer NSSF are shown separately from income tax.
+  zero-rate threshold. PAYE can add the taxable benefit values and other taxable
+  employment pay entered by the user; it does not value benefits or determine
+  exemptions. Employee and employer NSSF are shown separately from income tax.
 - **Chargeable-income worksheet:** For individuals, the estimator subtracts
   user-entered deductions from annual assessable income. For companies, it
   starts with accounting profit, adds user-entered non-deductible expenses,
@@ -21,8 +22,19 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   Do not enter adjustments already reflected in accounting profit, and verify
   each tax treatment against the applicable law and records.
 - **Company income tax:** The standard resident company rate is 30% of
-  chargeable income. Targeted exemptions, incentives and presumptive treatment
-  are not applied by this calculator.
+  chargeable income. The company reconciliation separates accounting
+  add-backs, exempt income included in accounts, user-entered capital
+  allowances, carried-forward losses, other deductions, provisional tax
+  instalments, and entered creditable withholding tax. The estimator does not
+  validate asset classes, deduction eligibility, loss restrictions, WHT
+  certificates or creditability. Targeted exemptions, incentives and
+  presumptive treatment are not applied by this calculator.
+- **Capital allowances:** A separate illustration multiplies a user-entered
+  tax basis by a user-confirmed rate and displays the resulting allowance and
+  remaining basis. It is not a statutory depreciation schedule; asset
+  classification, pool rules, qualifying cost, timing, disposal adjustments
+  and restrictions must be established separately. Transfer only a supported
+  allowance amount into the company reconciliation.
 - **VAT:** Standard-rated supplies use 18%; zero-rated supplies use 0%. The
   estimate subtracts input VAT after restricting recovery based on the exempt
   supply share. Actual credit eligibility depends on the law, EFRIS evidence,
@@ -57,14 +69,16 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   EAC tariff, or a licensed customs agent. Import VAT may be recoverable by an
   eligible registered business; this estimate shows cash charges and does not
   subtract a later input-tax credit.
+- **Accountant workpapers:** The company tax breakdown is a current-tax
+  reconciliation, not a financial-reporting deferred-tax computation. Tax
+  provision, deferred tax, transfer pricing, thin-capitalisation/interest
+  restrictions, group relief and specialist incentive regimes require
+  additional facts and are not calculated.
 
 ## Other obligations surfaced
 
-The import/export estimator uses tariff rates and assessed amounts entered by
-the user. It does not determine HS classification, customs value, origin
-preferences, or product-specific excise/export levies. Stamp duty depends on
-the instrument or transaction; Local Service Tax depends on local-authority
-schedules. NSSF is a social-security contribution, not a tax.
+Stamp duty depends on the instrument or transaction; Local Service Tax depends
+on local-authority schedules. NSSF is a social-security contribution, not a tax.
 
 ## References
 
@@ -73,8 +87,6 @@ Revenue Authority guidance before use. The following references were consulted
 for this estimator; the PwC summaries are secondary references, not legislation:
 
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
-- [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
-- [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
 - [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
 - [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
 - [PwC Uganda individual income tax](https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income)

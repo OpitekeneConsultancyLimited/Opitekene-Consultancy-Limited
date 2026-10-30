@@ -71,6 +71,11 @@ const headContent = {
     description: "Estimate Uganda customs taxes using rates confirmed for your goods and tariff code.",
     button: "Calculate customs estimate",
   },
+  "capital-allowances": {
+    title: "Capital allowance estimate",
+    description: "Apply a tax rate you have confirmed to an asset or pool tax basis.",
+    button: "Calculate capital allowance",
+  },
 };
 
 function formatUgx(value) {
@@ -247,7 +252,12 @@ function showIncomeTax() {
 }
 
 function showPaye() {
-  const monthlyIncome = document.querySelector("#monthly-salary").valueAsNumber;
+  const salary = document.querySelector("#monthly-salary").valueAsNumber;
+  const benefitsInput = document.querySelector("#monthly-taxable-benefits");
+  const otherPayInput = document.querySelector("#monthly-other-taxable-pay");
+  const taxableBenefits = benefitsInput.value === "" ? 0 : benefitsInput.valueAsNumber;
+  const otherTaxablePay = otherPayInput.value === "" ? 0 : otherPayInput.valueAsNumber;
+  const monthlyIncome = salary + taxableBenefits + otherTaxablePay;
   const grossInput = document.querySelector("#monthly-gross-earnings");
   const monthlyGross = grossInput.value === ""
     ? monthlyIncome
@@ -265,21 +275,34 @@ function showPaye() {
       amount: band.tax,
     })),
     extraRows: [
+      { label: "Monthly cash salary", rate: null, amount: salary },
+      { label: "Taxable value of benefits entered", rate: null, amount: taxableBenefits },
+      { label: "Other taxable employment income entered", rate: null, amount: otherTaxablePay },
+      { label: "Estimated monthly taxable pay", rate: null, amount: monthlyIncome },
       { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
       { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
     ],
     breakdownHeading: "Monthly PAYE and payroll",
     breakdownCaption: "NSSF is not income tax",
-    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same taxable monthly pay throughout the year. A resident employee earning no more than UGX 335,000 per month is within the PAYE-exempt threshold. NSSF is estimated at 5% employee and 10% employer; verify applicability. Benefits, Local Service Tax and special reliefs are not included.`,
+    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same pay throughout the year. The taxable value of benefits and other pay is entered by you; the calculator does not value benefits or decide exemptions. A resident employee earning no more than UGX 335,000 monthly taxable pay is within the PAYE-exempt threshold. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
   });
 }
 
 function showCompanyTax() {
   const accountingProfit = document.querySelector("#company-profit").valueAsNumber;
   const addbacksInput = document.querySelector("#company-addbacks");
+  const exemptIncomeInput = document.querySelector("#company-exempt-income");
+  const capitalAllowancesInput = document.querySelector("#company-capital-allowances");
+  const lossesInput = document.querySelector("#company-tax-losses");
   const deductionsInput = document.querySelector("#company-deductions");
   const addbacks = addbacksInput.value === "" ? 0 : addbacksInput.valueAsNumber;
-  const deductions = deductionsInput.value === "" ? 0 : deductionsInput.valueAsNumber;
+  const exemptIncome = exemptIncomeInput.value === "" ? 0 : exemptIncomeInput.valueAsNumber;
+  const capitalAllowances = capitalAllowancesInput.value === ""
+    ? 0
+    : capitalAllowancesInput.valueAsNumber;
+  const taxLosses = lossesInput.value === "" ? 0 : lossesInput.valueAsNumber;
+  const otherDeductions = deductionsInput.value === "" ? 0 : deductionsInput.valueAsNumber;
+  const deductions = exemptIncome + capitalAllowances + taxLosses + otherDeductions;
   const chargeability = ugandaTax.calculateChargeableIncome(
     accountingProfit,
     addbacks,
@@ -288,9 +311,14 @@ function showCompanyTax() {
   const paid = document.querySelector("#company-paid").value === ""
     ? 0
     : document.querySelector("#company-paid").valueAsNumber;
+  const withholdingCreditsInput = document.querySelector("#company-wht-credits");
+  const withholdingCredits = withholdingCreditsInput.value === ""
+    ? 0
+    : withholdingCreditsInput.valueAsNumber;
   const estimate = ugandaTax.calculateCompanyIncomeTax(
     chargeability.chargeableIncome,
     paid,
+    withholdingCredits,
   );
 
   renderResult({
@@ -302,15 +330,18 @@ function showCompanyTax() {
       { label: "Accounting profit before tax", rate: null, amount: chargeability.income },
       { label: "Add: non-deductible expenses entered", rate: null, amount: chargeability.additions },
       { label: "Profit after add-backs", rate: null, amount: chargeability.incomeAfterAdditions },
-      { label: "Less: further allowable deductions entered", rate: null, amount: -chargeability.deductions },
-      ...estimate.breakdown.map((item) => ({
-        label: item.label,
-        rate: item.rate,
-        amount: item.amount,
-      })),
+      { label: "Less: exempt income included in accounts", rate: null, amount: -exemptIncome },
+      { label: "Less: capital allowances entered", rate: null, amount: -capitalAllowances },
+      { label: "Less: eligible carried-forward tax losses entered", rate: null, amount: -taxLosses },
+      { label: "Less: other allowable deductions entered", rate: null, amount: -otherDeductions },
+      { label: "Estimated chargeable income", rate: null, amount: chargeability.chargeableIncome },
+      { label: "Company income tax", rate: 0.3, amount: estimate.tax },
+      { label: "Less: provisional tax instalments paid", rate: null, amount: -paid },
+      { label: "Less: creditable withholding tax entered", rate: null, amount: -withholdingCredits },
+      { label: "Estimated balance after entered credits", rate: null, amount: estimate.balance },
     ],
     breakdownCaption: "Accounting profit to chargeable income",
-    note: "Uses the standard 30% company rate. Enter only adjustments not already reflected in the accounts and deductions confirmed allowable under the applicable rules. The estimator does not determine deductibility, capital allowances, exempt income, carried-forward losses, incentives or special regimes.",
+    note: "Uses the standard 30% company rate. Enter only items confirmed for this taxpayer and year. Capital allowances must come from an asset-level tax schedule, and carried-forward losses and withholding credits require supporting records and eligibility. This estimator does not determine deductibility, statutory asset classes/rates, loss limits, creditability, incentives or special regimes.",
   });
 }
 
@@ -454,6 +485,22 @@ function showCustomsEstimate() {
   });
 }
 
+function showCapitalAllowance() {
+  const estimate = ugandaTax.calculateCapitalAllowance(
+    document.querySelector("#allowance-tax-base").valueAsNumber,
+    document.querySelector("#allowance-rate").valueAsNumber,
+  );
+
+  renderResult({
+    value: estimate.allowance,
+    label: "Illustrative capital allowance for the year",
+    context: `Tax basis entered: ${formatUgx(estimate.taxBase)} · Rate entered: ${formatPercent(estimate.rate)}`,
+    breakdown: estimate.breakdown,
+    breakdownCaption: "User-confirmed basis and rate",
+    note: "Illustrative straight-rate arithmetic only. Confirm the asset class, allowance method, qualifying basis, rate, timing, disposals and restrictions under the applicable law. This result is not automatically transferred into the company tax reconciliation; enter the supported allowance amount there.",
+  });
+}
+
 const calculations = {
   individual: showIncomeTax,
   paye: showPaye,
@@ -463,6 +510,7 @@ const calculations = {
   withholding: showWithholdingTax,
   presumptive: showPresumptiveTax,
   customs: showCustomsEstimate,
+  "capital-allowances": showCapitalAllowance,
 };
 
 form.addEventListener("submit", (event) => {

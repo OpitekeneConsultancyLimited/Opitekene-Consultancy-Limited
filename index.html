@@ -79,6 +79,7 @@
           <button class="tax-tab" id="tab-withholding" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="withholding" tabindex="-1">Withholding tax</button>
           <button class="tax-tab" id="tab-presumptive" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="presumptive" tabindex="-1">Presumptive tax</button>
           <button class="tax-tab" id="tab-customs" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="customs" tabindex="-1">Imports &amp; exports</button>
+          <button class="tax-tab" id="tab-capital-allowances" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="capital-allowances" tabindex="-1">Capital allowances</button>
         </div>
 
         <div class="estimator-grid">
@@ -135,9 +136,18 @@
                 </select>
               </div>
               <div class="field">
-                <label for="monthly-salary">Monthly taxable employment income</label>
+                <label for="monthly-salary">Monthly cash salary before PAYE</label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-salary" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
-                <p class="field-help">Enter monthly taxable pay before PAYE. The estimate annualises this pay and divides the annual tax by 12.</p>
+                <p class="field-help">Enter regular cash salary before PAYE deductions.</p>
+              </div>
+              <div class="field">
+                <label for="monthly-taxable-benefits">Monthly taxable value of benefits <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-taxable-benefits" type="number" min="0" step="1" inputmode="numeric" placeholder="Use tax value of benefits" disabled></div>
+                <p class="field-help">Enter the taxable value you have determined for benefits such as housing, vehicle or other benefits; do not enter their cost automatically.</p>
+              </div>
+              <div class="field">
+                <label for="monthly-other-taxable-pay">Other monthly taxable employment income <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-other-taxable-pay" type="number" min="0" step="1" inputmode="numeric" placeholder="Taxable allowances or other pay" disabled></div>
               </div>
               <div class="field">
                 <label for="monthly-gross-earnings">Monthly gross earnings for NSSF <span>(optional)</span></label>
@@ -158,13 +168,32 @@
                 <p class="field-help">Enter expenses included in accounting profit that you have confirmed are not deductible for tax.</p>
               </div>
               <div class="field">
+                <label for="company-exempt-income">Exempt income included in accounting profit <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-exempt-income" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter confirmed exempt income" disabled></div>
+              </div>
+              <div class="field">
+                <label for="company-capital-allowances">Capital allowances for the year <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-capital-allowances" type="number" min="0" step="1" inputmode="numeric" placeholder="From your tax depreciation schedule" disabled></div>
+                <p class="field-help">Enter the allowable amount from your asset-by-asset tax schedule, not book depreciation. Eligibility, asset class and rate are not determined here.</p>
+              </div>
+              <div class="field">
+                <label for="company-tax-losses">Carried-forward tax losses used <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-tax-losses" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter eligible amount used this year" disabled></div>
+                <p class="field-help">Use only losses verified as available and allowable for this taxpayer and year.</p>
+              </div>
+              <div class="field">
                 <label for="company-deductions">Further allowable tax deductions <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-deductions" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 2000000" disabled></div>
                 <p class="field-help">Enter only deductions or adjustments not already reflected in accounting profit, and confirmed allowable for this year.</p>
               </div>
               <div class="field">
-                <label for="company-paid">Provisional income tax paid <span>(optional)</span></label>
+                <label for="company-paid">Provisional tax instalments paid <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-paid" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 10000000" disabled></div>
+              </div>
+              <div class="field">
+                <label for="company-wht-credits">Creditable withholding tax paid on the company’s income <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-wht-credits" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter verified, creditable WHT only" disabled></div>
+                <p class="field-help">Exclude final withholding taxes and amounts not supported by valid certificates or records.</p>
               </div>
             </div>
 
@@ -359,6 +388,19 @@
                   <label for="export-other-charges">Other assessed export charges <span>(optional)</span></label>
                   <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="export-other-charges" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter assessed amount"></div>
                 </div>
+              </div>
+            </div>
+
+            <div class="tax-fields" data-fields="capital-allowances" hidden>
+              <div class="field">
+                <label for="allowance-tax-base">Tax basis for the asset or pool (UGX)</label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-tax-base" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter confirmed tax basis" data-required="true"></div>
+                <p class="field-help">Enter the basis to which the applicable allowance rate applies, after the tax adjustments required for your asset class.</p>
+              </div>
+              <div class="field">
+                <label for="allowance-rate">Applicable capital allowance rate (%)</label>
+                <div class="input-wrap"><input id="allowance-rate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Confirm rate for asset class and year" data-required="true"><span class="currency-prefix" aria-hidden="true">%</span></div>
+                <p class="field-help">Confirm the rate, method, eligibility and any first-year or disposal adjustments under the current law. This tool does not classify the asset or select its rate.</p>
               </div>
             </div>
 

@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
   calculateCompanyIncomeTax,
+  calculateCapitalAllowance,
   calculateChargeableIncome,
   calculateCustomsEstimate,
   calculateIndividualIncomeTax,
@@ -76,9 +77,24 @@ test("annualizes monthly taxable pay for PAYE and returns a monthly breakdown", 
 
 test("calculates standard company income tax and balance after payments", () => {
   const estimate = calculateCompanyIncomeTax(100_000_000, 10_000_000);
+  const withCredits = calculateCompanyIncomeTax(100_000_000, 10_000_000, 5_000_000);
 
   assert.equal(estimate.tax, 30_000_000);
   assert.equal(estimate.balance, 20_000_000);
+  assert.equal(withCredits.totalCredits, 15_000_000);
+  assert.equal(withCredits.balance, 15_000_000);
+  assert.throws(() => calculateCompanyIncomeTax(1_000_000, 0, -1), RangeError);
+});
+
+test("calculates an illustrative capital allowance using a user-confirmed rate", () => {
+  const estimate = calculateCapitalAllowance(10_000_000, 25);
+
+  assert.equal(estimate.allowance, 2_500_000);
+  assert.equal(estimate.closingTaxValue, 7_500_000);
+  assert.equal(estimate.breakdown.length, 3);
+  assert.throws(() => calculateCapitalAllowance(-1, 25), RangeError);
+  assert.throws(() => calculateCapitalAllowance(1_000_000, 100.1), RangeError);
+  assert.throws(() => calculateCapitalAllowance(1_000_000, Number.NaN), RangeError);
 });
 
 test("estimates import duty, excise, import VAT, withholding and landed cost", () => {
