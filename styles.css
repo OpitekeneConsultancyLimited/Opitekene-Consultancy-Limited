@@ -694,6 +694,22 @@ input:focus-visible {
   font: 500 11px var(--sans);
 }
 
+.field .text-input {
+  width: 100%;
+  min-height: 45px;
+  padding: 0 12px;
+  border: 1px solid #dfe5de;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: 500 11px var(--sans);
+}
+
+.field .text-input:focus {
+  border-color: #5c9470;
+  outline: 3px solid rgba(34, 109, 72, 0.1);
+}
+
 .checkbox-label {
   display: flex !important;
   align-items: center;
@@ -708,6 +724,10 @@ input:focus-visible {
 }
 
 .tax-fields[hidden] {
+  display: none;
+}
+
+.customs-mode-fields[hidden] {
   display: none;
 }
 
