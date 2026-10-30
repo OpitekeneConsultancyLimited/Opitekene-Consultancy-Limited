@@ -308,7 +308,8 @@ p {
 }
 
 .law-updates,
-.other-heads {
+.other-heads,
+.payment-section {
   width: min(1120px, calc(100% - 64px));
   margin-right: auto;
   margin-left: auto;
@@ -407,6 +408,100 @@ p {
 .other-heads li strong {
   color: #35493d;
   font-size: 11px;
+}
+
+.payment-section {
+  display: grid;
+  grid-template-columns: 0.8fr 1.5fr;
+  gap: 20px 60px;
+  padding: 31px 0;
+  border-top: 1px solid #e1e6df;
+}
+
+.payment-heading h2 {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: 29px;
+  font-weight: 500;
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+}
+
+.payment-heading > p:last-child,
+.payment-note {
+  margin: 0;
+  color: #758178;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.payment-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.payment-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.payment-provider {
+  color: #64736a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.payment-number {
+  color: var(--green-dark);
+  font-size: clamp(16px, 2.2vw, 21px);
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.payment-number:hover {
+  text-decoration: underline;
+}
+
+.service-prices {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.service-prices li {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px;
+  border-radius: 8px;
+  background: #edf5ee;
+  color: #68766d;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.service-prices strong {
+  color: #35493d;
+  font-size: 11px;
+}
+
+.payment-note {
+  grid-column: 2;
+  font-size: 10px;
 }
 
 .section-heading {
@@ -1067,10 +1162,19 @@ td:first-child {
   }
 
   .law-updates,
-  .other-heads {
+  .other-heads,
+  .payment-section {
     grid-template-columns: 1fr;
     gap: 23px;
     padding: 29px 0;
+  }
+
+  .service-prices {
+    grid-column: auto;
+  }
+
+  .payment-note {
+    grid-column: auto;
   }
 
   .law-update-list {
@@ -1109,7 +1213,8 @@ td:first-child {
   .info-section,
   .disclaimer,
   .law-updates,
-  .other-heads {
+  .other-heads,
+  .payment-section {
     width: calc(100% - 32px);
   }
 
