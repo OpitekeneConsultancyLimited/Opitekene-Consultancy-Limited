@@ -6,12 +6,13 @@
     <meta name="theme-color" content="#f6f7f2">
     <meta
       name="description"
-      content="Estimate Uganda personal, business, import and export taxes under FY 2026/27 rules with clear breakdowns."
+      content="Explore Uganda FY 2026/27 tax estimates and source-linked tax guidance for individuals and businesses."
     >
     <title>TaxComp Uganda | Tax calculators</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=tax-advisory-1">
+    <script src="tax-advisory.js?v=tax-advisory-1" defer></script>
     <script src="tax-calculator.js?v=rental-matrix-1" defer></script>
-    <script src="app.js?v=rental-matrix-1" defer></script>
+    <script src="app.js?v=tax-advisory-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -21,6 +22,7 @@
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#estimator">Tax calculators</a>
+        <a href="#advisory">Tax guidance</a>
         <a href="#payments">Mobile-money payments</a>
         <a href="#how-it-works">How it works</a>
       </nav>
@@ -507,6 +509,59 @@
               <p id="calculation-note" class="calculation-note"></p>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section class="advisory-section" id="advisory" aria-labelledby="advisory-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">UGANDA TAX GUIDANCE</p>
+            <h2 id="advisory-title">Find a tax answer.</h2>
+            <p>Search practical, source-linked guidance for the tax topics covered by TaxComp.</p>
+          </div>
+          <span class="advisory-review-date">Reviewed 31 Oct 2026 · FY 2026/27</span>
+        </div>
+
+        <div class="advisory-caveat" role="note">
+          This is a curated guide, not a lawyer, accountant, URA ruling or live AI service. It does not
+          automatically track new laws. Check the cited sources and effective dates; ask a qualified tax
+          professional about your facts before filing, paying or taking a legal position.
+        </div>
+
+        <form class="advisory-search" id="tax-advisory-search" role="search">
+          <label for="advisory-query">What do you need help with?</label>
+          <div class="advisory-search-row">
+            <input id="advisory-query" type="search" placeholder="e.g. Can I deduct rental expenses as a company?" autocomplete="off">
+            <select id="advisory-topic" aria-label="Filter guidance by topic">
+              <option value="all">All tax topics</option>
+              <option value="individual">Individual income</option>
+              <option value="employment">PAYE and employment</option>
+              <option value="business">Company and business</option>
+              <option value="rental">Rental income</option>
+              <option value="vat">VAT</option>
+              <option value="withholding">Withholding tax</option>
+              <option value="customs">Imports and exports</option>
+            </select>
+            <button type="submit">Search guidance</button>
+          </div>
+          <div class="advisory-quick-questions" aria-label="Example questions">
+            <span>Try:</span>
+            <button type="button" data-advisory-query="VAT registration threshold">VAT registration threshold</button>
+            <button type="button" data-advisory-query="non-resident rent withholding">Non-resident rent</button>
+            <button type="button" data-advisory-query="2026 withholding changes">2026 WHT changes</button>
+          </div>
+        </form>
+
+        <p class="advisory-result-count" id="advisory-result-count" aria-live="polite"></p>
+        <div class="advisory-results" id="advisory-results" aria-live="polite"></div>
+        <p class="advisory-no-results" id="advisory-no-results" hidden>
+          No verified guidance matched those words. Try a broader topic, review the official sources, or
+          request a case-specific consultation.
+          <a href="#payments">Consultation and service details</a>
+        </p>
+        <div class="advisory-footer">
+          <p>Need help applying the rules to your records, transaction or URA notice?</p>
+          <a class="advisory-consult-link" href="#payments">Request a tax consultation <span aria-hidden="true">→</span></a>
         </div>
       </section>
 

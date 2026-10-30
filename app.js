@@ -26,6 +26,12 @@ const formError = document.querySelector("#form-error");
 const customsDirection = document.querySelector("#customs-direction");
 const rentalTaxpayerType = document.querySelector("#rental-taxpayer-type");
 const rentalResidency = document.querySelector("#rental-residency");
+const advisoryForm = document.querySelector("#tax-advisory-search");
+const advisoryQuery = document.querySelector("#advisory-query");
+const advisoryTopic = document.querySelector("#advisory-topic");
+const advisoryResults = document.querySelector("#advisory-results");
+const advisoryResultCount = document.querySelector("#advisory-result-count");
+const advisoryNoResults = document.querySelector("#advisory-no-results");
 const amountFormatter = new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 });
 const percentFormatter = new Intl.NumberFormat("en-UG", {
   style: "percent",
@@ -238,6 +244,91 @@ function updateRentalMode() {
     }
   }
 }
+
+function renderAdvisoryGuidance() {
+  const results = ugandaTaxAdvisory.searchGuidance(
+    advisoryQuery.value,
+    advisoryTopic.value,
+  );
+  advisoryResults.replaceChildren();
+  advisoryNoResults.hidden = results.length !== 0;
+  advisoryResultCount.textContent = `${results.length} ${results.length === 1 ? "guidance note" : "guidance notes"}`;
+
+  for (const item of results) {
+    const article = document.createElement("article");
+    article.className = "advisory-card";
+
+    const topic = document.createElement("span");
+    topic.className = "advisory-card-topic";
+    topic.textContent = item.topic.replace("-", " ");
+
+    const heading = document.createElement("h3");
+    heading.textContent = item.title;
+
+    const summary = document.createElement("p");
+    summary.textContent = item.summary;
+
+    const nextStepLabel = document.createElement("strong");
+    nextStepLabel.className = "advisory-next-label";
+    nextStepLabel.textContent = "What to check";
+
+    const nextStep = document.createElement("p");
+    nextStep.className = "advisory-next-step";
+    nextStep.textContent = item.nextStep;
+
+    const sourceList = document.createElement("ul");
+    sourceList.className = "advisory-sources";
+    sourceList.setAttribute("aria-label", "Guidance sources");
+    for (const source of ugandaTaxAdvisory.getSources(item.sourceKeys)) {
+      const sourceItem = document.createElement("li");
+      const link = document.createElement("a");
+      link.href = source.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = source.label;
+      sourceItem.append(link);
+      sourceList.append(sourceItem);
+    }
+
+    article.append(topic, heading, summary, nextStepLabel, nextStep, sourceList);
+    if (item.calculator) {
+      const calculatorLink = document.createElement("a");
+      calculatorLink.className = "advisory-calculator-link";
+      calculatorLink.href = "#estimator";
+      calculatorLink.dataset.advisoryHead = item.calculator;
+      calculatorLink.textContent = "Open related calculator";
+      article.append(calculatorLink);
+    }
+    advisoryResults.append(article);
+  }
+}
+
+advisoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  renderAdvisoryGuidance();
+});
+
+advisoryTopic.addEventListener("change", renderAdvisoryGuidance);
+advisoryQuery.addEventListener("input", renderAdvisoryGuidance);
+
+document.querySelector(".advisory-quick-questions").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-advisory-query]");
+  if (!button) return;
+  advisoryQuery.value = button.dataset.advisoryQuery;
+  renderAdvisoryGuidance();
+});
+
+advisoryResults.addEventListener("click", (event) => {
+  const link = event.target.closest("[data-advisory-head]");
+  if (!link) return;
+  event.preventDefault();
+  const targetTab = taxTabs.find((tab) => tab.dataset.taxHead === link.dataset.advisoryHead);
+  if (targetTab) {
+    setTaxHead(link.dataset.advisoryHead);
+    document.querySelector("#estimator").scrollIntoView({ behavior: "smooth" });
+    targetTab.focus({ preventScroll: true });
+  }
+});
 
 function renderBreakdown(rows) {
   resultBreakdown.replaceChildren();
@@ -749,3 +840,4 @@ form.addEventListener("submit", (event) => {
 });
 
 setTaxHead("individual");
+renderAdvisoryGuidance();

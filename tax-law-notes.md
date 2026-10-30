@@ -1,7 +1,12 @@
 # Uganda tax estimator: FY 2026/27
 
 The site uses the Uganda year of income from 1 July 2026 through 30 June 2027.
-It is a planning estimator, not a return-preparation or tax-advice service.
+It is a planning estimator and source-linked educational guide, not a
+return-preparation, legal opinion or personalized tax-advice service. The
+curated advisory guidance was reviewed on 31 October 2026. It is not connected
+to a live legislation feed and will not automatically detect new laws,
+amendments, regulations, URA practice or court decisions. Verify the effective
+law and official URA guidance for the relevant transaction and period.
 
 ## Rules represented in the calculators
 
@@ -105,8 +110,10 @@ on local-authority schedules. NSSF is a social-security contribution, not a tax.
 ## References
 
 Tax rates and changes should be checked against the applicable Acts and Uganda
-Revenue Authority guidance before use. The following references were consulted
-for this estimator; the PwC summaries are secondary references, not legislation:
+Revenue Authority guidance before use. The advisory search contains curated
+topic notes and does not generate an answer when a question is outside those
+notes. Official URA material should be preferred; the PwC summaries below are
+secondary references, not legislation.
 
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
 - [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
