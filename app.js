@@ -23,6 +23,7 @@ const designatedPayerField = document.querySelector("#designated-payer-field");
 const supplierInvoiceField = document.querySelector("#supplier-invoice-field");
 const whtType = document.querySelector("#wht-type");
 const formError = document.querySelector("#form-error");
+const customsDirection = document.querySelector("#customs-direction");
 const amountFormatter = new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 });
 const percentFormatter = new Intl.NumberFormat("en-UG", {
   style: "percent",
@@ -65,6 +66,11 @@ const headContent = {
     description: "Apply the presumptive rate confirmed for your business.",
     button: "Calculate presumptive tax",
   },
+  customs: {
+    title: "Import or export goods",
+    description: "Estimate Uganda customs taxes using rates confirmed for your goods and tariff code.",
+    button: "Calculate customs estimate",
+  },
 };
 
 function formatUgx(value) {
@@ -74,6 +80,19 @@ function formatUgx(value) {
 
 function formatPercent(rate) {
   return percentFormatter.format(rate);
+}
+
+function updateCustomsMode() {
+  const active = !document.querySelector('.tax-fields[data-fields="customs"]').hidden;
+
+  for (const panel of document.querySelectorAll(".customs-mode-fields")) {
+    const selected = panel.dataset.customsMode === customsDirection.value;
+    panel.hidden = !selected;
+    for (const control of panel.querySelectorAll("input, select")) {
+      control.disabled = !active || !selected;
+      control.required = active && selected && control.dataset.required === "true";
+    }
+  }
 }
 
 function renderBreakdown(rows) {
@@ -115,6 +134,7 @@ function setTaxHead(head, focusTab = false) {
     }
   }
 
+  updateCustomsMode();
   formTitle.textContent = content.title;
   formDescription.textContent = content.description;
   calculateLabel.textContent = content.button;
@@ -151,6 +171,8 @@ whtType.addEventListener("change", () => {
     !["resident-supply", "vat-withholding"].includes(whtType.value);
   supplierInvoiceField.hidden = whtType.value !== "vat-withholding";
 });
+
+customsDirection.addEventListener("change", updateCustomsMode);
 
 for (const panel of taxFields) {
   const requiredControl = panel.querySelector("input, select");
@@ -380,6 +402,58 @@ function showPresumptiveTax() {
   });
 }
 
+function showCustomsEstimate() {
+  const direction = customsDirection.value;
+  const goods = document.querySelector("#customs-goods").value.trim();
+  const hsCode = document.querySelector("#customs-hs-code").value.trim();
+  const origin = direction === "import"
+    ? document.querySelector("#import-origin").value.trim()
+    : "";
+  const tradeDetails = [
+    goods,
+    `HS code: ${hsCode || "not entered"}`,
+    origin ? `Origin: ${origin}` : "",
+  ].filter(Boolean).join(" · ");
+  const optionalNumber = (selector) => {
+    const input = document.querySelector(selector);
+    return input.value === "" ? 0 : input.valueAsNumber;
+  };
+  const estimate = ugandaTax.calculateCustomsEstimate({
+    direction,
+    customsValue: direction === "import"
+      ? document.querySelector("#import-customs-value").valueAsNumber
+      : document.querySelector("#export-customs-value").valueAsNumber,
+    customsDutyRate: optionalNumber("#import-duty-rate"),
+    importExciseDuty: optionalNumber("#import-excise-duty"),
+    importWithholdingRate: optionalNumber("#import-withholding-rate"),
+    importOtherCharges: optionalNumber("#import-other-charges"),
+    importVatTreatment: document.querySelector("#import-vat-treatment").value,
+    exportVatTreatment: document.querySelector("#export-vat-treatment").value,
+    exportVatRate: 18,
+    exportLevyRate: optionalNumber("#export-levy-rate"),
+    exportExciseDuty: optionalNumber("#export-excise-duty"),
+    exportOtherCharges: optionalNumber("#export-other-charges"),
+  });
+
+  renderResult({
+    value: estimate.totalCharges,
+    label: direction === "import"
+      ? "Estimated import taxes and charges"
+      : "Estimated export taxes and charges",
+    context: direction === "import"
+      ? `Estimated landed cost: ${formatUgx(estimate.landedCost)} · ${tradeDetails}`
+      : `Estimated proceeds after entered charges: ${formatUgx(estimate.netProceeds)} · ${tradeDetails}`,
+    breakdown: estimate.breakdown,
+    breakdownCaption: direction === "import"
+      ? "Customs value to landed cost"
+      : "Export value to net proceeds",
+    note: direction === "import"
+      ? "Duty and other rates depend on the HS code, origin and current EAC tariff. Import VAT is estimated on customs value plus entered duty and excise. Import WHT is only included at the rate you enter; confirm whether it applies and its legal base. Import VAT may be recoverable by eligible registered businesses but is shown as cash due here. This estimate excludes unentered levies, fees, storage, broker charges and local delivery."
+      : "Export duty and levies apply only to specified goods and must be confirmed for the HS code and destination. Zero-rated export VAT requires eligibility and evidence; choose a different treatment only when confirmed. This estimate excludes unentered levies, fees, freight, insurance and destination-country taxes.",
+    breakdownHeading: "Customs tax and charge calculation",
+  });
+}
+
 const calculations = {
   individual: showIncomeTax,
   paye: showPaye,
@@ -388,6 +462,7 @@ const calculations = {
   rental: showRentalTax,
   withholding: showWithholdingTax,
   presumptive: showPresumptiveTax,
+  customs: showCustomsEstimate,
 };
 
 form.addEventListener("submit", (event) => {
