@@ -738,6 +738,56 @@ input:focus-visible {
   line-height: 1.55;
 }
 
+.adjustment-details {
+  margin: 0 0 19px;
+  padding: 13px;
+  border: 1px solid #e4e9e2;
+  border-radius: 8px;
+  background: #fbfcf9;
+}
+
+.adjustment-details summary {
+  color: #293a30;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.adjustment-details > .field-help {
+  margin-bottom: 13px;
+}
+
+.adjustment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0 12px;
+}
+
+.field.adjustment-field {
+  margin-bottom: 13px;
+}
+
+.adjustment-field label {
+  min-height: 30px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.adjustment-field .input-wrap {
+  height: 39px;
+}
+
+.adjustment-guidance {
+  margin: 2px 0 0;
+  padding: 10px;
+  border-radius: 6px;
+  background: #f0f4ee;
+  color: #66746a;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
 .vat-threshold-note {
   margin-top: 0;
   padding: 10px 11px;

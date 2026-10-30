@@ -10,8 +10,8 @@
     >
     <title>TaxComp Uganda | Tax calculators</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="tax-calculator.js?v=accountant-tools-1" defer></script>
-    <script src="app.js?v=accountant-tools-1" defer></script>
+    <script src="tax-calculator.js?v=accountant-workpapers-1" defer></script>
+    <script src="app.js?v=accountant-workpapers-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -136,19 +136,26 @@
                 </select>
               </div>
               <div class="field">
-                <label for="monthly-salary">Monthly cash salary before PAYE</label>
+                <label for="monthly-salary">Monthly basic cash salary before PAYE</label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-salary" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
-                <p class="field-help">Enter regular cash salary before PAYE deductions.</p>
+                <p class="field-help">Enter basic salary only. Add other taxable pay and benefits in the itemized schedule below.</p>
               </div>
-              <div class="field">
-                <label for="monthly-taxable-benefits">Monthly taxable value of benefits <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-taxable-benefits" type="number" min="0" step="1" inputmode="numeric" placeholder="Use tax value of benefits" disabled></div>
-                <p class="field-help">Enter the taxable value you have determined for benefits such as housing, vehicle or other benefits; do not enter their cost automatically.</p>
-              </div>
-              <div class="field">
-                <label for="monthly-other-taxable-pay">Other monthly taxable employment income <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-other-taxable-pay" type="number" min="0" step="1" inputmode="numeric" placeholder="Taxable allowances or other pay" disabled></div>
-              </div>
+              <details class="adjustment-details">
+                <summary>Itemize taxable pay and benefits</summary>
+                <p class="field-help">
+                  Enter the monthly taxable amount you have determined for each item. Benefit valuation,
+                  exemptions and treatment of one-off payments are not calculated here. Do not enter a
+                  benefit twice.
+                </p>
+                <div class="adjustment-grid" id="paye-taxable-items"></div>
+                <p class="adjustment-guidance">
+                  Possible exclusions depend on statutory conditions. Examples to assess separately include
+                  qualifying passage costs, medical reimbursements, certain employer-paid life premiums,
+                  per diem, meals available to all full-time employees, small gifts, employer retirement
+                  contributions, share options at grant, qualifying pension payments and security-guard
+                  services. Confirm the current law before excluding an amount.
+                </p>
+              </details>
               <div class="field">
                 <label for="monthly-gross-earnings">Monthly gross earnings for NSSF <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-gross-earnings" type="number" min="0" step="1" inputmode="numeric" placeholder="Defaults to taxable pay" disabled></div>
@@ -159,14 +166,19 @@
             <div class="tax-fields" data-fields="company" hidden>
               <div class="field">
                 <label for="company-profit">Annual accounting profit before tax</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-profit" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 100000000" data-required="true" disabled></div>
-                <p class="field-help">Start with profit from your accounts, not turnover.</p>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-profit" type="number" step="1" inputmode="numeric" placeholder="Enter profit or loss from accounts" data-required="true" disabled></div>
+                <p class="field-help">Start with profit or loss from your accounts, not turnover.</p>
               </div>
               <div class="field">
-                <label for="company-addbacks">Expenses to add back <span>(optional)</span></label>
+                <label for="company-addbacks">Other disallowable expenses or taxable adjustments <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-addbacks" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" disabled></div>
-                <p class="field-help">Enter expenses included in accounting profit that you have confirmed are not deductible for tax.</p>
+                <p class="field-help">Use for confirmed adjustments not already itemized below.</p>
               </div>
+              <details class="adjustment-details">
+                <summary>Itemize additions to accounting profit</summary>
+                <p class="field-help">Enter only the amount not already reflected in profit and confirmed as a tax adjustment for this taxpayer and year.</p>
+                <div class="adjustment-grid" id="company-addback-items"></div>
+              </details>
               <div class="field">
                 <label for="company-exempt-income">Exempt income included in accounting profit <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-exempt-income" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter confirmed exempt income" disabled></div>
@@ -182,10 +194,15 @@
                 <p class="field-help">Use only losses verified as available and allowable for this taxpayer and year.</p>
               </div>
               <div class="field">
-                <label for="company-deductions">Further allowable tax deductions <span>(optional)</span></label>
+                <label for="company-deductions">Other allowable tax deductions <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-deductions" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 2000000" disabled></div>
-                <p class="field-help">Enter only deductions or adjustments not already reflected in accounting profit, and confirmed allowable for this year.</p>
+                <p class="field-help">Use for confirmed deductions not already itemized below or reflected in the accounts.</p>
               </div>
+              <details class="adjustment-details">
+                <summary>Itemize other allowable deductions</summary>
+                <p class="field-help">Enter only amounts confirmed deductible and not already included in accounting profit or another field.</p>
+                <div class="adjustment-grid" id="company-deduction-items"></div>
+              </details>
               <div class="field">
                 <label for="company-paid">Provisional tax instalments paid <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-paid" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 10000000" disabled></div>

@@ -4,6 +4,7 @@ const {
   calculateCompanyIncomeTax,
   calculateCapitalAllowance,
   calculateChargeableIncome,
+  calculateCompanyTaxBase,
   calculateCustomsEstimate,
   calculateIndividualIncomeTax,
   calculatePaye,
@@ -60,6 +61,21 @@ test("reconciles income, tax add-backs and allowable deductions to chargeable in
   assert.equal(company.chargeableIncome, 103_000_000);
   assert.throws(() => calculateChargeableIncome(1_000_000, 0, 1_000_001), RangeError);
   assert.throws(() => calculateChargeableIncome(1_000_000, -1, 0), RangeError);
+});
+
+test("reconciles company adjustments and applies only confirmed loss relief", () => {
+  const profit = calculateCompanyTaxBase(100_000_000, 5_000_000, 12_000_000, 10_000_000);
+  const loss = calculateCompanyTaxBase(5_000_000, 1_000_000, 9_000_000);
+
+  assert.equal(profit.incomeAfterAdditions, 105_000_000);
+  assert.equal(profit.adjustedProfitBeforeLosses, 93_000_000);
+  assert.equal(profit.carriedForwardLossesUsed, 10_000_000);
+  assert.equal(profit.chargeableIncome, 83_000_000);
+  assert.equal(loss.adjustedProfitBeforeLosses, -3_000_000);
+  assert.equal(loss.currentYearLoss, 3_000_000);
+  assert.equal(loss.chargeableIncome, 0);
+  assert.throws(() => calculateCompanyTaxBase(1_000_000, 0, 0, 1_000_001), RangeError);
+  assert.throws(() => calculateCompanyTaxBase(Number.NaN), RangeError);
 });
 
 test("annualizes monthly taxable pay for PAYE and returns a monthly breakdown", () => {

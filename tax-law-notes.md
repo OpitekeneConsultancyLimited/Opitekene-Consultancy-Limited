@@ -10,9 +10,15 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   UGX 5,820,001–120,000,000 at 30%, and income above UGX 120,000,000 at 40%.
   Non-resident individual bands are different and can be selected. PAYE
   annualizes monthly taxable pay; for residents, UGX 335,000 per month is the
-  zero-rate threshold. PAYE can add the taxable benefit values and other taxable
-  employment pay entered by the user; it does not value benefits or determine
-  exemptions. Employee and employer NSSF are shown separately from income tax.
+  zero-rate threshold. PAYE itemizes user-entered monthly salary and
+  employment-pay/benefit categories, including allowances, housing, motor
+  vehicle and loan benefits, reimbursements, share-scheme amounts, gifts and
+  termination-related income. The user must establish each taxable value and
+  whether the item is taxable. The estimate does not value benefits, determine
+  exemptions, or calculate the special treatment that may apply to lump sums,
+  share schemes or termination payments. Examples of possible exclusions are
+  shown as reminders only; verify their statutory conditions before excluding
+  anything. Employee and employer NSSF are shown separately from income tax.
 - **Chargeable-income worksheet:** For individuals, the estimator subtracts
   user-entered deductions from annual assessable income. For companies, it
   starts with accounting profit, adds user-entered non-deductible expenses,
@@ -22,13 +28,20 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   Do not enter adjustments already reflected in accounting profit, and verify
   each tax treatment against the applicable law and records.
 - **Company income tax:** The standard resident company rate is 30% of
-  chargeable income. The company reconciliation separates accounting
-  add-backs, exempt income included in accounts, user-entered capital
-  allowances, carried-forward losses, other deductions, provisional tax
-  instalments, and entered creditable withholding tax. The estimator does not
-  validate asset classes, deduction eligibility, loss restrictions, WHT
-  certificates or creditability. Targeted exemptions, incentives and
-  presumptive treatment are not applied by this calculator.
+  chargeable income. The company reconciliation supports itemized
+  user-confirmed additions and deductions, exempt income included in accounts,
+  capital allowances, carried-forward losses, provisional-tax instalments,
+  and entered creditable withholding tax. A current-year accounting/tax loss
+  is displayed separately and is not automatically recognized as an assessed
+  loss or carried forward. The user must confirm the treatment of every
+  adjustment; the estimator does not validate deductibility, asset classes,
+  loss restrictions, WHT certificates or creditability. The item list is an
+  organizing workpaper based on the categories supplied for the site, not a
+  statement that every listed expense is always disallowed or deductible.
+  Some entries are specialized or conditional and should be left at zero
+  unless supported by the taxpayer's records and current law. Targeted
+  exemptions, incentives and presumptive treatment are not applied by this
+  calculator.
 - **Capital allowances:** A separate illustration multiplies a user-entered
   tax basis by a user-confirmed rate and displays the resulting allowance and
   remaining basis. It is not a statutory depreciation schedule; asset

@@ -107,6 +107,40 @@
     };
   }
 
+  function calculateCompanyTaxBase(
+    accountingProfit,
+    additions = 0,
+    deductions = 0,
+    carriedForwardLosses = 0,
+  ) {
+    if (!Number.isFinite(accountingProfit)) {
+      throw new RangeError("Accounting profit or loss must be a finite number.");
+    }
+    requireNonNegative(additions, "Taxable additions");
+    requireNonNegative(deductions, "Allowable deductions");
+    requireNonNegative(carriedForwardLosses, "Carried-forward tax losses");
+
+    const incomeAfterAdditions = accountingProfit + additions;
+    const adjustedProfitBeforeLosses = incomeAfterAdditions - deductions;
+    const currentYearLoss = Math.max(0, -adjustedProfitBeforeLosses);
+    if (carriedForwardLosses > Math.max(0, adjustedProfitBeforeLosses)) {
+      throw new RangeError(
+        "Carried-forward losses used cannot exceed positive adjusted profit before loss relief.",
+      );
+    }
+
+    return {
+      accountingProfit,
+      additions,
+      incomeAfterAdditions,
+      deductions,
+      adjustedProfitBeforeLosses,
+      carriedForwardLossesUsed: carriedForwardLosses,
+      chargeableIncome: Math.max(0, adjustedProfitBeforeLosses - carriedForwardLosses),
+      currentYearLoss,
+    };
+  }
+
   function calculatePaye(
     monthlyTaxableIncome,
     isResident = true,
@@ -437,6 +471,7 @@
 
   return {
     calculateChargeableIncome,
+    calculateCompanyTaxBase,
     calculateCapitalAllowance,
     calculateCustomsEstimate,
     calculateIndividualIncomeTax,

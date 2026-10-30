@@ -30,6 +30,129 @@ const percentFormatter = new Intl.NumberFormat("en-UG", {
   maximumFractionDigits: 1,
 });
 
+const payeTaxableItems = [
+  { key: "travel-allowance", label: "Travel allowance" },
+  { key: "medical-allowance", label: "Medical allowance" },
+  { key: "leave-pay", label: "Leave pay" },
+  { key: "utilities", label: "Utilities benefit" },
+  { key: "school-fees", label: "School fees and dependent education benefits" },
+  { key: "spouse-travel", label: "Travel allowance for spouse" },
+  { key: "dependent-medical", label: "Medical benefits for spouse or dependents" },
+  { key: "domestic-assistant", label: "Housekeeper, chauffeur, gardener or other domestic assistant" },
+  { key: "reimbursed-expenditure", label: "Reimbursed employee expenditure not treated as employer business expenditure" },
+  { key: "termination", label: "Compensation for termination of employment" },
+  { key: "life-insurance", label: "Life insurance premium paid by a tax-exempt employer" },
+  { key: "employment-conditions", label: "Consideration for agreeing to employment conditions or changes" },
+  { key: "share-scheme", label: "Taxable employee share-scheme benefit or option disposal gain" },
+  { key: "gifts", label: "Employer gifts determined taxable under the monthly threshold rules" },
+  { key: "motor-vehicle", label: "Motor vehicle benefit (enter assessed taxable value)" },
+  { key: "low-interest-loan", label: "Low-interest loan benefit (enter assessed taxable value)" },
+  { key: "housing", label: "Residential housing benefit (enter assessed taxable value)" },
+  { key: "gratuity", label: "Gratuity or end-of-term benefit" },
+  { key: "overtime", label: "Overtime pay" },
+  { key: "bonus", label: "Bonus" },
+  { key: "other", label: "Other taxable employment benefit or income" },
+];
+
+const companyAddbackItems = [
+  { key: "accounting-depreciation", label: "Accounting depreciation" },
+  { key: "amortisation", label: "Amortisation" },
+  { key: "income-tax", label: "Income tax (including rental tax) expense or provision" },
+  { key: "property-income", label: "Non-deductible expenses relating to property or rental income" },
+  { key: "insurance-business", label: "Insurance-business-specific tax adjustment (if applicable)" },
+  { key: "dividends-reserves", label: "Dividends or amounts transferred to reserves/capital" },
+  { key: "personal-expenses", label: "Personal, commuting, clothing or non-qualifying education expenses" },
+  { key: "director-interest", label: "Interest on director debit balances" },
+  { key: "insurance-recoverable", label: "Expenses or losses recoverable under insurance, contract or indemnity" },
+  { key: "non-qualifying-donations", label: "Donations not confirmed as qualifying" },
+  { key: "fines-penalties", label: "Government or local-authority fines and penalties" },
+  { key: "retirement-insurance", label: "Employee retirement contributions, life premiums or pension payments confirmed disallowable" },
+  { key: "employee-gifts", label: "Employee gift expense where the related benefit is not included in taxable employment income" },
+  { key: "supplier-documentation", label: "Expenses affected by supplier TIN or EFRIS documentation rules" },
+  { key: "meals-entertainment", label: "Meals, refreshments or entertainment amount confirmed disallowable" },
+  { key: "bad-debt-provisions", label: "General bad-debt provisions or increases in provisions" },
+  { key: "capital-disposal-loss", label: "Loss on disposal of fixed or other capital assets" },
+  { key: "share-capital", label: "Expenditure on increase of share capital" },
+  { key: "capitalised-costs", label: "Legal, stamp-duty or other incidental asset costs charged to expenses" },
+  { key: "exempt-income-expenses", label: "Expenses incurred in deriving exempt income" },
+  { key: "forex-impairment", label: "Foreign-exchange or revaluation loss and loan impairment not deductible" },
+  { key: "restricted-interest", label: "Interest disallowed under a foreign-control or other statutory restriction" },
+  { key: "petroleum-contract", label: "Petroleum-operation contract expenditure confirmed non-deductible" },
+  { key: "bad-debt-recovery", label: "Bad debt recovered or other taxable recovery not already included in profit" },
+  { key: "withholding-expense", label: "Withholding tax expense confirmed non-deductible" },
+  { key: "balancing-charge", label: "Balancing charge or other taxable recovery not already in profit" },
+  { key: "other", label: "Other confirmed disallowable expense or taxable adjustment" },
+];
+
+const companyDeductionItems = [
+  { key: "business-expenditure", label: "Allowable business expenditure not already deducted in the accounts" },
+  { key: "apportioned-expenses", label: "Allowable apportioned expenses for taxable income (enter only the assessed portion)" },
+  { key: "local-service-tax", label: "Local Service Tax" },
+  { key: "bad-debts", label: "Bad debts written off after required recovery steps" },
+  { key: "specific-provision", label: "Qualifying specific bad-debt provision for a financial institution" },
+  { key: "interest", label: "Allowable interest on debt obligations" },
+  { key: "minor-capital-repairs", label: "Qualifying minor capital expenditure, repairs or minor capital equipment" },
+  { key: "trading-stock-disposal", label: "Tax adjustment on disposal of trading stock" },
+  { key: "wear-and-tear", label: "Wear-and-tear/capital allowance from the tax asset schedule" },
+  { key: "balancing-allowance", label: "Balancing allowance on disposal of a depreciable asset" },
+  { key: "industrial-building", label: "Industrial building deduction from the tax schedule" },
+  { key: "reverse-charge-vat", label: "Reverse-charge VAT confirmed deductible for income-tax purposes" },
+  { key: "start-up-intangibles", label: "Qualifying start-up or intangible-asset expenditure" },
+  { key: "research-training", label: "Qualifying scientific research, training or education expenditure" },
+  { key: "charitable-donations", label: "Qualifying charitable donations" },
+  { key: "farming", label: "Qualifying farming expenditure" },
+  { key: "foreign-exchange", label: "Realized foreign-currency debt loss, unrealized exchange gain or reevaluation gain adjustment" },
+  { key: "partnership-estate", label: "Qualifying partnership, trust or deceased-estate loss/expenditure" },
+  { key: "petroleum-decommissioning", label: "Qualifying petroleum-operation or decommissioning expenditure" },
+  { key: "work-permit", label: "Qualifying initial or renewed work-permit costs" },
+  { key: "insurance-reserves", label: "Qualifying decrease in provisions or insurance reserves" },
+  { key: "other", label: "Other confirmed allowable deduction" },
+];
+
+function createAdjustmentFields(containerId, items, dataAttribute, idPrefix) {
+  const container = document.querySelector(`#${containerId}`);
+
+  for (const item of items) {
+    const field = document.createElement("div");
+    field.className = "field adjustment-field";
+
+    const label = document.createElement("label");
+    const inputId = `${idPrefix}-${item.key}`;
+    label.htmlFor = inputId;
+    label.textContent = item.label;
+
+    const inputWrap = document.createElement("div");
+    inputWrap.className = "input-wrap";
+    const currency = document.createElement("span");
+    currency.className = "currency-prefix";
+    currency.setAttribute("aria-hidden", "true");
+    currency.textContent = "UGX";
+
+    const input = document.createElement("input");
+    input.id = inputId;
+    input.type = "number";
+    input.min = "0";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.placeholder = "0";
+    input.disabled = true;
+    input.setAttribute(dataAttribute, item.key);
+
+    inputWrap.append(currency, input);
+    field.append(label, inputWrap);
+    container.append(field);
+  }
+}
+
+function readAdjustmentItems(dataAttribute) {
+  return [...form.querySelectorAll(`input[${dataAttribute}]`)]
+    .map((input) => ({
+      label: input.labels[0].textContent,
+      amount: input.value === "" ? 0 : input.valueAsNumber,
+    }))
+    .filter((item) => item.amount > 0);
+}
+
 const headContent = {
   individual: {
     title: "Your income",
@@ -253,11 +376,9 @@ function showIncomeTax() {
 
 function showPaye() {
   const salary = document.querySelector("#monthly-salary").valueAsNumber;
-  const benefitsInput = document.querySelector("#monthly-taxable-benefits");
-  const otherPayInput = document.querySelector("#monthly-other-taxable-pay");
-  const taxableBenefits = benefitsInput.value === "" ? 0 : benefitsInput.valueAsNumber;
-  const otherTaxablePay = otherPayInput.value === "" ? 0 : otherPayInput.valueAsNumber;
-  const monthlyIncome = salary + taxableBenefits + otherTaxablePay;
+  const taxableItems = readAdjustmentItems("data-paye-taxable-item");
+  const taxableItemsTotal = taxableItems.reduce((total, item) => total + item.amount, 0);
+  const monthlyIncome = salary + taxableItemsTotal;
   const grossInput = document.querySelector("#monthly-gross-earnings");
   const monthlyGross = grossInput.value === ""
     ? monthlyIncome
@@ -276,37 +397,44 @@ function showPaye() {
     })),
     extraRows: [
       { label: "Monthly cash salary", rate: null, amount: salary },
-      { label: "Taxable value of benefits entered", rate: null, amount: taxableBenefits },
-      { label: "Other taxable employment income entered", rate: null, amount: otherTaxablePay },
+      ...taxableItems.map((item) => ({ label: item.label, rate: null, amount: item.amount })),
       { label: "Estimated monthly taxable pay", rate: null, amount: monthlyIncome },
       { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
       { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
     ],
     breakdownHeading: "Monthly PAYE and payroll",
     breakdownCaption: "NSSF is not income tax",
-    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same pay throughout the year. The taxable value of benefits and other pay is entered by you; the calculator does not value benefits or decide exemptions. A resident employee earning no more than UGX 335,000 monthly taxable pay is within the PAYE-exempt threshold. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
+    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly pay throughout the year. You must assess whether each item is taxable and enter its correct monthly taxable value. This annualized estimate does not value benefits or determine exemptions, special treatment of lump sums, termination pay or share schemes. Do not double count salary or benefits; verify exceptions against the current law. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
   });
 }
 
 function showCompanyTax() {
   const accountingProfit = document.querySelector("#company-profit").valueAsNumber;
+  const itemizedAddbacks = readAdjustmentItems("data-company-addback-item");
+  const itemizedDeductions = readAdjustmentItems("data-company-deduction-item");
   const addbacksInput = document.querySelector("#company-addbacks");
   const exemptIncomeInput = document.querySelector("#company-exempt-income");
   const capitalAllowancesInput = document.querySelector("#company-capital-allowances");
   const lossesInput = document.querySelector("#company-tax-losses");
   const deductionsInput = document.querySelector("#company-deductions");
-  const addbacks = addbacksInput.value === "" ? 0 : addbacksInput.valueAsNumber;
+  const otherAddbacks = addbacksInput.value === "" ? 0 : addbacksInput.valueAsNumber;
+  const addbacks = itemizedAddbacks.reduce((total, item) => total + item.amount, otherAddbacks);
   const exemptIncome = exemptIncomeInput.value === "" ? 0 : exemptIncomeInput.valueAsNumber;
   const capitalAllowances = capitalAllowancesInput.value === ""
     ? 0
     : capitalAllowancesInput.valueAsNumber;
   const taxLosses = lossesInput.value === "" ? 0 : lossesInput.valueAsNumber;
   const otherDeductions = deductionsInput.value === "" ? 0 : deductionsInput.valueAsNumber;
-  const deductions = exemptIncome + capitalAllowances + taxLosses + otherDeductions;
-  const chargeability = ugandaTax.calculateChargeableIncome(
+  const itemizedDeductionTotal = itemizedDeductions.reduce(
+    (total, item) => total + item.amount,
+    0,
+  );
+  const deductions = exemptIncome + capitalAllowances + itemizedDeductionTotal + otherDeductions;
+  const taxBase = ugandaTax.calculateCompanyTaxBase(
     accountingProfit,
     addbacks,
     deductions,
+    taxLosses,
   );
   const paid = document.querySelector("#company-paid").value === ""
     ? 0
@@ -316,32 +444,66 @@ function showCompanyTax() {
     ? 0
     : withholdingCreditsInput.valueAsNumber;
   const estimate = ugandaTax.calculateCompanyIncomeTax(
-    chargeability.chargeableIncome,
+    taxBase.chargeableIncome,
     paid,
     withholdingCredits,
   );
 
+  const adjustmentRows = [
+    { label: "Accounting profit or (loss) before tax", rate: null, amount: accountingProfit },
+    ...itemizedAddbacks.map((item) => ({ label: `Add: ${item.label}`, rate: null, amount: item.amount })),
+    ...(otherAddbacks > 0
+      ? [{ label: "Add: other disallowable expenses/taxable adjustments", rate: null, amount: otherAddbacks }]
+      : []),
+    { label: "Profit/(loss) after additions", rate: null, amount: taxBase.incomeAfterAdditions },
+    ...(exemptIncome > 0
+      ? [{ label: "Less: exempt income included in accounts", rate: null, amount: -exemptIncome }]
+      : []),
+    ...(capitalAllowances > 0
+      ? [{ label: "Less: capital allowances entered", rate: null, amount: -capitalAllowances }]
+      : []),
+    ...itemizedDeductions.map((item) => ({
+      label: `Less: ${item.label}`,
+      rate: null,
+      amount: -item.amount,
+    })),
+    ...(otherDeductions > 0
+      ? [{ label: "Less: other allowable deductions", rate: null, amount: -otherDeductions }]
+      : []),
+    {
+      label: taxBase.currentYearLoss > 0
+        ? "Tax loss for the year before loss relief"
+        : "Adjusted profit before carried-forward losses",
+      rate: null,
+      amount: taxBase.adjustedProfitBeforeLosses,
+    },
+    ...(taxLosses > 0
+      ? [{ label: "Less: eligible carried-forward tax losses used", rate: null, amount: -taxLosses }]
+      : []),
+    { label: "Estimated chargeable income", rate: null, amount: taxBase.chargeableIncome },
+    ...(taxBase.currentYearLoss > 0
+      ? [{
+        label: "Current-year tax loss (not automatically carried forward)",
+        rate: null,
+        amount: taxBase.currentYearLoss,
+      }]
+      : []),
+    { label: "Company income tax", rate: 0.3, amount: estimate.tax },
+    { label: "Less: provisional tax instalments paid", rate: null, amount: -paid },
+    { label: "Less: creditable withholding tax entered", rate: null, amount: -withholdingCredits },
+    { label: "Estimated balance after entered credits", rate: null, amount: estimate.balance },
+  ];
+
   renderResult({
     value: estimate.tax,
     label: "Estimated annual company income tax",
-    context: `Estimated chargeable income: ${formatUgx(chargeability.chargeableIncome)} · Standard resident company rate: 30%`,
+    context: taxBase.currentYearLoss > 0
+      ? `Current-year tax loss entered: ${formatUgx(taxBase.currentYearLoss)} · confirm availability and carry-forward treatment`
+      : `Estimated chargeable income: ${formatUgx(taxBase.chargeableIncome)} · Standard resident company rate: 30%`,
     balance: estimate.balance,
-    breakdown: [
-      { label: "Accounting profit before tax", rate: null, amount: chargeability.income },
-      { label: "Add: non-deductible expenses entered", rate: null, amount: chargeability.additions },
-      { label: "Profit after add-backs", rate: null, amount: chargeability.incomeAfterAdditions },
-      { label: "Less: exempt income included in accounts", rate: null, amount: -exemptIncome },
-      { label: "Less: capital allowances entered", rate: null, amount: -capitalAllowances },
-      { label: "Less: eligible carried-forward tax losses entered", rate: null, amount: -taxLosses },
-      { label: "Less: other allowable deductions entered", rate: null, amount: -otherDeductions },
-      { label: "Estimated chargeable income", rate: null, amount: chargeability.chargeableIncome },
-      { label: "Company income tax", rate: 0.3, amount: estimate.tax },
-      { label: "Less: provisional tax instalments paid", rate: null, amount: -paid },
-      { label: "Less: creditable withholding tax entered", rate: null, amount: -withholdingCredits },
-      { label: "Estimated balance after entered credits", rate: null, amount: estimate.balance },
-    ],
-    breakdownCaption: "Accounting profit to chargeable income",
-    note: "Uses the standard 30% company rate. Enter only items confirmed for this taxpayer and year. Capital allowances must come from an asset-level tax schedule, and carried-forward losses and withholding credits require supporting records and eligibility. This estimator does not determine deductibility, statutory asset classes/rates, loss limits, creditability, incentives or special regimes.",
+    breakdown: adjustmentRows,
+    breakdownCaption: "Itemized tax reconciliation from accounting profit or loss",
+    note: "Uses the standard 30% company rate only when taxable chargeable income exists. Every adjustment must be confirmed for this taxpayer, year and tax treatment; enter each item once. This tool does not determine deductibility, asset classes/rates, loss restrictions, withholding creditability, exemptions, or special regimes. A displayed current-year tax loss is not a determination that it can be carried forward; confirm the assessment and statutory treatment before filing.",
   });
 }
 
@@ -512,6 +674,25 @@ const calculations = {
   customs: showCustomsEstimate,
   "capital-allowances": showCapitalAllowance,
 };
+
+createAdjustmentFields(
+  "paye-taxable-items",
+  payeTaxableItems,
+  "data-paye-taxable-item",
+  "paye-item",
+);
+createAdjustmentFields(
+  "company-addback-items",
+  companyAddbackItems,
+  "data-company-addback-item",
+  "company-addback-item",
+);
+createAdjustmentFields(
+  "company-deduction-items",
+  companyDeductionItems,
+  "data-company-deduction-item",
+  "company-deduction-item",
+);
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
