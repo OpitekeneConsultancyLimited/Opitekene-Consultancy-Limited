@@ -3,6 +3,7 @@ const test = require("node:test");
 const {
   calculateCompanyIncomeTax,
   calculateChargeableIncome,
+  calculateCustomsEstimate,
   calculateIndividualIncomeTax,
   calculatePaye,
   calculatePresumptiveTax,
@@ -78,6 +79,54 @@ test("calculates standard company income tax and balance after payments", () => 
 
   assert.equal(estimate.tax, 30_000_000);
   assert.equal(estimate.balance, 20_000_000);
+});
+
+test("estimates import duty, excise, import VAT, withholding and landed cost", () => {
+  const estimate = calculateCustomsEstimate({
+    direction: "import",
+    customsValue: 10_000_000,
+    customsDutyRate: 10,
+    importExciseDuty: 500_000,
+    importWithholdingRate: 6,
+    importOtherCharges: 100_000,
+  });
+
+  assert.equal(estimate.importVat, 2_070_000);
+  assert.equal(estimate.totalCharges, 4_270_000);
+  assert.equal(estimate.landedCost, 14_270_000);
+  assert.equal(estimate.breakdown.length, 8);
+});
+
+test("estimates export VAT treatment, levies and net proceeds", () => {
+  const estimate = calculateCustomsEstimate({
+    direction: "export",
+    customsValue: 10_000_000,
+    exportVatTreatment: "zero-rated",
+    exportLevyRate: 5,
+    exportExciseDuty: 100_000,
+    exportOtherCharges: 20_000,
+  });
+
+  assert.equal(estimate.exportVat, 0);
+  assert.equal(estimate.totalCharges, 620_000);
+  assert.equal(estimate.netProceeds, 9_380_000);
+  const standardRated = calculateCustomsEstimate({
+    direction: "export",
+    customsValue: 1_000_000,
+    exportVatTreatment: "standard",
+    exportVatRate: 18,
+  });
+  assert.equal(standardRated.exportVat, 180_000);
+  assert.throws(() => calculateCustomsEstimate({
+    direction: "import",
+    customsValue: 1_000,
+    customsDutyRate: 100.1,
+  }), RangeError);
+  assert.throws(() => calculateCustomsEstimate({
+    direction: "export",
+    customsValue: 1_000,
+    exportVatTreatment: "unknown",
+  }), RangeError);
 });
 
 test("calculates VAT on exclusive and inclusive prices and accounts for input VAT", () => {
