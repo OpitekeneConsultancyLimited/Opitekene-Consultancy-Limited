@@ -46,13 +46,25 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   turnover. It does not choose the statutory schedule, determine eligibility,
   or handle exclusions and record-keeping rules. The general small-business
   turnover ceiling represented is UGX 150,000,000.
+- **Imports and exports:** The customs estimator calculates an indicative
+  import duty from user-entered customs value and duty rate, import VAT on
+  customs value plus entered duty and excise, and user-entered import
+  withholding and other charges. For exports, it calculates the selected VAT
+  treatment, entered export levy rate and other charges. It does not classify
+  goods by HS code, retrieve tariff rates, determine preferential origin, or
+  establish exemptions or zero-rating eligibility. Confirm the classification,
+  rate, customs value and charges using the URA customs assessment, current
+  EAC tariff, or a licensed customs agent. Import VAT may be recoverable by an
+  eligible registered business; this estimate shows cash charges and does not
+  subtract a later input-tax credit.
 
-## Other obligations surfaced, but not calculated
+## Other obligations surfaced
 
-Excise duty and customs duty depend on product classification and tariff
-schedules; stamp duty depends on the instrument or transaction; Local Service
-Tax depends on local-authority schedules. The site identifies these rather than
-guessing a generic liability. NSSF is a social-security contribution, not a tax.
+The import/export estimator uses tariff rates and assessed amounts entered by
+the user. It does not determine HS classification, customs value, origin
+preferences, or product-specific excise/export levies. Stamp duty depends on
+the instrument or transaction; Local Service Tax depends on local-authority
+schedules. NSSF is a social-security contribution, not a tax.
 
 ## References
 
@@ -61,6 +73,10 @@ Revenue Authority guidance before use. The following references were consulted
 for this estimator; the PwC summaries are secondary references, not legislation:
 
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
+- [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
+- [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
+- [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
+- [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
 - [PwC Uganda individual income tax](https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income)
 - [PwC Uganda corporate income tax](https://taxsummaries.pwc.com/uganda/corporate/taxes-on-corporate-income)
 - [PwC Uganda other taxes and VAT](https://taxsummaries.pwc.com/uganda/corporate/other-taxes)
