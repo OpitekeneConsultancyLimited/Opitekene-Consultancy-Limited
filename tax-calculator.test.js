@@ -223,12 +223,68 @@ test("checks updated FY 2026/27 VAT registration thresholds", () => {
   assert.equal(belowThreshold.registrationAssessed, true);
 });
 
-test("calculates individual rental tax after the annual threshold", () => {
-  const estimate = calculateRentalIncomeTax(12_820_000, 500_000);
+test("calculates resident individual rental tax after the annual threshold", () => {
+  const estimate = calculateRentalIncomeTax({
+    grossRentalIncome: 12_820_000,
+    taxPaid: 500_000,
+  });
 
-  assert.equal(estimate.taxableRentalIncome, 10_000_000);
+  assert.equal(estimate.taxBase, 10_000_000);
   assert.equal(estimate.tax, 1_200_000);
   assert.equal(estimate.balance, 700_000);
+});
+
+test("calculates resident company rental tax on entered chargeable rental profit", () => {
+  const estimate = calculateRentalIncomeTax({
+    grossRentalIncome: 12_000_000,
+    taxpayerType: "company",
+    allowableExpenses: 3_000_000,
+    carriedForwardLosses: 1_000_000,
+    taxPaid: 200_000,
+    withholdingCredits: 100_000,
+  });
+
+  assert.equal(estimate.taxBase, 8_000_000);
+  assert.equal(estimate.tax, 2_400_000);
+  assert.equal(estimate.totalCredits, 300_000);
+  assert.equal(estimate.balance, 2_100_000);
+});
+
+test("calculates 15% gross rent withholding for non-resident landlords", () => {
+  for (const taxpayerType of ["individual", "company"]) {
+    const estimate = calculateRentalIncomeTax({
+      grossRentalIncome: 12_000_000,
+      taxpayerType,
+      residency: "nonresident",
+      allowableExpenses: 3_000_000,
+      taxPaid: 500_000,
+    });
+
+    assert.equal(estimate.tax, 1_800_000);
+    assert.equal(estimate.balance, 1_300_000);
+    assert.equal(estimate.taxRate, 0.15);
+  }
+});
+
+test("shows current-year company rental loss without taxing negative income", () => {
+  const estimate = calculateRentalIncomeTax({
+    grossRentalIncome: 2_000_000,
+    taxpayerType: "company",
+    allowableExpenses: 3_000_000,
+  });
+
+  assert.equal(estimate.tax, 0);
+  assert.equal(estimate.taxBase, 0);
+  assert.equal(estimate.currentYearLoss, 1_000_000);
+  assert.throws(() => calculateRentalIncomeTax({
+    grossRentalIncome: 2_000_000,
+    taxpayerType: "company",
+    allowableExpenses: 500_000,
+    carriedForwardLosses: 2_000_000,
+  }), RangeError);
+  assert.throws(() => calculateRentalIncomeTax({
+    grossRentalIncome: -1,
+  }), RangeError);
 });
 
 test("calculates withholding rates and applies the resident supply threshold", () => {

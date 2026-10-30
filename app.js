@@ -24,6 +24,8 @@ const supplierInvoiceField = document.querySelector("#supplier-invoice-field");
 const whtType = document.querySelector("#wht-type");
 const formError = document.querySelector("#form-error");
 const customsDirection = document.querySelector("#customs-direction");
+const rentalTaxpayerType = document.querySelector("#rental-taxpayer-type");
+const rentalResidency = document.querySelector("#rental-residency");
 const amountFormatter = new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 });
 const percentFormatter = new Intl.NumberFormat("en-UG", {
   style: "percent",
@@ -176,8 +178,8 @@ const headContent = {
   },
   rental: {
     title: "Rental income",
-    description: "Estimate annual individual rental income tax.",
-    button: "Calculate rental tax",
+    description: "Estimate Uganda rental tax or non-resident rent withholding for individuals and companies.",
+    button: "Calculate rental estimate",
   },
   withholding: {
     title: "Payment details",
@@ -215,6 +217,20 @@ function updateCustomsMode() {
 
   for (const panel of document.querySelectorAll(".customs-mode-fields")) {
     const selected = panel.dataset.customsMode === customsDirection.value;
+    panel.hidden = !selected;
+    for (const control of panel.querySelectorAll("input, select")) {
+      control.disabled = !active || !selected;
+      control.required = active && selected && control.dataset.required === "true";
+    }
+  }
+}
+
+function updateRentalMode() {
+  const active = !document.querySelector('.tax-fields[data-fields="rental"]').hidden;
+  const mode = `${rentalResidency.value}-${rentalTaxpayerType.value}`;
+
+  for (const panel of document.querySelectorAll(".rental-mode-fields")) {
+    const selected = panel.dataset.rentalMode === mode;
     panel.hidden = !selected;
     for (const control of panel.querySelectorAll("input, select")) {
       control.disabled = !active || !selected;
@@ -263,6 +279,7 @@ function setTaxHead(head, focusTab = false) {
   }
 
   updateCustomsMode();
+  updateRentalMode();
   formTitle.textContent = content.title;
   formDescription.textContent = content.description;
   calculateLabel.textContent = content.button;
@@ -301,6 +318,8 @@ whtType.addEventListener("change", () => {
 });
 
 customsDirection.addEventListener("change", updateCustomsMode);
+rentalTaxpayerType.addEventListener("change", updateRentalMode);
+rentalResidency.addEventListener("change", updateRentalMode);
 
 for (const panel of taxFields) {
   const requiredControl = panel.querySelector("input, select");
@@ -549,15 +568,35 @@ function showRentalTax() {
   const paid = document.querySelector("#rental-paid").value === ""
     ? 0
     : document.querySelector("#rental-paid").valueAsNumber;
-  const estimate = ugandaTax.calculateRentalIncomeTax(income, paid);
+  const expensesInput = document.querySelector("#rental-expenses");
+  const lossesInput = document.querySelector("#rental-losses");
+  const creditsInput = document.querySelector("#rental-wht-credits");
+  const taxpayerType = rentalTaxpayerType.value;
+  const residency = rentalResidency.value;
+  const estimate = ugandaTax.calculateRentalIncomeTax({
+    grossRentalIncome: income,
+    taxpayerType,
+    residency,
+    allowableExpenses: expensesInput.value === "" ? 0 : expensesInput.valueAsNumber,
+    carriedForwardLosses: lossesInput.value === "" ? 0 : lossesInput.valueAsNumber,
+    taxPaid: paid,
+    withholdingCredits: creditsInput.value === "" ? 0 : creditsInput.valueAsNumber,
+  });
+  const context = residency === "nonresident"
+    ? `Uganda-source gross rent: ${formatUgx(income)} · Standard domestic withholding: ${formatPercent(estimate.taxRate)}`
+    : taxpayerType === "individual"
+      ? `Taxable rental income: ${formatUgx(estimate.taxBase)} · Rate: ${formatPercent(estimate.taxRate)}`
+      : `Chargeable rental income: ${formatUgx(estimate.taxBase)} · Company rate: ${formatPercent(estimate.taxRate)}`;
 
   renderResult({
     value: estimate.tax,
-    label: "Estimated annual individual rental income tax",
-    context: `Taxable rental income: ${formatUgx(estimate.taxableRentalIncome)} · Rate: 12%`,
+    label: estimate.taxLabel,
+    context,
     balance: estimate.balance,
     breakdown: estimate.breakdown,
-    note: "Applies 12% to annual gross individual rental income above UGX 2,820,000. No rental expense deductions are applied. Monthly filing and payment apply from 1 July 2026; this annual estimate does not calculate monthly instalments. Company rental income is not covered.",
+    note: estimate.note,
+    breakdownHeading: "Rental income computation",
+    breakdownCaption: `${taxpayerType === "individual" ? "Individual" : "Company"} · ${residency === "resident" ? "Resident" : "Non-resident"}`,
   });
 }
 

@@ -382,22 +382,109 @@
     };
   }
 
-  function calculateRentalIncomeTax(grossRentalIncome, taxPaid = 0) {
+  function calculateRentalIncomeTax({
+    grossRentalIncome,
+    taxpayerType = "individual",
+    residency = "resident",
+    allowableExpenses = 0,
+    carriedForwardLosses = 0,
+    taxPaid = 0,
+    withholdingCredits = 0,
+  }) {
     requireNonNegative(grossRentalIncome, "Gross rental income");
+    requireNonNegative(allowableExpenses, "Allowable rental expenses");
+    requireNonNegative(carriedForwardLosses, "Carried-forward rental tax losses");
     requireNonNegative(taxPaid, "Rental tax already paid");
-    const taxableRentalIncome = Math.max(0, grossRentalIncome - 2_820_000);
-    const tax = taxableRentalIncome * 0.12;
+    requireNonNegative(withholdingCredits, "Creditable rental withholding tax");
+
+    if (!["individual", "company"].includes(taxpayerType)) {
+      throw new RangeError("Choose an individual or company taxpayer.");
+    }
+    if (!["resident", "nonresident"].includes(residency)) {
+      throw new RangeError("Choose resident or non-resident tax status.");
+    }
+
+    const breakdown = [
+      { label: "Annual gross rental income", rate: null, amount: grossRentalIncome },
+    ];
+    let taxBase = grossRentalIncome;
+    let taxRate;
+    let tax;
+    let taxLabel;
+    let balance;
+    let currentYearLoss = 0;
+    let totalCredits;
+    let note;
+
+    if (residency === "nonresident") {
+      taxRate = 0.15;
+      tax = grossRentalIncome * taxRate;
+      totalCredits = taxPaid;
+      balance = tax - totalCredits;
+      taxLabel = "Indicative gross-rent withholding on Uganda-source rent";
+      breakdown.push(
+        { label: "Non-resident rent withholding (gross basis)", rate: taxRate, amount: tax },
+        { label: "Withholding/tax already paid entered", rate: null, amount: -taxPaid },
+        { label: "Estimated withholding still due", rate: null, amount: balance },
+      );
+      note = "For Uganda-source rent paid to a non-resident, the standard domestic withholding rate is 15% of gross rent. A double-tax agreement or specific circumstances may change the rate, final-tax treatment or filing obligations. This estimate does not calculate treaty relief or determine the withholding agent; confirm with URA or a qualified tax professional. Rental expenses are not deducted from this gross-basis estimate.";
+    } else if (taxpayerType === "individual") {
+      taxRate = 0.12;
+      taxBase = Math.max(0, grossRentalIncome - 2_820_000);
+      tax = taxBase * taxRate;
+      totalCredits = taxPaid;
+      balance = tax - totalCredits;
+      taxLabel = "Estimated individual rental income tax";
+      breakdown.push(
+        { label: "Annual individual rental threshold", rate: null, amount: -Math.min(grossRentalIncome, 2_820_000) },
+        { label: "Taxable rental income", rate: null, amount: taxBase },
+        { label: "Individual rental income tax", rate: taxRate, amount: tax },
+        { label: "Rental tax already paid entered", rate: null, amount: -taxPaid },
+        { label: "Estimated balance after entered payments", rate: null, amount: balance },
+      );
+      note = "Applies the individual rental-tax rule: 12% of annual gross rental income above UGX 2,820,000, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Monthly filing/payment may apply from 1 July 2026; this annual estimator does not calculate monthly instalments.";
+    } else {
+      taxRate = 0.3;
+      const companyTaxBase = calculateCompanyTaxBase(
+        grossRentalIncome,
+        0,
+        allowableExpenses,
+        carriedForwardLosses,
+      );
+      taxBase = companyTaxBase.chargeableIncome;
+      currentYearLoss = companyTaxBase.currentYearLoss;
+      tax = taxBase * taxRate;
+      totalCredits = taxPaid + withholdingCredits;
+      balance = tax - totalCredits;
+      taxLabel = "Estimated company income tax on rental income";
+      breakdown.push(
+        { label: "Allowable rental expenses entered", rate: null, amount: -allowableExpenses },
+        { label: "Adjusted rental profit before carried-forward losses", rate: null, amount: companyTaxBase.adjustedProfitBeforeLosses },
+        ...(carriedForwardLosses > 0
+          ? [{ label: "Eligible carried-forward rental tax losses used", rate: null, amount: -carriedForwardLosses }]
+          : []),
+        { label: "Estimated chargeable rental income", rate: null, amount: taxBase },
+        ...(currentYearLoss > 0
+          ? [{ label: "Current-year rental tax loss (not automatically carried forward)", rate: null, amount: currentYearLoss }]
+          : []),
+        { label: "Company income tax", rate: taxRate, amount: tax },
+        { label: "Provisional tax paid entered", rate: null, amount: -taxPaid },
+        { label: "Creditable withholding tax entered", rate: null, amount: -withholdingCredits },
+        { label: "Estimated balance after entered credits", rate: null, amount: balance },
+      );
+      note = "Uses the standard 30% resident-company rate on estimated chargeable rental income after user-entered allowable expenses and eligible carried-forward losses. The estimator does not determine deductibility, loss availability, ring-fencing, incentives or whether rental income is part of a broader company tax computation. Avoid double counting this income, expenses, losses or credits in the separate company calculator.";
+    }
 
     return {
       tax,
-      balance: tax - taxPaid,
-      taxableRentalIncome,
-      breakdown: [
-        { label: "Annual gross rental income", rate: null, amount: grossRentalIncome },
-        { label: "Rental income threshold", rate: null, amount: -Math.min(grossRentalIncome, 2_820_000) },
-        { label: "Taxable rental income", rate: null, amount: taxableRentalIncome },
-        { label: "Rental income tax", rate: 0.12, amount: tax },
-      ],
+      balance,
+      taxBase,
+      taxRate,
+      taxLabel,
+      totalCredits,
+      currentYearLoss,
+      breakdown,
+      note,
     };
   }
 

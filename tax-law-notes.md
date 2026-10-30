@@ -55,10 +55,19 @@ It is a planning estimator, not a return-preparation or tax-advice service.
   supplies to nuclear-energy contractors and subcontractors. The registration check uses the FY 2026/27
   UGX 300,000,000 annual and UGX 75,000,000 three-month thresholds, and includes
   a remote-services flag.
-- **Individual rental income:** The estimate applies 12% to annual gross rental
-  income above UGX 2,820,000, without expense deductions. Monthly filing and
-  payment apply from 1 July 2026; this calculator does not determine monthly
-  assessments or instalments.
+- **Rental income:** For a resident individual landlord, the estimate applies
+  12% to annual gross rental income above UGX 2,820,000, without expense
+  deductions. Resident company rental income is estimated at the standard 30%
+  company rate on rental profit after user-entered allowable expenses and
+  eligible carried-forward losses. For either an individual or company
+  non-resident landlord, the worksheet instead estimates domestic withholding
+  at 15% of gross rent from Uganda property, without expense deductions.
+  Treaty relief and the withholding/final-tax and filing treatment depend on
+  specific facts and must be confirmed; the tool does not calculate treaty
+  rates or decide whether withholding is final. Individual rental
+  filing/payment may be monthly from 1 July 2026; this annual estimate does
+  not calculate monthly instalments. Avoid double counting rental income,
+  expenses, losses or credits in the separate company computation.
 - **Withholding tax:** The category list provides common domestic, cross-border
   and FY 2026/27 payment categories. Treaty benefits, exemptions, recipient
   status, final-tax treatment and special eligibility conditions can change a
@@ -102,8 +111,8 @@ for this estimator; the PwC summaries are secondary references, not legislation:
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
 - [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
 - [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
-- [PwC Uganda individual income tax](https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income)
+- [PwC Uganda individual income and rental tax](https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income)
 - [PwC Uganda corporate income tax](https://taxsummaries.pwc.com/uganda/corporate/taxes-on-corporate-income)
 - [PwC Uganda other taxes and VAT](https://taxsummaries.pwc.com/uganda/corporate/other-taxes)
-- [PwC Uganda withholding taxes](https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes)
+- [PwC Uganda withholding taxes, including non-resident rent](https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes)
 - [PwC Uganda individual other taxes](https://taxsummaries.pwc.com/uganda/individual/other-taxes)

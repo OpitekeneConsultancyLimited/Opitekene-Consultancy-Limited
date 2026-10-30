@@ -10,8 +10,8 @@
     >
     <title>TaxComp Uganda | Tax calculators</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="tax-calculator.js?v=accountant-workpapers-1" defer></script>
-    <script src="app.js?v=accountant-workpapers-1" defer></script>
+    <script src="tax-calculator.js?v=rental-matrix-1" defer></script>
+    <script src="app.js?v=rental-matrix-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -256,13 +256,45 @@
 
             <div class="tax-fields" data-fields="rental" hidden>
               <div class="field">
-                <label for="rental-income">Annual gross rental income</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-income" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 24000000" data-required="true" disabled></div>
-                <p class="field-help">Individual rental income estimate; expenses are not deducted in this calculation.</p>
+                <label for="rental-taxpayer-type">Landlord type</label>
+                <select id="rental-taxpayer-type">
+                  <option value="individual">Individual landlord</option>
+                  <option value="company">Company landlord</option>
+                </select>
               </div>
               <div class="field">
-                <label for="rental-paid">Rental tax already paid <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-paid" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 500000" disabled></div>
+                <label for="rental-residency">Landlord tax residence</label>
+                <select id="rental-residency">
+                  <option value="resident">Resident in Uganda</option>
+                  <option value="nonresident">Non-resident</option>
+                </select>
+                <p class="field-help">For non-residents, the estimate applies the standard domestic withholding rate on Uganda-source gross rent, not the resident rental-tax computation. Treaty relief may apply.</p>
+              </div>
+              <div class="field">
+                <label for="rental-income">Annual gross rental income</label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-income" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 24000000" data-required="true" disabled></div>
+                <p class="field-help">Enter gross rent from Uganda property before expenses and tax withheld.</p>
+              </div>
+              <div class="rental-mode-fields" data-rental-mode="resident-company" hidden>
+                <div class="field">
+                  <label for="rental-expenses">Allowable rental expenses <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-expenses" type="number" min="0" step="1" inputmode="numeric" placeholder="Only expenses confirmed deductible"></div>
+                  <p class="field-help">Enter only expenses confirmed deductible for this company and year; do not deduct expenses already included in another tax computation.</p>
+                </div>
+                <div class="field">
+                  <label for="rental-losses">Eligible carried-forward rental tax losses used <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-losses" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter confirmed eligible loss"></div>
+                </div>
+                <div class="field">
+                  <label for="rental-wht-credits">Creditable withholding tax received <span>(optional)</span></label>
+                  <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-wht-credits" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter verified creditable WHT"></div>
+                  <p class="field-help">Enter only withholding confirmed creditable to the resident company and supported by records.</p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="rental-paid">Rental tax or withholding already paid <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="rental-paid" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter tax or withholding already paid" disabled></div>
+                <p class="field-help">For non-resident landlords, enter tax withheld from rent. For resident landlords, enter applicable tax payments only.</p>
               </div>
             </div>
 
