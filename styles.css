@@ -873,6 +873,37 @@ p {
   text-decoration: underline;
 }
 
+.business-contact {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.business-contact > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.business-contact a,
+.business-contact > div > span:last-child {
+  color: #35493d;
+  font-size: 11px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.business-contact a:hover {
+  text-decoration: underline;
+}
+
 .service-prices {
   display: grid;
   grid-column: 2;
@@ -1668,6 +1699,10 @@ td:first-child {
   }
 
   .service-prices {
+    grid-column: auto;
+  }
+
+  .business-contact {
     grid-column: auto;
   }
 
