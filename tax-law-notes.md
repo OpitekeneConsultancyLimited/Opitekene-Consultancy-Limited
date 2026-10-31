@@ -113,6 +113,13 @@ on local-authority schedules. NSSF is a social-security contribution, not a tax.
 
 ## Uganda tax case summaries
 
+- **Quickway Property Services Limited v Uganda Revenue Authority**,
+  Application No. TAT 105 of 2021, [2023] UGTAT 2 (21 February 2023). ULII's
+  published summary reports that the applicant failed to prove the input VAT
+  payments it claimed; the Tribunal upheld URA's disallowance and dismissed
+  the application with costs. This is a case-specific summary, not a blanket
+  rule that any particular missing document automatically defeats an input
+  VAT claim.
 - **Multiple ICD Limited v Uganda Revenue Authority**, Civil Application No.
 1062 of 2026, [2026] UGCA 329 (28 October 2026). ULII's published case
 summary says the Court of Appeal stayed recovery of a VAT assessment pending
@@ -134,6 +141,7 @@ secondary references, not legislation.
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
 - [Uganda Legal Information Institute judgments](https://ulii.org/en/judgments/)
 - [Uganda Tax Appeals Tribunal decisions on ULII](https://ulii.org/en/judgments/UGTAT/)
+- [Quickway Property Services Limited v Uganda Revenue Authority, [2023] UGTAT 2](https://ulii.org/en/akn/ug/judgment/ugtat/2023/2/eng@2023-02-21)
 - [Multiple ICD Limited v Uganda Revenue Authority, [2026] UGCA 329](https://ulii.org/en/akn/ug/judgment/ugca/2026/329/eng@2026-10-28)
 - [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
 - [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)

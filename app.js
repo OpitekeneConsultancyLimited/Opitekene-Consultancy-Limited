@@ -334,6 +334,10 @@ function renderTaxCases() {
     citation.className = "case-law-citation";
     citation.textContent = `${item.citation} · ${item.date}`;
 
+    const court = document.createElement("p");
+    court.className = "case-law-court";
+    court.textContent = item.court;
+
     const issueLabel = document.createElement("strong");
     issueLabel.textContent = "Issue";
     const issue = document.createElement("p");
@@ -361,6 +365,7 @@ function renderTaxCases() {
       topic,
       heading,
       citation,
+      court,
       issueLabel,
       issue,
       outcomeLabel,

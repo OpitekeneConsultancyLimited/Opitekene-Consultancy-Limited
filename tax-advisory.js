@@ -44,8 +44,24 @@
 
   const taxCases = [
     {
+      id: "quickway-property-services-ura-2023",
+      topic: "Input VAT",
+      court: "Tax Appeals Tribunal (Uganda)",
+      name: "Quickway Property Services Limited v Uganda Revenue Authority",
+      citation: "Application No. TAT 105 of 2021 · [2023] UGTAT 2",
+      date: "21 February 2023",
+      keywords: [
+        "input VAT input tax payments evidence invoices proof claim disallowance burden",
+      ],
+      issue: "Whether Quickway established the input VAT payments it claimed in its tax dispute.",
+      summary: "ULII's published case summary says the applicant failed to prove the input VAT payments. The Tribunal upheld URA's disallowance and dismissed the application with costs.",
+      significance: "The decision is a reminder to retain and present adequate evidence for disputed input VAT claims. Its result turns on the record in that case; it does not mean every input VAT claim without a particular document automatically fails.",
+      sourceUrl: "https://ulii.org/en/akn/ug/judgment/ugtat/2023/2/eng@2023-02-21",
+    },
+    {
       id: "multiple-icd-ura-2026",
       topic: "VAT",
+      court: "Court of Appeal of Uganda",
       name: "Multiple ICD Limited v Uganda Revenue Authority",
       citation: "Civil Application No. 1062 of 2026 · [2026] UGCA 329",
       date: "28 October 2026",

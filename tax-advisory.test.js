@@ -60,6 +60,11 @@ test("provides cited tax-case summaries and accurately scopes interim decisions"
   const vatLease = searchTaxCases("VAT lease time of supply");
   assert.ok(vatLease.some((item) => item.id === "multiple-icd-ura-2026"));
   assert.match(vatLease[0].significance, /interim/i);
+
+  const inputVat = searchTaxCases("input VAT evidence payments");
+  assert.ok(inputVat.some((item) => item.id === "quickway-property-services-ura-2023"));
+  assert.equal(inputVat[0].court, "Tax Appeals Tribunal (Uganda)");
+  assert.match(inputVat[0].summary, /dismissed the application with costs/i);
 });
 
 test("tax-case search returns no match for an unsupported query", () => {
