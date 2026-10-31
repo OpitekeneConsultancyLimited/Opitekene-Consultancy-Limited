@@ -7,6 +7,10 @@ curated advisory guidance was reviewed on 31 October 2026. It is not connected
 to a live legislation feed and will not automatically detect new laws,
 amendments, regulations, URA practice or court decisions. Verify the effective
 law and official URA guidance for the relevant transaction and period.
+Court-case notes are a separate, manually curated collection based on public
+case records. They are not updated automatically and may omit later appeals or
+subsequent legal developments; read the full judgment and confirm its current
+status before relying on it.
 
 ## Rules represented in the calculators
 
@@ -107,6 +111,18 @@ law and official URA guidance for the relevant transaction and period.
 Stamp duty depends on the instrument or transaction; Local Service Tax depends
 on local-authority schedules. NSSF is a social-security contribution, not a tax.
 
+## Uganda tax case summaries
+
+- **Multiple ICD Limited v Uganda Revenue Authority**, Civil Application No.
+1062 of 2026, [2026] UGCA 329 (28 October 2026). ULII's published case
+summary says the Court of Appeal stayed recovery of a VAT assessment pending
+appeal, identifying an arguable statutory issue and adequate security paid.
+The listed issue concerns time of supply under a lease, a contractual
+moratorium and section 14 of the VAT Act. This was an interim stay
+application, not a final decision of the VAT merits. The site summary is
+based on ULII's public case listing; consult the full judgment for the
+court's reasons and any subsequent appeal.
+
 ## References
 
 Tax rates and changes should be checked against the applicable Acts and Uganda
@@ -116,6 +132,9 @@ notes. Official URA material should be preferred; the PwC summaries below are
 secondary references, not legislation.
 
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
+- [Uganda Legal Information Institute judgments](https://ulii.org/en/judgments/)
+- [Uganda Tax Appeals Tribunal decisions on ULII](https://ulii.org/en/judgments/UGTAT/)
+- [Multiple ICD Limited v Uganda Revenue Authority, [2026] UGCA 329](https://ulii.org/en/akn/ug/judgment/ugca/2026/329/eng@2026-10-28)
 - [URA Electronic Single Window](https://singlewindow.go.ug/stp/#/)
 - [East African Community Common External Tariff resources](https://www.eac.int/documents/category/eac-common-external-tariff)
 - [PwC Uganda individual income and rental tax](https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income)

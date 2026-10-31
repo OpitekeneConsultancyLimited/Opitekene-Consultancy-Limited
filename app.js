@@ -32,6 +32,11 @@ const advisoryTopic = document.querySelector("#advisory-topic");
 const advisoryResults = document.querySelector("#advisory-results");
 const advisoryResultCount = document.querySelector("#advisory-result-count");
 const advisoryNoResults = document.querySelector("#advisory-no-results");
+const taxCaseForm = document.querySelector("#tax-case-search");
+const taxCaseQuery = document.querySelector("#tax-case-query");
+const taxCaseResults = document.querySelector("#tax-case-results");
+const taxCaseResultCount = document.querySelector("#tax-case-result-count");
+const taxCaseNoResults = document.querySelector("#tax-case-no-results");
 const amountFormatter = new Intl.NumberFormat("en-UG", { maximumFractionDigits: 0 });
 const percentFormatter = new Intl.NumberFormat("en-UG", {
   style: "percent",
@@ -303,6 +308,71 @@ function renderAdvisoryGuidance() {
   }
 }
 
+function renderTaxCases() {
+  const cases = ugandaTaxAdvisory.searchTaxCases(taxCaseQuery.value);
+  taxCaseResults.replaceChildren();
+  taxCaseNoResults.hidden = cases.length !== 0;
+  taxCaseResultCount.textContent = `${cases.length} ${cases.length === 1 ? "case summary" : "case summaries"}`;
+
+  for (const item of cases) {
+    const article = document.createElement("article");
+    article.className = "case-law-card";
+
+    const topic = document.createElement("span");
+    topic.className = "advisory-card-topic";
+    topic.textContent = item.topic;
+
+    const heading = document.createElement("h3");
+    const caseLink = document.createElement("a");
+    caseLink.href = item.sourceUrl;
+    caseLink.target = "_blank";
+    caseLink.rel = "noopener noreferrer";
+    caseLink.textContent = item.name;
+    heading.append(caseLink);
+
+    const citation = document.createElement("p");
+    citation.className = "case-law-citation";
+    citation.textContent = `${item.citation} · ${item.date}`;
+
+    const issueLabel = document.createElement("strong");
+    issueLabel.textContent = "Issue";
+    const issue = document.createElement("p");
+    issue.textContent = item.issue;
+
+    const outcomeLabel = document.createElement("strong");
+    outcomeLabel.textContent = "Published case summary";
+    const summary = document.createElement("p");
+    summary.textContent = item.summary;
+
+    const significanceLabel = document.createElement("strong");
+    significanceLabel.textContent = "How to read it";
+    const significance = document.createElement("p");
+    significance.className = "case-law-significance";
+    significance.textContent = item.significance;
+
+    const sourceLink = document.createElement("a");
+    sourceLink.className = "advisory-calculator-link";
+    sourceLink.href = item.sourceUrl;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noopener noreferrer";
+    sourceLink.textContent = "Read the judgment on ULII";
+
+    article.append(
+      topic,
+      heading,
+      citation,
+      issueLabel,
+      issue,
+      outcomeLabel,
+      summary,
+      significanceLabel,
+      significance,
+      sourceLink,
+    );
+    taxCaseResults.append(article);
+  }
+}
+
 advisoryForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderAdvisoryGuidance();
@@ -329,6 +399,13 @@ advisoryResults.addEventListener("click", (event) => {
     targetTab.focus({ preventScroll: true });
   }
 });
+
+taxCaseForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  renderTaxCases();
+});
+
+taxCaseQuery.addEventListener("input", renderTaxCases);
 
 function renderBreakdown(rows) {
   resultBreakdown.replaceChildren();
@@ -841,3 +918,4 @@ form.addEventListener("submit", (event) => {
 
 setTaxHead("individual");
 renderAdvisoryGuidance();
+renderTaxCases();

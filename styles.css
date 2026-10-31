@@ -296,6 +296,7 @@ p {
 
 .estimator-section,
 .advisory-section,
+.case-law-section,
 .info-section,
 .disclaimer {
   width: min(1120px, calc(100% - 64px));
@@ -312,6 +313,167 @@ p {
   padding: 38px 0 42px;
   border-top: 1px solid #e1e6df;
   scroll-margin-top: 24px;
+}
+
+.case-law-section {
+  padding: 38px 0 42px;
+  border-top: 1px solid #e1e6df;
+  scroll-margin-top: 24px;
+}
+
+.case-law-database-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.case-law-database-link {
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.case-law-database-link:hover {
+  text-decoration: underline;
+}
+
+.case-law-caveat {
+  margin-bottom: 16px;
+  padding: 13px 15px;
+  border-left: 3px solid #c69336;
+  border-radius: 5px;
+  background: #f3f1e8;
+  color: #5e594d;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.case-law-search {
+  margin-bottom: 14px;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.case-law-search > label {
+  display: block;
+  margin-bottom: 8px;
+  color: #293a30;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.case-law-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+.case-law-search-row input {
+  min-width: 0;
+  min-height: 43px;
+  padding: 0 11px;
+  border: 1px solid #dfe5de;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: 500 11px var(--sans);
+}
+
+.case-law-search-row button {
+  min-height: 43px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  font: 700 11px var(--sans);
+}
+
+.case-law-search-row button:hover {
+  background: var(--green-dark);
+}
+
+.case-law-result-count {
+  margin: 0 0 9px;
+  color: #758178;
+  font-size: 10px;
+}
+
+.case-law-results {
+  display: grid;
+  grid-template-columns: minmax(0, 820px);
+  gap: 12px;
+}
+
+.case-law-card {
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.case-law-card h3 {
+  margin: 0 0 6px;
+  color: #293a30;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.case-law-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.case-law-card h3 a:hover {
+  color: var(--green);
+  text-decoration: underline;
+}
+
+.case-law-card p {
+  margin: 0 0 12px;
+  color: #66746a;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.case-law-card .case-law-citation {
+  margin-bottom: 15px;
+  color: #78857c;
+  font-size: 9px;
+}
+
+.case-law-card > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #35493d;
+  font-size: 10px;
+}
+
+.case-law-card .case-law-significance {
+  padding: 10px 11px;
+  border-radius: 6px;
+  background: #f5f7f2;
+}
+
+.case-law-no-results {
+  margin: 12px 0;
+  padding: 17px;
+  border: 1px dashed #cbd8cc;
+  border-radius: 8px;
+  color: #66746a;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.case-law-no-results a {
+  color: var(--green);
+  font-weight: 700;
 }
 
 .advisory-heading {
@@ -1378,6 +1540,7 @@ td:first-child {
   .site-footer,
   .estimator-section,
   .advisory-section,
+  .case-law-section,
   .info-section,
   .disclaimer,
   .law-updates,
@@ -1439,6 +1602,14 @@ td:first-child {
 
   .advisory-search-row,
   .advisory-results {
+    grid-template-columns: 1fr;
+  }
+
+  .case-law-search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .case-law-results {
     grid-template-columns: 1fr;
   }
 
@@ -1538,6 +1709,7 @@ td:first-child {
   .site-footer,
   .estimator-section,
   .advisory-section,
+  .case-law-section,
   .info-section,
   .disclaimer,
   .law-updates,

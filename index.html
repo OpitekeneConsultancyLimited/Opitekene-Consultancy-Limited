@@ -6,13 +6,13 @@
     <meta name="theme-color" content="#f6f7f2">
     <meta
       name="description"
-      content="Explore Uganda FY 2026/27 tax estimates and source-linked tax guidance for individuals and businesses."
+      content="Explore Uganda FY 2026/27 tax estimates, source-linked guidance and Ugandan tax case summaries."
     >
     <title>TaxComp Uganda | Tax calculators</title>
-    <link rel="stylesheet" href="styles.css?v=tax-advisory-1">
-    <script src="tax-advisory.js?v=tax-advisory-1" defer></script>
+    <link rel="stylesheet" href="styles.css?v=tax-cases-1">
+    <script src="tax-advisory.js?v=tax-cases-1" defer></script>
     <script src="tax-calculator.js?v=rental-matrix-1" defer></script>
-    <script src="app.js?v=tax-advisory-1" defer></script>
+    <script src="app.js?v=tax-cases-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -23,6 +23,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#estimator">Tax calculators</a>
         <a href="#advisory">Tax guidance</a>
+        <a href="#tax-cases">Tax cases</a>
         <a href="#payments">Mobile-money payments</a>
         <a href="#how-it-works">How it works</a>
       </nav>
@@ -563,6 +564,44 @@
           <p>Need help applying the rules to your records, transaction or URA notice?</p>
           <a class="advisory-consult-link" href="#payments">Request a tax consultation <span aria-hidden="true">→</span></a>
         </div>
+      </section>
+
+      <section class="case-law-section" id="tax-cases" aria-labelledby="tax-cases-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">UGANDA CASE LAW</p>
+            <h2 id="tax-cases-title">Tax cases, in context.</h2>
+            <p>Selected, non-exhaustive case notes with citations and links to the published judgments.</p>
+          </div>
+          <div class="case-law-database-links">
+            <a class="case-law-database-link" href="https://ulii.org/en/judgments/" target="_blank" rel="noopener noreferrer">
+              Browse ULII judgments <span aria-hidden="true">↗</span>
+            </a>
+            <a class="case-law-database-link" href="https://ulii.org/en/judgments/UGTAT/" target="_blank" rel="noopener noreferrer">
+              Tax Appeals Tribunal decisions <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="case-law-caveat" role="note">
+          These are educational case notes, not legal advice. Summaries are based on the cited public case records and may not include the full reasoning, later appeal history or subsequent legal changes. Read the full judgment before relying on a case.
+        </div>
+
+        <form class="case-law-search" id="tax-case-search" role="search">
+          <label for="tax-case-query">Search cases by name, tax topic or issue</label>
+          <div class="case-law-search-row">
+            <input id="tax-case-query" type="search" placeholder="e.g. VAT lease time of supply" autocomplete="off">
+            <button type="submit">Search cases</button>
+          </div>
+        </form>
+
+        <p class="case-law-result-count" id="tax-case-result-count" aria-live="polite"></p>
+        <div class="case-law-results" id="tax-case-results" aria-live="polite"></div>
+        <p class="case-law-no-results" id="tax-case-no-results" hidden>
+          No case note matched that search. Search the
+          <a href="https://ulii.org/en/judgments/" target="_blank" rel="noopener noreferrer">ULII judgments database</a>
+          for other published decisions.
+        </p>
       </section>
 
       <section class="law-updates" aria-labelledby="law-updates-title">

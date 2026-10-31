@@ -36,7 +36,28 @@
       label: "URA Electronic Single Window",
       url: "https://singlewindow.go.ug/stp/#/",
     },
+    uliiJudgments: {
+      label: "Uganda Legal Information Institute (ULII) judgments",
+      url: "https://ulii.org/en/judgments/",
+    },
   };
+
+  const taxCases = [
+    {
+      id: "multiple-icd-ura-2026",
+      topic: "VAT",
+      name: "Multiple ICD Limited v Uganda Revenue Authority",
+      citation: "Civil Application No. 1062 of 2026 · [2026] UGCA 329",
+      date: "28 October 2026",
+      keywords: [
+        "vat lease time of supply moratorium assessment recovery stay appeal security section 14",
+      ],
+      issue: "The ULII case listing identifies the dispute as concerning the time of supply under a lease, the effect of a contractual moratorium, and section 14 of the Value Added Tax Act.",
+      summary: "According to ULII's published case summary, the Court of Appeal stayed recovery of the VAT assessment pending appeal. It found an arguable statutory issue and noted that adequate security had been paid.",
+      significance: "This was an interim stay application. The published summary does not establish that the Court finally decided the VAT time-of-supply question or the taxpayer's ultimate liability.",
+      sourceUrl: "https://ulii.org/en/akn/ug/judgment/ugca/2026/329/eng@2026-10-28",
+    },
+  ];
 
   const guidance = [
     {
@@ -234,10 +255,33 @@
     return sourceKeys.map((key) => sources[key]);
   }
 
+  function searchTaxCases(query = "", topic = "all") {
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+    return taxCases.filter((item) => {
+      if (topic !== "all" && item.topic.toLowerCase() !== topic.toLowerCase()) return false;
+      if (terms.length === 0) return true;
+
+      const searchable = [
+        item.name,
+        item.citation,
+        item.topic,
+        item.keywords,
+        item.issue,
+        item.summary,
+        item.significance,
+      ].join(" ").toLowerCase();
+
+      return terms.every((term) => searchable.includes(term));
+    });
+  }
+
   return {
     reviewedOn: "31 October 2026",
     guidance,
     getSources,
     searchGuidance,
+    searchTaxCases,
+    taxCases,
   };
 });
