@@ -1,0 +1,13 @@
+name = "taxcomp-uganda-chat"
+main = "worker/index.mjs"
+compatibility_date = "2026-10-31"
+
+[vars]
+ALLOWED_ORIGIN = "https://opitekeneconsultancylimited.github.io"
+GEMINI_MODEL = "gemini-2.5-flash"
+
+[[unsafe.bindings]]
+name = "CHAT_LIMITER"
+type = "ratelimit"
+namespace_id = "726194"
+simple = { limit = 8, period = 60 }

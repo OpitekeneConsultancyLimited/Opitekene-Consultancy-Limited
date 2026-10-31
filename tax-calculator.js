@@ -22,6 +22,24 @@
     { label: "Above UGX 120,000,000", lower: 120_000_000, upper: Infinity, rate: 0.4 },
   ];
 
+  const wearAndTearClasses = [
+    {
+      id: "class-1",
+      label: "Class 1 — computers and data-handling equipment",
+      rate: 0.4,
+    },
+    {
+      id: "class-2",
+      label: "Class 2 — plant and machinery used in farming, manufacturing or mining",
+      rate: 0.3,
+    },
+    {
+      id: "class-3",
+      label: "Class 3 — vehicles, other specified equipment and assets not in Classes 1 or 2",
+      rate: 0.2,
+    },
+  ];
+
   const withholdingRates = {
     "resident-supply": { label: "Resident supply / contract payment", rate: 0.06 },
     "resident-dividend": { label: "Resident dividend", rate: 0.15 },
@@ -186,24 +204,66 @@
     };
   }
 
-  function calculateCapitalAllowance(taxBase, ratePercent) {
-    requireNonNegative(taxBase, "Capital allowance tax basis");
-    if (!Number.isFinite(ratePercent) || ratePercent < 0 || ratePercent > 100) {
-      throw new RangeError("The capital allowance rate must be between 0 and 100 percent.");
+  function calculateWearAndTear({
+    assetClass,
+    openingTaxWrittenDownValue,
+    additions = 0,
+    disposalProceeds = 0,
+    businessUsePercent,
+  }) {
+    const selectedClass = wearAndTearClasses.find((item) => item.id === assetClass);
+    if (!selectedClass) {
+      throw new RangeError("Select a valid wear-and-tear asset class.");
     }
 
-    const rate = ratePercent / 100;
-    const allowance = taxBase * rate;
+    requireNonNegative(openingTaxWrittenDownValue, "Opening tax written-down value");
+    requireNonNegative(additions, "Qualifying additions");
+    requireNonNegative(disposalProceeds, "Disposal proceeds");
+    if (!Number.isFinite(businessUsePercent) ||
+        businessUsePercent < 0 ||
+        businessUsePercent > 100) {
+      throw new RangeError("Business use must be between 0 and 100 percent.");
+    }
+
+    const businessUse = businessUsePercent / 100;
+    const businessUseAdditions = additions * businessUse;
+    const businessUseDisposalProceeds = disposalProceeds * businessUse;
+    const poolBeforeDisposals = openingTaxWrittenDownValue + businessUseAdditions;
+    const excessDisposalProceeds = Math.max(
+      0,
+      businessUseDisposalProceeds - poolBeforeDisposals,
+    );
+    const poolAvailableForAllowance = Math.max(
+      0,
+      poolBeforeDisposals - businessUseDisposalProceeds,
+    );
+    const allowance = poolAvailableForAllowance * selectedClass.rate;
+    const closingTaxWrittenDownValue = poolAvailableForAllowance - allowance;
 
     return {
-      taxBase,
-      rate,
+      assetClass: selectedClass,
+      rate: selectedClass.rate,
+      openingTaxWrittenDownValue,
+      additions,
+      businessUsePercent,
+      businessUseAdditions,
+      disposalProceeds,
+      businessUseDisposalProceeds,
+      poolBeforeDisposals,
+      poolAvailableForAllowance,
       allowance,
-      closingTaxValue: taxBase - allowance,
+      closingTaxWrittenDownValue,
+      excessDisposalProceeds,
       breakdown: [
-        { label: "Tax basis entered", rate: null, amount: taxBase },
-        { label: "Capital allowance at user-confirmed rate", rate, amount: allowance },
-        { label: "Illustrative closing tax value", rate: null, amount: taxBase - allowance },
+        { label: "Opening tax written-down value", rate: null, amount: openingTaxWrittenDownValue },
+        { label: `Additions included at ${businessUsePercent}% business use`, rate: null, amount: businessUseAdditions },
+        { label: `Less: disposal proceeds at ${businessUsePercent}% business use`, rate: null, amount: -businessUseDisposalProceeds },
+        { label: "Pool balance before wear-and-tear allowance", rate: null, amount: poolAvailableForAllowance },
+        { label: `Wear-and-tear allowance — ${selectedClass.id.replace("-", " ")} at ${selectedClass.rate * 100}%`, rate: selectedClass.rate, amount: allowance },
+        { label: "Closing tax written-down value to carry forward", rate: null, amount: closingTaxWrittenDownValue },
+        ...(excessDisposalProceeds > 0
+          ? [{ label: "Excess disposal proceeds — review for a balancing adjustment", rate: null, amount: excessDisposalProceeds }]
+          : []),
       ],
     };
   }
@@ -559,7 +619,8 @@
   return {
     calculateChargeableIncome,
     calculateCompanyTaxBase,
-    calculateCapitalAllowance,
+    calculateWearAndTear,
+    wearAndTearClasses,
     calculateCustomsEstimate,
     calculateIndividualIncomeTax,
     calculatePaye,

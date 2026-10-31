@@ -19,6 +19,7 @@ test("provides source-linked guidance across all main tax areas", () => {
     "vat",
     "withholding",
     "customs",
+    "international",
   ]) {
     assert.ok(topics.has(topic), `missing guidance topic: ${topic}`);
   }
@@ -27,6 +28,7 @@ test("provides source-linked guidance across all main tax areas", () => {
     assert.ok(item.summary);
     assert.ok(item.nextStep);
     assert.ok(getSources(item.sourceKeys).length > 0);
+    assert.ok(getSources(item.sourceKeys).every(Boolean), `missing source for: ${item.id}`);
   }
 });
 
@@ -34,11 +36,21 @@ test("searches guidance by question terms and optional topic", () => {
   const vat = searchGuidance("VAT registration threshold");
   const rental = searchGuidance("resident company rental expenses", "rental");
   const withholding = searchGuidance("2026 withholding changes");
+  const wearAndTear = searchGuidance("wear and tear classes");
+  const treaty = searchGuidance("international treaty withholding beneficial ownership", "international");
+  const transferPricing = searchGuidance("related party transfer pricing arm's length", "international");
 
   assert.ok(vat.some((item) => item.id === "vat-threshold"));
   assert.ok(rental.some((item) => item.id === "rental-company"));
   assert.ok(withholding.some((item) => item.id === "withholding-changes"));
+  const allowance = wearAndTear.find((item) => item.id === "capital-allowances");
+  assert.ok(allowance);
+  assert.match(allowance.summary, /Class 1.*40%.*Class 2.*30%.*Class 3.*20%/);
+  assert.ok(getSources(allowance.sourceKeys).some((source) => source.url.endsWith("/corporate/deductions")));
   assert.equal(searchGuidance("VAT registration threshold", "customs").length, 0);
+  assert.ok(treaty.some((item) => item.id === "international-treaties"));
+  assert.ok(transferPricing.some((item) => item.id === "international-transfer-pricing"));
+  assert.equal(treaty.find((item) => item.id === "international-treaties").calculator, "international");
 });
 
 test("returns all guidance for an empty query and no unsupported answer for a miss", () => {

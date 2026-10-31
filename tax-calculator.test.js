@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const {
   calculateCompanyIncomeTax,
-  calculateCapitalAllowance,
+  calculateWearAndTear,
   calculateChargeableIncome,
   calculateCompanyTaxBase,
   calculateCustomsEstimate,
@@ -102,15 +102,72 @@ test("calculates standard company income tax and balance after payments", () => 
   assert.throws(() => calculateCompanyIncomeTax(1_000_000, 0, -1), RangeError);
 });
 
-test("calculates an illustrative capital allowance using a user-confirmed rate", () => {
-  const estimate = calculateCapitalAllowance(10_000_000, 25);
+test("calculates wear-and-tear allowances at the statutory reducing-balance class rates", () => {
+  const class1 = calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 10_000_000,
+    additions: 4_000_000,
+    disposalProceeds: 1_000_000,
+    businessUsePercent: 100,
+  });
+  const class2 = calculateWearAndTear({
+    assetClass: "class-2",
+    openingTaxWrittenDownValue: 10_000_000,
+    businessUsePercent: 100,
+  });
+  const class3 = calculateWearAndTear({
+    assetClass: "class-3",
+    openingTaxWrittenDownValue: 10_000_000,
+    businessUsePercent: 100,
+  });
 
-  assert.equal(estimate.allowance, 2_500_000);
-  assert.equal(estimate.closingTaxValue, 7_500_000);
-  assert.equal(estimate.breakdown.length, 3);
-  assert.throws(() => calculateCapitalAllowance(-1, 25), RangeError);
-  assert.throws(() => calculateCapitalAllowance(1_000_000, 100.1), RangeError);
-  assert.throws(() => calculateCapitalAllowance(1_000_000, Number.NaN), RangeError);
+  assert.equal(class1.rate, 0.4);
+  assert.equal(class1.poolAvailableForAllowance, 13_000_000);
+  assert.equal(class1.allowance, 5_200_000);
+  assert.equal(class1.closingTaxWrittenDownValue, 7_800_000);
+  assert.equal(class2.rate, 0.3);
+  assert.equal(class2.allowance, 3_000_000);
+  assert.equal(class3.rate, 0.2);
+  assert.equal(class3.allowance, 2_000_000);
+  assert.equal(class1.breakdown.length, 6);
+});
+
+test("apportions additions and disposals for business use and flags excess proceeds", () => {
+  const apportioned = calculateWearAndTear({
+    assetClass: "class-3",
+    openingTaxWrittenDownValue: 1_000_000,
+    additions: 2_000_000,
+    disposalProceeds: 500_000,
+    businessUsePercent: 50,
+  });
+  const excess = calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 0,
+    additions: 1_000_000,
+    disposalProceeds: 1_200_000,
+    businessUsePercent: 100,
+  });
+
+  assert.equal(apportioned.poolAvailableForAllowance, 1_750_000);
+  assert.equal(apportioned.allowance, 350_000);
+  assert.equal(apportioned.closingTaxWrittenDownValue, 1_400_000);
+  assert.equal(excess.allowance, 0);
+  assert.equal(excess.excessDisposalProceeds, 200_000);
+  assert.throws(() => calculateWearAndTear({
+    assetClass: "class-4",
+    openingTaxWrittenDownValue: 0,
+    businessUsePercent: 100,
+  }), RangeError);
+  assert.throws(() => calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: -1,
+    businessUsePercent: 100,
+  }), RangeError);
+  assert.throws(() => calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 0,
+    businessUsePercent: 100.1,
+  }), RangeError);
 });
 
 test("estimates import duty, excise, import VAT, withholding and landed cost", () => {

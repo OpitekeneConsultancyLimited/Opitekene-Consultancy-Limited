@@ -51,12 +51,25 @@ status before relying on it.
   unless supported by the taxpayer's records and current law. Targeted
   exemptions, incentives and presumptive treatment are not applied by this
   calculator.
-- **Capital allowances:** A separate illustration multiplies a user-entered
-  tax basis by a user-confirmed rate and displays the resulting allowance and
-  remaining basis. It is not a statutory depreciation schedule; asset
-  classification, pool rules, qualifying cost, timing, disposal adjustments
-  and restrictions must be established separately. Transfer only a supported
-  allowance amount into the company reconciliation.
+- **Wear-and-tear allowances:** The calculator applies the reducing-balance
+  method using the three asset classes and rates summarized for Uganda:
+  Class 1, computers and data-handling equipment, 40%; Class 2, plant and
+  machinery used in farming, manufacturing or mining, 30%; and Class 3, 20%,
+  covering automobiles, buses/minibuses, construction and earth-moving
+  equipment, specialised trucks/tractors/trailers, rail equipment, vessels,
+  aircraft, specialised public-utility equipment, office furniture/fixtures/
+  equipment, and other depreciable assets not included in another class. The
+  pool calculation starts with opening tax written-down value, adds the
+  business-use share of qualifying additions, subtracts the entered
+  business-use share of disposal proceeds, and applies the class rate to the
+  resulting pool balance. Opening values must already reflect prior tax
+  adjustments. The tool flags but does not calculate balancing charges or
+  allowances when proceeds exceed the pool balance. It does not determine
+  asset eligibility, minor-asset expensing or special restrictions. The
+  separate industrial-building allowance is not calculated here; confirm its
+  qualifying conditions and 5% straight-line rate separately. The rates and
+  method are summarized by [PwC Uganda](https://taxsummaries.pwc.com/uganda/corporate/deductions);
+  verify the current Income Tax Act and URA guidance before filing.
 - **VAT:** Standard-rated supplies use 18%; zero-rated supplies use 0%. The
   estimate subtracts input VAT after restricting recovery based on the exempt
   supply share. Actual credit eligibility depends on the law, EFRIS evidence,
@@ -85,6 +98,20 @@ status before relying on it.
   withholding categories apply from 1 July 2026. VAT withholding is only
   estimated for a designated agent where the supplier has not issued an EFRIS
   e-invoice or e-receipt.
+- **International tax:** The site provides an issue checklist for residence
+  and source, treaties and double-tax relief, non-resident withholding,
+  permanent establishment, transfer pricing, foreign tax credits,
+  cross-border employment, VAT on imported or digital services, customs and
+  EAC trade, BEPS screening, foreign exchange, records and disputes. It does
+  not maintain a verified treaty-rate matrix or determine treaty eligibility,
+  a permanent establishment, transfer-pricing compliance, foreign-tax-credit
+  entitlement or obligations outside Uganda. The workbench provides
+  arithmetic scenarios for entered withholding rates, foreign-tax-credit
+  ceilings, currency conversion, related-party price comparison, workday
+  allocation, imported-service VAT and profit attribution. Rates, caps,
+  comparable prices, exchange rates, day-count methods and allocations must
+  be independently verified. The scenarios do not establish tax liability or
+  legal entitlement and are not substitutes for country-specific advice.
 - **Presumptive tax:** The estimate applies a rate entered by the user to
   turnover. It does not choose the statutory schedule, determine eligibility,
   or handle exclusions and record-keeping rules. The general small-business
@@ -150,3 +177,5 @@ secondary references, not legislation.
 - [PwC Uganda other taxes and VAT](https://taxsummaries.pwc.com/uganda/corporate/other-taxes)
 - [PwC Uganda withholding taxes, including non-resident rent](https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes)
 - [PwC Uganda individual other taxes](https://taxsummaries.pwc.com/uganda/individual/other-taxes)
+- [OECD Transfer Pricing Guidelines](https://www.oecd.org/tax/transfer-pricing/oecd-transfer-pricing-guidelines-for-multinational-enterprises-and-tax-administrations-20769717.htm)
+- [OECD Base Erosion and Profit Shifting (BEPS)](https://www.oecd.org/tax/beps/)

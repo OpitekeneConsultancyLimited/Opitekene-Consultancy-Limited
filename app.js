@@ -208,9 +208,9 @@ const headContent = {
     button: "Calculate customs estimate",
   },
   "capital-allowances": {
-    title: "Capital allowance estimate",
-    description: "Apply a tax rate you have confirmed to an asset or pool tax basis.",
-    button: "Calculate capital allowance",
+    title: "Wear-and-tear schedule",
+    description: "Calculate the reducing-balance allowance using Uganda’s statutory asset classes.",
+    button: "Calculate wear-and-tear",
   },
 };
 
@@ -299,9 +299,15 @@ function renderAdvisoryGuidance() {
     if (item.calculator) {
       const calculatorLink = document.createElement("a");
       calculatorLink.className = "advisory-calculator-link";
-      calculatorLink.href = "#estimator";
-      calculatorLink.dataset.advisoryHead = item.calculator;
-      calculatorLink.textContent = "Open related calculator";
+      if (item.calculator === "international") {
+        calculatorLink.href = "#international-tax";
+        calculatorLink.dataset.advisoryInternational = "true";
+        calculatorLink.textContent = "Open international tax workbench";
+      } else {
+        calculatorLink.href = "#estimator";
+        calculatorLink.dataset.advisoryHead = item.calculator;
+        calculatorLink.textContent = "Open related calculator";
+      }
       article.append(calculatorLink);
     }
     advisoryResults.append(article);
@@ -394,6 +400,13 @@ document.querySelector(".advisory-quick-questions").addEventListener("click", (e
 });
 
 advisoryResults.addEventListener("click", (event) => {
+  const internationalLink = event.target.closest("[data-advisory-international]");
+  if (internationalLink) {
+    event.preventDefault();
+    document.querySelector("#international-tax").scrollIntoView({ behavior: "smooth" });
+    document.querySelector("#international-tax-method").focus({ preventScroll: true });
+    return;
+  }
   const link = event.target.closest("[data-advisory-head]");
   if (!link) return;
   event.preventDefault();
@@ -860,18 +873,27 @@ function showCustomsEstimate() {
 }
 
 function showCapitalAllowance() {
-  const estimate = ugandaTax.calculateCapitalAllowance(
-    document.querySelector("#allowance-tax-base").valueAsNumber,
-    document.querySelector("#allowance-rate").valueAsNumber,
-  );
+  const optionalNumber = (selector) => {
+    const input = document.querySelector(selector);
+    return input.value === "" ? 0 : input.valueAsNumber;
+  };
+  const estimate = ugandaTax.calculateWearAndTear({
+    assetClass: document.querySelector("#allowance-class").value,
+    openingTaxWrittenDownValue: document.querySelector("#allowance-opening-value").valueAsNumber,
+    additions: optionalNumber("#allowance-additions"),
+    disposalProceeds: optionalNumber("#allowance-disposals"),
+    businessUsePercent: document.querySelector("#allowance-business-use").valueAsNumber,
+  });
 
   renderResult({
     value: estimate.allowance,
-    label: "Illustrative capital allowance for the year",
-    context: `Tax basis entered: ${formatUgx(estimate.taxBase)} · Rate entered: ${formatPercent(estimate.rate)}`,
+    label: "Estimated wear-and-tear allowance",
+    context: `${estimate.assetClass.label} · Reducing balance at ${formatPercent(estimate.rate)} · Closing pool: ${formatUgx(estimate.closingTaxWrittenDownValue)}`,
     breakdown: estimate.breakdown,
-    breakdownCaption: "User-confirmed basis and rate",
-    note: "Illustrative straight-rate arithmetic only. Confirm the asset class, allowance method, qualifying basis, rate, timing, disposals and restrictions under the applicable law. This result is not automatically transferred into the company tax reconciliation; enter the supported allowance amount there.",
+    breakdownCaption: "Class-based tax pool reconciliation",
+    note: estimate.excessDisposalProceeds > 0
+      ? "The excess disposal proceeds are flagged but no balancing charge or allowance is calculated. Confirm asset eligibility, tax basis, business-use apportionment and disposal treatment under the current Income Tax Act before using this result. Transfer only the supported allowance into the company tax reconciliation."
+      : "This estimate applies the selected class rate on a reducing-balance pool after entered additions and disposals. It does not determine asset eligibility, minor-asset expensing, balancing adjustments, initial allowances, or industrial-building allowance. Confirm the current law and records; transfer only a supported allowance into the company tax reconciliation.",
   });
 }
 
@@ -905,6 +927,14 @@ createAdjustmentFields(
   "data-company-deduction-item",
   "company-deduction-item",
 );
+
+const wearAndTearClassSelect = document.querySelector("#allowance-class");
+for (const assetClass of ugandaTax.wearAndTearClasses) {
+  const option = document.createElement("option");
+  option.value = assetClass.id;
+  option.textContent = `${assetClass.label} (${formatPercent(assetClass.rate)})`;
+  wearAndTearClassSelect.append(option);
+}
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();

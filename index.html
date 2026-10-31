@@ -4,15 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f6f7f2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TaxComp">
     <meta
       name="description"
       content="Explore Uganda FY 2026/27 tax estimates, source-linked guidance and Ugandan tax case summaries."
     >
+    <meta name="taxcomp-chat-endpoint" content="">
     <title>TaxComp Uganda | Tax calculators</title>
-    <link rel="stylesheet" href="styles.css?v=business-contact-1">
-    <script src="tax-advisory.js?v=tax-cases-2" defer></script>
-    <script src="tax-calculator.js?v=rental-matrix-1" defer></script>
-    <script src="app.js?v=business-contact-1" defer></script>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
+    <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
+    <link rel="stylesheet" href="styles.css?v=tax-chat-calculator-links-1">
+    <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
+    <script src="tax-calculator.js?v=wear-tear-classes-1" defer></script>
+    <script src="app.js?v=wear-tear-classes-1" defer></script>
+    <script src="tax-chat.js?v=tax-chat-calculator-links-1" defer></script>
+    <script src="international-tax.js?v=international-tax-1" defer></script>
+    <script src="app-install.js?v=pwa-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -22,7 +32,9 @@
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#estimator">Tax calculators</a>
+        <a href="#international-tax">International tax</a>
         <a href="#advisory">Tax guidance</a>
+        <a href="#tax-chat">Ask TaxComp</a>
         <a href="#tax-cases">Tax cases</a>
         <a href="#payments">Mobile-money payments</a>
         <a href="#how-it-works">How it works</a>
@@ -31,13 +43,15 @@
         Start estimating
         <span aria-hidden="true">↗</span>
       </a>
+      <button class="header-link install-app-button" id="install-app" type="button" hidden>Install app</button>
     </header>
+    <p class="install-app-help" id="install-help" role="status" hidden></p>
 
     <main>
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-copy">
           <p class="eyebrow"><span class="eyebrow-dot"></span> UGANDA · FY 2026/27</p>
-          <h1 id="page-title">A clearer picture<br>of your <span>taxes.</span></h1>
+          <h1 id="page-title">A Clean Solution<br>to Your <span>Taxes</span></h1>
           <p class="hero-description">
             Estimate common taxes and customs charges, explore a transparent
             breakdown, and understand the assumptions behind each result.
@@ -47,7 +61,7 @@
               <path d="M10 2.5 3.75 5v4.2c0 3.7 2.65 7.15 6.25 8.3 3.6-1.15 6.25-4.6 6.25-8.3V5L10 2.5Z"></path>
               <path d="m7.2 9.9 1.8 1.8 3.8-4"></path>
             </svg>
-            Your figures stay in this browser. Nothing is saved or sent.
+            Calculator figures stay in this browser. If AI chat is connected, messages are sent to Gemini through Cloudflare; don't share confidential details.
           </div>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -82,7 +96,7 @@
           <button class="tax-tab" id="tab-withholding" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="withholding" tabindex="-1">Withholding tax</button>
           <button class="tax-tab" id="tab-presumptive" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="presumptive" tabindex="-1">Presumptive tax</button>
           <button class="tax-tab" id="tab-customs" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="customs" tabindex="-1">Imports &amp; exports</button>
-          <button class="tax-tab" id="tab-capital-allowances" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="capital-allowances" tabindex="-1">Capital allowances</button>
+          <button class="tax-tab" id="tab-capital-allowances" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="capital-allowances" tabindex="-1">Wear &amp; tear</button>
         </div>
 
         <div class="estimator-grid">
@@ -445,15 +459,35 @@
 
             <div class="tax-fields" data-fields="capital-allowances" hidden>
               <div class="field">
-                <label for="allowance-tax-base">Tax basis for the asset or pool (UGX)</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-tax-base" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter confirmed tax basis" data-required="true"></div>
-                <p class="field-help">Enter the basis to which the applicable allowance rate applies, after the tax adjustments required for your asset class.</p>
+                <label for="allowance-class">Wear-and-tear class</label>
+                <select id="allowance-class" data-required="true">
+                  <option value="">Choose the asset class</option>
+                </select>
+                <p class="field-help">Class 1 — 40%: computers and data-handling equipment.</p>
+                <p class="field-help">Class 2 — 30%: plant and machinery used in farming, manufacturing or mining.</p>
+                <p class="field-help">Class 3 — 20%: automobiles; buses/minibuses; construction and earth-moving equipment; specialised trucks, tractors, trailers and trailer-mounted containers; rail cars, locomotives and equipment; vessels, barges, tugs and similar water-transport equipment; aircraft; specialised public-utility plant/equipment/machinery; office furniture, fixtures and equipment; and other depreciable assets not in Classes 1 or 2.</p>
               </div>
               <div class="field">
-                <label for="allowance-rate">Applicable capital allowance rate (%)</label>
-                <div class="input-wrap"><input id="allowance-rate" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="Confirm rate for asset class and year" data-required="true"><span class="currency-prefix" aria-hidden="true">%</span></div>
-                <p class="field-help">Confirm the rate, method, eligibility and any first-year or disposal adjustments under the current law. This tool does not classify the asset or select its rate.</p>
+                <label for="allowance-opening-value">Opening tax written-down value (UGX)</label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-opening-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter prior-year closing pool value" data-required="true"></div>
+                <p class="field-help">For a new class pool, enter 0. Otherwise enter the previous year’s closing tax pool balance, already adjusted for business use.</p>
               </div>
+              <div class="field">
+                <label for="allowance-additions">Qualifying additions in the year (UGX) <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-additions" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+                <p class="field-help">Enter qualifying capital cost, excluding recoverable VAT and costs that are not part of the asset’s tax basis.</p>
+              </div>
+              <div class="field">
+                <label for="allowance-disposals">Disposal proceeds for this class pool (UGX) <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-disposals" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+                <p class="field-help">Enter proceeds attributable to assets in this class. Any proceeds exceeding the pool balance are flagged for a separate balancing-adjustment review.</p>
+              </div>
+              <div class="field">
+                <label for="allowance-business-use">Business-use percentage</label>
+                <div class="input-wrap"><input id="allowance-business-use" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="e.g. 100" data-required="true"><span class="currency-prefix" aria-hidden="true">%</span></div>
+                <p class="field-help">Applied to current-year additions and disposal proceeds. Use the already apportioned amount for the opening pool value.</p>
+              </div>
+              <p class="field-help">Wear-and-tear uses reducing-balance rates by statutory class. This schedule is separate from the 5% straight-line industrial building allowance. <a href="https://taxsummaries.pwc.com/uganda/corporate/deductions" target="_blank" rel="noopener noreferrer">Read the Uganda depreciation summary</a> and confirm the current law and asset eligibility.</p>
             </div>
 
             <button class="calculate-button" type="submit">
@@ -513,6 +547,70 @@
         </div>
       </section>
 
+      <section class="international-tax-section" id="international-tax" aria-labelledby="international-tax-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">CROSS-BORDER TAX</p>
+            <h2 id="international-tax-title">International tax, from a Uganda perspective.</h2>
+            <p>Explore the cross-border issues that can affect people and businesses operating in or with Uganda.</p>
+          </div>
+        </div>
+        <div class="advisory-caveat" role="note">
+          International tax depends on the countries involved, the tax year, the contract and the facts. This guide is not a worldwide rate database and does not determine residence, treaty entitlement, permanent establishment, transfer-pricing compliance or filing obligations. Confirm current rules in every relevant country before acting.
+        </div>
+
+        <div class="international-tax-topics">
+          <article><span>01</span><h3>Residence and source</h3><p>Identify where a person or company is tax-resident, where income arises, and which countries may tax it. Citizenship, incorporation and payment location are not always decisive on their own.</p></article>
+          <article><span>02</span><h3>Tax treaties and double taxation</h3><p>Check whether an effective agreement applies to both parties and the income type, then review residence, beneficial ownership, anti-abuse and documentation requirements before seeking relief.</p></article>
+          <article><span>03</span><h3>Cross-border withholding</h3><p>Review dividends, interest, royalties, rent, services, management fees, transport, insurance and other payments to non-residents. Determine the tax base, rate, timing, reporting and whether withholding is creditable or final.</p></article>
+          <article><span>04</span><h3>Permanent establishment</h3><p>Assess fixed places of business, projects, dependent agents, service activity and other local presence under domestic law and any applicable treaty. A PE may change profit attribution, registration and return obligations.</p></article>
+          <article><span>05</span><h3>Transfer pricing and related parties</h3><p>Identify associated-party transactions, test arm’s-length pricing, keep contemporaneous evidence, and assess local documentation, disclosure, financing and adjustment rules.</p></article>
+          <article><span>06</span><h3>Foreign income and double-tax relief</h3><p>Review foreign-source income, tax paid abroad, available credit or exemption mechanisms, limits, proof and timing. Relief is not automatic and may be restricted by income category or law.</p></article>
+          <article><span>07</span><h3>Cross-border employees</h3><p>Consider work location and days, employer and economic-employer facts, payroll withholding, benefits, social security, immigration status, remote work and any treaty employment conditions.</p></article>
+          <article><span>08</span><h3>VAT and digital services</h3><p>Check imported services, reverse-charge VAT, non-resident digital supplies, e-commerce platforms, place-of-supply rules, registration, invoicing and recoverability in each country.</p></article>
+          <article><span>09</span><h3>Customs and regional trade</h3><p>Confirm HS classification, customs value, origin, EAC or other preferential rules, proof of origin, import VAT, excise, export controls and the destination country’s import obligations.</p></article>
+          <article><span>10</span><h3>Groups, anti-avoidance and BEPS</h3><p>Review controlled-foreign-company rules, interest limitations, hybrid arrangements, treaty abuse, country-by-country reporting and global minimum-tax rules where the group and jurisdiction are in scope.</p></article>
+          <article><span>11</span><h3>Foreign exchange and payments</h3><p>Track currency conversion, timing, withholding certificates, tax gross-ups, foreign-exchange gains or losses, bank evidence and payment/reporting rules for cross-border transactions.</p></article>
+          <article><span>12</span><h3>Disclosure, audits and disputes</h3><p>Keep contracts, invoices, travel/workday records, residency certificates, proof of tax paid, customs records and related-party support. Check deadlines, exchange-of-information exposure, objection routes and treaty mutual-agreement procedures.</p></article>
+        </div>
+
+        <div class="international-tax-calculator">
+          <div>
+            <p class="eyebrow section-eyebrow">QUICK ESTIMATE</p>
+            <h3>Cross-border tax workbench.</h3>
+            <p>Choose an arithmetic scenario. Every rate, cap, reference price, workday count and allocation must be verified for the relevant countries and tax period.</p>
+          </div>
+          <form id="international-tax-form">
+            <div class="field">
+              <label for="international-tax-method">Choose a calculation</label>
+              <select id="international-tax-method">
+                <option value="withholding">Cross-border withholding comparison</option>
+                <option value="foreignCredit">Foreign tax credit ceiling scenario</option>
+                <option value="currency">Foreign-currency conversion</option>
+                <option value="transferPricing">Related-party price comparison</option>
+                <option value="workdays">Cross-border employment workday allocation</option>
+                <option value="importedServicesVat">Imported-service VAT scenario</option>
+                <option value="profitAttribution">Permanent-establishment profit allocation</option>
+              </select>
+            </div>
+            <h3 id="international-tax-workbench-title"></h3>
+            <p id="international-tax-method-description" class="international-tax-method-description"></p>
+            <div id="international-tax-fields" class="international-tax-fields"></div>
+            <button type="submit">Calculate scenario</button>
+            <p id="international-tax-error" class="form-error" role="alert" hidden></p>
+          </form>
+          <div id="international-tax-result" class="international-tax-result" aria-live="polite" hidden></div>
+        </div>
+        <p class="international-tax-sources">
+          Reference portals:
+          <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">URA</a> ·
+          <a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff</a> ·
+          <a href="https://www.oecd.org/tax/transfer-pricing/oecd-transfer-pricing-guidelines-for-multinational-enterprises-and-tax-administrations-20769717.htm" target="_blank" rel="noopener noreferrer">OECD Transfer Pricing Guidelines</a> ·
+          <a href="https://www.oecd.org/tax/beps/" target="_blank" rel="noopener noreferrer">OECD BEPS</a> ·
+          <a href="https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes" target="_blank" rel="noopener noreferrer">Uganda withholding tax overview (secondary)</a>
+        </p>
+      </section>
+
       <section class="advisory-section" id="advisory" aria-labelledby="advisory-title">
         <div class="advisory-heading">
           <div>
@@ -524,9 +622,9 @@
         </div>
 
         <div class="advisory-caveat" role="note">
-          This is a curated guide, not a lawyer, accountant, URA ruling or live AI service. It does not
-          automatically track new laws. Check the cited sources and effective dates; ask a qualified tax
-          professional about your facts before filing, paying or taking a legal position.
+          This is educational guidance, not a lawyer, accountant, URA ruling or personalized tax advice.
+          The AI chat uses reviewed TaxComp notes and can make mistakes; it does not automatically track
+          new laws. Check cited sources and effective dates before filing, paying or taking a legal position.
         </div>
 
         <form class="advisory-search" id="tax-advisory-search" role="search">
@@ -542,6 +640,7 @@
               <option value="vat">VAT</option>
               <option value="withholding">Withholding tax</option>
               <option value="customs">Imports and exports</option>
+              <option value="international">International tax</option>
             </select>
             <button type="submit">Search guidance</button>
           </div>
@@ -564,6 +663,42 @@
           <p>Need help applying the rules to your records, transaction or URA notice?</p>
           <a class="advisory-consult-link" href="#payments">Request a tax consultation <span aria-hidden="true">→</span></a>
         </div>
+      </section>
+
+      <section class="tax-chat-section" id="tax-chat" aria-labelledby="tax-chat-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">TAXCOMP CHAT</p>
+            <h2 id="tax-chat-title">Ask a tax question.</h2>
+            <p>Ask in your own words about Uganda taxes, reviewed guidance or case summaries. When a note matches a supported tax head, open its calculator directly from the answer.</p>
+          </div>
+          <button class="tax-chat-clear" id="tax-chat-clear" type="button">Clear chat</button>
+        </div>
+        <p class="tax-chat-privacy" role="note">
+          Do not enter your TIN, passwords, mobile-money PINs, account numbers or confidential documents.
+          The chat does not save history; when AI is connected, your question and recent chat turns are sent
+          to Google Gemini through Cloudflare to generate a reply.
+        </p>
+        <div class="tax-chat-panel">
+          <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <form class="tax-chat-form" id="tax-chat-form">
+            <label for="tax-chat-input">Your question</label>
+            <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
+            <div class="tax-chat-form-footer">
+              <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
+              <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+          <div class="tax-chat-shortcuts" aria-label="Example chat questions">
+            <span>Try asking:</span>
+            <button type="button" data-chat-question="What are the VAT registration thresholds?">VAT thresholds</button>
+            <button type="button" data-chat-question="Which employment benefits can affect PAYE?">PAYE benefits</button>
+            <button type="button" data-chat-question="What should I check before claiming a tax treaty rate?">Tax treaties</button>
+            <button type="button" data-chat-question="How is wear-and-tear calculated by asset class?">Wear and tear</button>
+            <button type="button" data-chat-question="What did the Quickway input VAT case decide?">Tax case summary</button>
+          </div>
+        </div>
+        <p class="tax-chat-status" id="tax-chat-status" aria-live="polite"></p>
       </section>
 
       <section class="case-law-section" id="tax-cases" aria-labelledby="tax-cases-title">
