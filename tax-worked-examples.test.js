@@ -22,6 +22,7 @@ test("recomputes CSI Bank provisions, allowances and tax reconciliation", () => 
   assert.equal(result.chargeableIncome, 5_472_543_563);
   assert.equal(result.taxBeforeCredits, 1_641_763_069);
   assert.equal(result.netTaxPayable, 1_617_441_069);
+  assert.equal(result.taxBeforeCredits - data.csiBankTaxComputation.withholdingCredits, result.netTaxPayable);
 });
 
 test("recomputes Burugo transaction withholding and total", () => {

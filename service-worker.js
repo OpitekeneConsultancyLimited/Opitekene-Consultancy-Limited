@@ -1,4 +1,4 @@
-const CACHE_NAME = "taxcomp-app-v7";
+const CACHE_NAME = "taxcomp-app-v8";
 const APP_SHELL = [
   "./",
   "./index.html",

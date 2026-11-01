@@ -43,6 +43,8 @@ test("searches guidance by question terms and optional topic", () => {
   const healthCheck = searchGuidance("business tax health check VAT PAYE records", "business");
   const historicalComputation = searchGuidance("2024 historical company tax computation chargeable income", "business");
   const historicalWithholding = searchGuidance("2024 Burugo historical withholding WHT schedule", "withholding");
+  const csiExample = searchGuidance("2024 CSI Bank tax before credits withholding credit net payable", "business");
+  const burugoExample = searchGuidance("Burugo 2024 WHT total 143970000 telecom rental", "withholding");
   const incomeAmendments = searchGuidance("software royalty controlled transactions arm's length", "business");
   const softwareRoyaltyAmendments = searchGuidance("software royalty 2026 amendments", "business");
   const exciseAmendments = searchGuidance("2026 excise cement sugar rates", "customs");
@@ -71,6 +73,15 @@ test("searches guidance by question terms and optional topic", () => {
   assert.ok(healthCheck.some((item) => item.id === "business-tax-health-check"));
   assert.ok(historicalComputation.some((item) => item.id === "historical-company-tax-computation"));
   assert.ok(historicalWithholding.some((item) => item.id === "historical-withholding-schedule"));
+  const csiGuide = csiExample.find((item) => item.id === "historical-company-tax-computation");
+  assert.ok(csiGuide);
+  assert.equal(csiGuide.workedExample, "csi-bank");
+  assert.match(csiGuide.summary, /tax before credits is UGX 1,641,763,069/i);
+  assert.match(csiGuide.summary, /net tax payable is UGX 1,617,441,069/i);
+  const burugoGuide = burugoExample.find((item) => item.id === "historical-withholding-schedule");
+  assert.ok(burugoGuide);
+  assert.equal(burugoGuide.workedExample, "burugo-withholding");
+  assert.match(burugoGuide.summary, /total WHT of UGX 143,970,000/);
   const incomeAmendmentGuide = incomeAmendments.find((item) => item.id === "income-tax-amendments-2026");
   assert.ok(incomeAmendmentGuide);
   assert.ok(softwareRoyaltyAmendments.some((item) => item.id === "income-tax-amendments-2026"));

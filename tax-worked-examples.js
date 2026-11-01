@@ -200,7 +200,7 @@
       ["Total add-backs", money(csi.totalAddBacks)],
       ...csi.deductions.map((item) => [item.name, money(item.amount)]),
       ["Chargeable income", money(csi.chargeableIncome)],
-      ["Tax at supplied company rate", `${money(csiResult.taxBeforeCredits)} (${percent(data.parameters.companyTaxRate)})`],
+      ["Tax before credits at supplied company rate", `${money(csiResult.taxBeforeCredits)} (${percent(data.parameters.companyTaxRate)})`],
       ["Less withholding tax credits", `−${money(csi.withholdingCredits)}`],
       ["Net tax payable", money(csi.netTaxPayable)],
     ]);
@@ -208,6 +208,7 @@
     const bankChecks = [
       ["Total add-backs", csiResult.totalAddBacks, csi.totalAddBacks],
       ["Chargeable income", csiResult.chargeableIncome, csi.chargeableIncome],
+      ["Tax before credits", csiResult.taxBeforeCredits, round(csi.chargeableIncome * data.parameters.companyTaxRate)],
       ["Net tax payable", csiResult.netTaxPayable, csi.netTaxPayable],
     ];
     for (const [label, calculated, supplied] of bankChecks) {

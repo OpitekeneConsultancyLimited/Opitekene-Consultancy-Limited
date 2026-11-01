@@ -316,6 +316,15 @@ function renderAdvisoryGuidance() {
       }
       article.append(calculatorLink);
     }
+    if (item.workedExample) {
+      const workedExampleLink = document.createElement("a");
+      workedExampleLink.className = "advisory-calculator-link";
+      workedExampleLink.href = "#tax-worked-examples";
+      workedExampleLink.textContent = item.workedExample === "csi-bank"
+        ? "Open the CSI Bank 2024 worked example"
+        : "Open the Burugo 2024 worked example";
+      article.append(workedExampleLink);
+    }
     advisoryResults.append(article);
   }
 }
