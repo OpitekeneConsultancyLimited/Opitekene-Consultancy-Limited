@@ -89,6 +89,24 @@
 
   const guidance = [
     {
+      id: "business-tax-audit",
+      topic: "business",
+      title: "How can a business prepare for a URA tax audit?",
+      keywords: ["business tax audit URA prepare notice request records evidence deadline assessment inspection review"],
+      summary: "Start from the actual notice: verify its source, tax types, periods, scope, requested records and response dates. Preserve the relevant accounting, invoice, payroll, customs and filing records; reconcile material figures to returns; index each response and keep proof of delivery. The facts and applicable procedure determine what must be provided.",
+      nextStep: "Use TaxComp's audit-readiness checklist to organize requests and supporting evidence. Confirm deadlines and response requirements with URA or a qualified Ugandan tax adviser; this checklist does not act for you.",
+      sourceKeys: ["ura"],
+    },
+    {
+      id: "business-tax-health-check",
+      topic: "business",
+      title: "What should a business include in a tax health check?",
+      keywords: ["business tax health check compliance review VAT EFRIS PAYE withholding customs records reconciliations cross-border"],
+      summary: "A useful internal review maps registrations and filing obligations, reconciles returns to accounting and payment records, samples evidence for material tax positions, and reviews VAT/EFRIS, payroll, withholding, customs and cross-border or related-party activity where relevant. A checklist cannot establish legal compliance or replace an independent tax review.",
+      nextStep: "Use TaxComp's health-check prompts to record items ready for review, items needing follow-up and items that may not apply. Verify current obligations and deadlines against official URA information and your business facts.",
+      sourceKeys: ["ura"],
+    },
+    {
       id: "international-residence-source",
       topic: "international",
       title: "How do tax residence and income source affect cross-border tax?",

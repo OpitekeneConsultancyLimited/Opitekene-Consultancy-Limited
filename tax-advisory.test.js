@@ -20,6 +20,7 @@ test("provides source-linked guidance across all main tax areas", () => {
     "withholding",
     "customs",
     "international",
+    "business",
   ]) {
     assert.ok(topics.has(topic), `missing guidance topic: ${topic}`);
   }
@@ -39,6 +40,8 @@ test("searches guidance by question terms and optional topic", () => {
   const wearAndTear = searchGuidance("wear and tear classes");
   const treaty = searchGuidance("international treaty withholding beneficial ownership", "international");
   const transferPricing = searchGuidance("related party transfer pricing arm's length", "international");
+  const audit = searchGuidance("business tax audit prepare notice evidence", "business");
+  const healthCheck = searchGuidance("business tax health check VAT PAYE records", "business");
 
   assert.ok(vat.some((item) => item.id === "vat-threshold"));
   assert.ok(rental.some((item) => item.id === "rental-company"));
@@ -51,6 +54,8 @@ test("searches guidance by question terms and optional topic", () => {
   assert.ok(treaty.some((item) => item.id === "international-treaties"));
   assert.ok(transferPricing.some((item) => item.id === "international-transfer-pricing"));
   assert.equal(treaty.find((item) => item.id === "international-treaties").calculator, "international");
+  assert.ok(audit.some((item) => item.id === "business-tax-audit"));
+  assert.ok(healthCheck.some((item) => item.id === "business-tax-health-check"));
 });
 
 test("returns all guidance for an empty query and no unsupported answer for a miss", () => {

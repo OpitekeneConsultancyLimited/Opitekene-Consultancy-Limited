@@ -20,5 +20,12 @@ successful visit. Open-ended AI chat requires an internet connection and a
 configured Cloudflare Worker and Gemini API key. Case links and external tax
 sources also require an internet connection.
 
+The audit-readiness and tax health-check workspaces are available in the app.
+Checklist statuses and the optional tax period are saved in browser storage on
+the current device only. Avoid entering confidential details. Users can clear
+each workspace, or download or print its checklist report. These educational
+prompts do not assess legal compliance or replace current URA guidance or
+professional advice.
+
 The PWA is not published to Google Play or Apple's App Store. GitHub Pages
 serves it over HTTPS, which is required for installation outside localhost.

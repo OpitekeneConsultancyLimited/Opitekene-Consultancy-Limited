@@ -22,6 +22,7 @@
     <script src="app.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-calculator-links-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
+    <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-1" defer></script>
   </head>
   <body>
@@ -33,6 +34,7 @@
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#estimator">Tax calculators</a>
         <a href="#international-tax">International tax</a>
+        <a href="#audit-health">Audit &amp; health</a>
         <a href="#advisory">Tax guidance</a>
         <a href="#tax-chat">Ask TaxComp</a>
         <a href="#tax-cases">Tax cases</a>
@@ -608,6 +610,61 @@
           <a href="https://www.oecd.org/tax/transfer-pricing/oecd-transfer-pricing-guidelines-for-multinational-enterprises-and-tax-administrations-20769717.htm" target="_blank" rel="noopener noreferrer">OECD Transfer Pricing Guidelines</a> ·
           <a href="https://www.oecd.org/tax/beps/" target="_blank" rel="noopener noreferrer">OECD BEPS</a> ·
           <a href="https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes" target="_blank" rel="noopener noreferrer">Uganda withholding tax overview (secondary)</a>
+        </p>
+      </section>
+
+      <section class="audit-health-section" id="audit-health" aria-labelledby="audit-health-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">BUSINESS TAX CONTROLS</p>
+            <h2 id="audit-health-title">Prepare for a tax audit. Check your tax health.</h2>
+            <p>Work through practical records and control prompts, then focus on the follow-ups that need attention.</p>
+          </div>
+        </div>
+
+        <div class="audit-health-caveat" role="note">
+          This educational checklist is not a tax filing, audit opinion, compliance certificate or legal advice. Tax obligations and deadlines depend on the facts and current law. Verify a URA notice and its deadlines directly with URA or a qualified adviser.
+        </div>
+
+        <div class="audit-health-privacy" role="note">
+          Your checklist statuses and optional period are saved in this browser on this device only. No accounting records, company name or answers are uploaded. Avoid entering confidential details; use clear progress to remove saved answers from this browser.
+        </div>
+
+        <div class="audit-health-workspace">
+          <div class="audit-health-controls">
+            <div class="field">
+              <label for="audit-health-mode">Choose a workspace</label>
+              <select id="audit-health-mode">
+                <option value="audit">Audit readiness</option>
+                <option value="health">Tax health check</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="audit-health-period">Tax period (optional)</label>
+              <input class="text-input" id="audit-health-period" type="text" maxlength="80" placeholder="e.g. FY 2025/26" autocomplete="off">
+            </div>
+            <div class="audit-health-buttons">
+              <button id="audit-health-download" type="button">Download report</button>
+              <button id="audit-health-print" type="button">Print report</button>
+              <button id="audit-health-reset" class="audit-health-reset" type="button">Clear progress</button>
+            </div>
+          </div>
+
+          <p id="audit-health-mode-description" class="audit-health-mode-description"></p>
+          <p id="audit-health-save-status" class="audit-health-save-status" role="status"></p>
+          <p id="audit-health-notice" class="audit-health-notice" role="alert" hidden></p>
+
+          <div id="audit-health-summary" class="audit-health-summary" aria-live="polite"></div>
+          <div id="audit-health-actions" class="audit-health-actions" aria-live="polite"></div>
+          <div id="audit-health-checklist" class="audit-health-checklist"></div>
+          <pre id="audit-health-print-report" class="audit-health-print-report" hidden></pre>
+        </div>
+
+        <p class="audit-health-sources">
+          Reference sources:
+          <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority (official tax information)</a> ·
+          <a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff resources</a> ·
+          <a href="tax-law-notes.md">TaxComp calculation assumptions and source notes</a>
         </p>
       </section>
 
