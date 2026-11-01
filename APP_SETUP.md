@@ -32,5 +32,20 @@ worked examples. Their calculations check arithmetic only; the tax treatments
 and cited historical law are not independently validated and are not current
 filing advice.
 
+## Extract a tax-law PDF
+
+To extract text from a text-based PDF into searchable text, page-by-page JSON
+Lines, and a source-hash manifest, install `pypdf` and run:
+
+```powershell
+py -3 -m pip install pypdf
+py -3 capture_compendium.py "C:\path\to\laws-of-uganda.pdf"
+```
+
+By default, the script creates a `laws-of-uganda_extracted` folder beside the
+PDF. Use `--output-dir "C:\path\to\output"` to choose another location. Pages
+without extractable text may need OCR; the extraction does not preserve page
+layout. The source PDF is read locally and is not uploaded.
+
 The PWA is not published to Google Play or Apple's App Store. GitHub Pages
 serves it over HTTPS, which is required for installation outside localhost.
