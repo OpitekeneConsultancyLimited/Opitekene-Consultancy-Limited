@@ -316,13 +316,21 @@ function renderAdvisoryGuidance() {
       }
       article.append(calculatorLink);
     }
-    if (item.workedExample) {
+    const workedExample = {
+      "csi-bank": {
+        href: "#worked-example-csi-bank",
+        label: "Open the CSI Bank 2024 worked example",
+      },
+      "burugo-withholding": {
+        href: "#worked-example-burugo",
+        label: "Open the Burugo 2024 worked example",
+      },
+    }[item.workedExample];
+    if (workedExample) {
       const workedExampleLink = document.createElement("a");
       workedExampleLink.className = "advisory-calculator-link";
-      workedExampleLink.href = "#tax-worked-examples";
-      workedExampleLink.textContent = item.workedExample === "csi-bank"
-        ? "Open the CSI Bank 2024 worked example"
-        : "Open the Burugo 2024 worked example";
+      workedExampleLink.href = workedExample.href;
+      workedExampleLink.textContent = workedExample.label;
       article.append(workedExampleLink);
     }
     advisoryResults.append(article);
