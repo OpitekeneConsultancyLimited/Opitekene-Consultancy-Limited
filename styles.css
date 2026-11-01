@@ -213,6 +213,41 @@ p {
   font-size: 11px;
 }
 
+.hero-cta-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.hero-contact-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-contact-button:hover {
+  transform: translateY(-1px);
+}
+
+.hero-contact-button.primary {
+  background: var(--green);
+  box-shadow: 0 12px 24px rgba(23, 99, 69, 0.2);
+}
+
+.hero-contact-button.whatsapp {
+  background: #1bbf5f;
+  box-shadow: 0 12px 24px rgba(27, 191, 95, 0.2);
+}
+
 .trust-note svg {
   width: 16px;
   height: 16px;
