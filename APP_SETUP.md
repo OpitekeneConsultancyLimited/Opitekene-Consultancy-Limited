@@ -27,5 +27,10 @@ each workspace, or download or print its checklist report. These educational
 prompts do not assess legal compliance or replace current URA guidance or
 professional advice.
 
+The site also includes supplied year-of-income 2024 company-tax and withholding
+worked examples. Their calculations check arithmetic only; the tax treatments
+and cited historical law are not independently validated and are not current
+filing advice.
+
 The PWA is not published to Google Play or Apple's App Store. GitHub Pages
 serves it over HTTPS, which is required for installation outside localhost.

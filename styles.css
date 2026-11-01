@@ -322,6 +322,7 @@ p {
 
 .estimator-section,
 .international-tax-section,
+.worked-examples-section,
 .audit-health-section,
 .advisory-section,
 .tax-chat-section,
@@ -348,6 +349,82 @@ p {
   padding: 38px 0 42px;
   border-top: 1px solid #e1e6df;
   scroll-margin-top: 24px;
+}
+
+.worked-examples-section {
+  padding: 38px 0 42px;
+  border-top: 1px solid #e1e6df;
+  scroll-margin-top: 24px;
+}
+
+.worked-examples-caveat {
+  margin: 14px 0;
+  padding: 13px 15px;
+  border: 1px solid #eadbb9;
+  border-radius: 8px;
+  background: #fbf8ef;
+  color: #66583d;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-metadata,
+.worked-examples-sources {
+  color: #66746a;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-card {
+  margin: 14px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.worked-example-card h3 {
+  margin: 0 0 8px;
+  color: #293a30;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.worked-example-card h4 {
+  margin: 19px 0 7px;
+  color: #38493e;
+  font-size: 12px;
+}
+
+.worked-example-lead,
+.worked-example-check {
+  color: #66746a;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-check {
+  margin: 8px 0;
+  color: #176345;
+  font-weight: 650;
+}
+
+.worked-example-check.is-warning {
+  color: #9c3d25;
+}
+
+.worked-example-table-wrap {
+  overflow-x: auto;
+}
+
+.worked-example-table {
+  min-width: 580px;
+}
+
+.worked-examples-sources a {
+  color: var(--green);
+  font-weight: 650;
 }
 
 .audit-health-caveat,
@@ -2249,6 +2326,7 @@ td:first-child {
   .site-footer,
   .estimator-section,
   .international-tax-section,
+  .worked-examples-section,
   .audit-health-section,
   .advisory-section,
   .tax-chat-section,

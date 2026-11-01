@@ -89,6 +89,24 @@
 
   const guidance = [
     {
+      id: "historical-company-tax-computation",
+      topic: "business",
+      title: "How is a historical company tax computation reconciled?",
+      keywords: ["2024 historical company tax computation CSI Bank profit before tax add backs deductions chargeable income provisions wear tear building allowance"],
+      summary: "A worked reconciliation starts with accounting profit, adds back the supplied non-deductible or adjusted items, applies supported deductions and allowances, then calculates tax before credits and deducts supported tax credits. TaxComp's 2024 example checks arithmetic only and does not verify the legal treatment or supporting evidence.",
+      nextStep: "Review the historical CSI Bank worked example as a teaching illustration, and verify the law, return period and records that apply to any real filing.",
+      sourceKeys: ["ura", "corporate"],
+    },
+    {
+      id: "historical-withholding-schedule",
+      topic: "withholding",
+      title: "How can withholding tax transactions be reconciled?",
+      keywords: ["2024 Burugo historical withholding WHT schedule treasury bills bonds rental telecom commission reinsurance management fees gross amount rate total"],
+      summary: "A transaction schedule can show each income source, gross amount, entered rate and withholding amount, then reconcile the transaction amounts to a total. A matching arithmetic total does not confirm that the withholding rate, final or creditable treatment, residency or legal classification is correct.",
+      nextStep: "Review the historical Burugo schedule as a supplied arithmetic example only. Check current law, taxpayer status, payment date and supporting certificates before applying a withholding treatment.",
+      sourceKeys: ["ura", "withholding"],
+    },
+    {
       id: "business-tax-audit",
       topic: "business",
       title: "How can a business prepare for a URA tax audit?",
