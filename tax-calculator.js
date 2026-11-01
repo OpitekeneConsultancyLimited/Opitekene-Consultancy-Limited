@@ -57,10 +57,11 @@
     "nonresident-telecom": { label: "Non-resident telecommunications or direct-to-home TV income", rate: 0.05 },
     "resident-entertainer": { label: "Resident public entertainer payment", rate: 0.06 },
     "betting-winnings": { label: "Betting or gaming winnings", rate: 0.15 },
+    "resident-telecom-commission": { label: "Telecommunications, mobile-network or mobile-money commission", rate: 0.1 },
     "payment-service-commission": { label: "Payment service provider commission", rate: 0.1 },
     "insurance-agent-commission": { label: "Insurance agent commission", rate: 0.1 },
     "advertising-agent-commission": { label: "Advertising agent commission", rate: 0.1 },
-    "mobile-money-commission": { label: "Airtime distribution or mobile money commission", rate: 0.1 },
+    "mobile-money-commission": { label: "Airtime distribution commission", rate: 0.1 },
     "vat-withholding": { label: "VAT withholding on taxable supply without e-invoice", rate: 0.06 },
     "nonresident-debenture-interest": { label: "Qualifying non-resident debenture interest", rate: 0.05 },
   };
@@ -502,7 +503,7 @@
         { label: "Rental tax already paid entered", rate: null, amount: -taxPaid },
         { label: "Estimated balance after entered payments", rate: null, amount: balance },
       );
-      note = "Applies the individual rental-tax rule: 12% of annual gross rental income above UGX 2,820,000, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Monthly filing/payment may apply from 1 July 2026; this annual estimator does not calculate monthly instalments.";
+      note = "Applies the individual rental-tax rule: 12% of annual gross rental income above UGX 2,820,000, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Secondary commentary describes monthly provisional returns as an option, not a general mandatory monthly filing rule; confirm the available filing route and any payment obligation with URA.";
     } else {
       taxRate = 0.3;
       const companyTaxBase = calculateCompanyTaxBase(
@@ -553,6 +554,8 @@
     paymentType,
     isDesignatedPayer = false,
     supplierIssuedInvoice = false,
+    stakeAmount = 0,
+    isNationalLotteryWinnings = false,
   ) {
     requireNonNegative(grossPayment, "Gross payment");
     const category = withholdingRates[paymentType];
@@ -561,24 +564,50 @@
       throw new RangeError("Choose a supported withholding payment category.");
     }
 
+    if (paymentType === "betting-winnings") {
+      requireNonNegative(stakeAmount, "Stake amount");
+      if (stakeAmount > grossPayment) {
+        throw new RangeError("Stake amount cannot exceed the payout amount.");
+      }
+    }
+
+    const taxBase = paymentType === "betting-winnings"
+      ? grossPayment - stakeAmount
+      : grossPayment;
     const thresholdApplies = paymentType === "resident-supply";
     const vatInvoiceExemption = paymentType === "vat-withholding" &&
       (!isDesignatedPayer || supplierIssuedInvoice);
+    const lotteryExemption = paymentType === "betting-winnings" && isNationalLotteryWinnings;
     const exemptPayment = thresholdApplies &&
       (!isDesignatedPayer || grossPayment <= 1_000_000) ||
-      vatInvoiceExemption;
+      vatInvoiceExemption ||
+      lotteryExemption;
     const rate = exemptPayment ? 0 : category.rate;
-    const tax = grossPayment * rate;
+    const tax = taxBase * rate;
 
     return {
       tax,
       rate,
+      taxBase,
       paymentLabel: category.label,
-      breakdown: [
-        { label: "Gross payment", rate: null, amount: grossPayment },
-        { label: category.label, rate, amount: tax },
-      ],
-      note: paymentType === "nonresident-debenture-interest"
+      breakdown: paymentType === "betting-winnings"
+        ? [
+            { label: "Payout amount", rate: null, amount: grossPayment },
+            { label: "Less stake", rate: null, amount: -stakeAmount },
+            { label: "Winnings subject to withholding", rate: null, amount: taxBase },
+            { label: category.label, rate, amount: tax },
+          ]
+        : [
+            { label: "Gross payment", rate: null, amount: grossPayment },
+            { label: category.label, rate, amount: tax },
+          ],
+      note: lotteryExemption
+        ? "No withholding is estimated for winnings paid by a person licensed to conduct a national lottery. Verify the licence, payment and statutory conditions."
+        : paymentType === "betting-winnings"
+          ? "The 15% withholding estimate is based on winnings (payout less stake), not the full payout. The statutory exclusion for winnings paid by a person licensed to conduct a national lottery applies only when its conditions are met."
+          : paymentType === "resident-telecom-commission"
+            ? "The 10% category concerns commissions paid by telecommunications service providers for telecommunications retail, mobile network or mobile-money services. Confirm the payer, commission and statutory conditions."
+            : paymentType === "nonresident-debenture-interest"
         ? "The 5% rate applies only if all statutory conditions for qualifying offshore debentures are met. Otherwise the general non-resident interest rate may apply; verify the instrument and recipient before withholding."
         : paymentType === "insurance-agent-commission"
           ? "The 10% withholding on an insurance-agent commission is a final tax from 1 July 2026."

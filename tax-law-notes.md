@@ -3,7 +3,7 @@
 The site uses the Uganda year of income from 1 July 2026 through 30 June 2027.
 It is a planning estimator and source-linked educational guide, not a
 return-preparation, legal opinion or personalized tax-advice service. The
-curated advisory guidance was reviewed on 31 October 2026. It is not connected
+curated advisory guidance was reviewed on 1 November 2026. It is not connected
 to a live legislation feed and will not automatically detect new laws,
 amendments, regulations, URA practice or court decisions. Verify the effective
 law and official URA guidance for the relevant transaction and period.
@@ -86,18 +86,32 @@ status before relying on it.
   at 15% of gross rent from Uganda property, without expense deductions.
   Treaty relief and the withholding/final-tax and filing treatment depend on
   specific facts and must be confirmed; the tool does not calculate treaty
-  rates or decide whether withholding is final. Individual rental
-  filing/payment may be monthly from 1 July 2026; this annual estimate does
-  not calculate monthly instalments. Avoid double counting rental income,
+  rates or decide whether withholding is final. Secondary commentary on the
+  2026 amendment describes monthly provisional returns as an option for
+  individuals required to pay rental tax, not a general mandatory monthly
+  filing rule. Confirm the provision and filing route with URA; this annual
+  estimate does not calculate provisional instalments. Avoid double counting rental income,
   expenses, losses or credits in the separate company computation.
 - **Withholding tax:** The category list provides common domestic, cross-border
   and FY 2026/27 payment categories. Treaty benefits, exemptions, recipient
   status, final-tax treatment and special eligibility conditions can change a
   rate. The 5% non-resident debenture rate is conditional on the statutory
-  criteria. The 6% resident public entertainer and 15% betting/gaming
-  withholding categories apply from 1 July 2026. VAT withholding is only
-  estimated for a designated agent where the supplier has not issued an EFRIS
-  e-invoice or e-receipt.
+  criteria. The FY 2026/27 estimator represents 6% on specified public
+  entertainer payments, 15% on betting/gaming winnings (payout less stake,
+  with a statutory national-lottery exclusion), and 10% on specified
+  telecommunications/mobile-network/mobile-money commissions. Confirm the
+  payer, payment, commencement date and conditions in the enacted Act.
+  VAT withholding is only estimated for a designated agent where the supplier
+  has not issued an EFRIS e-invoice or e-receipt.
+- **2026 amendments:** Secondary commentary reports that the Income Tax
+  (Amendment) Act, 2026 expressly includes software in the royalty definition,
+  states an arm's-length obligation for controlled transactions, and changes
+  provisions for specified hotel/tourism operations, microfinance bad debts
+  and the Bujagali exemption. It also reports product-specific changes in the
+  Excise Duty (Amendment) Act, 2026, including fuel, cement, sugar, cooking
+  oil and plastics. TaxComp does not apply these sector-specific rules or
+  hard-code excise rates. Verify the Acts' final text, commencement and
+  eligibility conditions with official sources before relying on them.
 - **International tax:** The site provides an issue checklist for residence
   and source, treaties and double-tax relief, non-resident withholding,
   permanent establishment, transfer pricing, foreign tax credits,
@@ -133,6 +147,39 @@ status before relying on it.
   restrictions, group relief and specialist incentive regimes require
   additional facts and are not calculated.
 
+## Compendium-based advisory knowledge
+
+The advisory search and tax chatbot now include section-indexed guidance
+informed by the locally supplied *Domestic Tax Laws of Uganda, 2025–2026*
+compilation. The compilation's own disclaimer says it is for general reference,
+does not substitute for gazetted Acts and may not be accurate. It was used to
+locate subject areas and section numbers, not to publish or reproduce its text.
+Confirm every provision against the current gazetted Act, amendments,
+regulations, schedules and URA guidance. The compilation predates the 2026/27
+amendments discussed below and cannot establish their final wording.
+
+The expanded advisory covers the Income Tax Act framework and filing
+provisions (including sections 15–36 and 118–124), VAT registration,
+transaction timing, input-credit, invoicing and return provisions (sections
+5–31), the Tax Procedures Code Act record-keeping, assessment, objection and
+investigation provisions (sections 15–28 and 48–49), international and
+digital-income provisions (Income Tax Act sections 78–88), and the separate
+excise, stamp-duty and gaming frameworks. These are navigation and compliance
+checklists; they do not determine a taxpayer's facts, eligibility, liability,
+filing deadline or appeal rights.
+
+### Recent amendments
+
+TaxComp's FY 2026/27 amendment notes reflect selected items reported in
+secondary commentary on the Income Tax (Amendment) Act, 2026 and Excise Duty
+(Amendment) Act, 2026. The prior 2025–2026 compilation is not the source for
+those later changes, and primary amendment text has not been incorporated as
+a machine-verified rate table. In particular, verify the final wording,
+commencement, product classification, exclusions and eligibility conditions
+against the enacted Acts and URA before relying on the reported rental,
+withholding, controlled-transaction, royalty, sector-specific or excise
+changes. Bill-stage proposals are not treated as enacted rates.
+
 ## Other obligations surfaced
 
 Stamp duty depends on the instrument or transaction; Local Service Tax depends
@@ -163,9 +210,12 @@ Tax rates and changes should be checked against the applicable Acts and Uganda
 Revenue Authority guidance before use. The advisory search contains curated
 topic notes and does not generate an answer when a question is outside those
 notes. Official URA material should be preferred; the PwC summaries below are
-secondary references, not legislation.
+secondary references, not legislation. The MRT Tax article is secondary
+commentary and is cited for amendment navigation only; it is not a substitute
+for the enacted Acts.
 
 - [Uganda Revenue Authority](https://www.ura.go.ug/)
+- [MRT Tax: 2026 Uganda Income Tax and Excise Duty amendment commentary (secondary)](https://mrt.tax/2026/08/24/ugandas-2026-income-tax-and-excise-duty-amendments-now-law-key-changes-and-what-they-mean-for-taxpayers/)
 - [Uganda Legal Information Institute judgments](https://ulii.org/en/judgments/)
 - [Uganda Tax Appeals Tribunal decisions on ULII](https://ulii.org/en/judgments/UGTAT/)
 - [Quickway Property Services Limited v Uganda Revenue Authority, [2023] UGTAT 2](https://ulii.org/en/akn/ug/judgment/ugtat/2023/2/eng@2023-02-21)

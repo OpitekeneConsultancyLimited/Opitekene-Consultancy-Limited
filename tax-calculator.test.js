@@ -356,7 +356,32 @@ test("calculates withholding rates and applies the resident supply threshold", (
 
 test("calculates withholding categories added from July 2026", () => {
   assert.equal(calculateWithholdingTax(1_000_000, "resident-entertainer").tax, 60_000);
-  assert.equal(calculateWithholdingTax(1_000_000, "betting-winnings").tax, 150_000);
+  const bettingWinnings = calculateWithholdingTax(
+    1_000_000,
+    "betting-winnings",
+    false,
+    false,
+    400_000,
+  );
+  assert.equal(bettingWinnings.tax, 90_000);
+  assert.equal(bettingWinnings.taxBase, 600_000);
+  assert.equal(
+    calculateWithholdingTax(1_000_000, "betting-winnings", false, false, 1_000_000).tax,
+    0,
+  );
+  assert.equal(
+    calculateWithholdingTax(1_000_000, "betting-winnings", false, false, 400_000, true).tax,
+    0,
+  );
+  assert.throws(
+    () => calculateWithholdingTax(100, "betting-winnings", false, false, 101),
+    RangeError,
+  );
+  assert.throws(
+    () => calculateWithholdingTax(100, "betting-winnings", false, false, -1),
+    RangeError,
+  );
+  assert.equal(calculateWithholdingTax(1_000_000, "resident-telecom-commission").tax, 100_000);
   assert.equal(calculateWithholdingTax(1_000_000, "nonresident-debenture-interest").tax, 50_000);
 });
 

@@ -12,6 +12,17 @@ test("answers common VAT questions from reviewed guidance and includes citations
   assert.ok(result.calculators.includes("vat"));
 });
 
+test("answers tax-procedure questions from the compendium-indexed guidance", () => {
+  const result = findLocalAnswer(
+    "What records should I keep for a tax assessment or objection?",
+    advisory,
+  );
+
+  assert.ok(result.matches.some((item) => item.id === "tax-records-assessments-objections"));
+  assert.match(result.answer, /section 15 on accounts and records/i);
+  assert.ok(result.sources.some((source) => source.url === "https://ura.go.ug/"));
+});
+
 test("answers case questions with case-specific caveats and judgment link", () => {
   const result = findLocalAnswer("What did Quickway decide about input VAT evidence?", advisory);
 

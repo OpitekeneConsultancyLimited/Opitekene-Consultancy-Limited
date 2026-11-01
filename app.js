@@ -22,6 +22,12 @@ const calculationNote = document.querySelector("#calculation-note");
 const designatedPayerField = document.querySelector("#designated-payer-field");
 const supplierInvoiceField = document.querySelector("#supplier-invoice-field");
 const whtType = document.querySelector("#wht-type");
+const whtGrossLabel = document.querySelector("#wht-gross-label");
+const whtGrossHelp = document.querySelector("#wht-gross-help");
+const bettingStakeField = document.querySelector("#betting-stake-field");
+const bettingStake = document.querySelector("#betting-stake");
+const nationalLotteryField = document.querySelector("#national-lottery-field");
+const nationalLotteryWinnings = document.querySelector("#national-lottery-winnings");
 const formError = document.querySelector("#form-error");
 const customsDirection = document.querySelector("#customs-direction");
 const rentalTaxpayerType = document.querySelector("#rental-taxpayer-type");
@@ -459,8 +465,12 @@ function setTaxHead(head, focusTab = false) {
     const selected = panel.dataset.fields === head;
     panel.hidden = !selected;
     for (const control of panel.querySelectorAll("input, select")) {
-      control.disabled = !selected;
-      control.required = selected && control.dataset.required === "true";
+      const requiredFor = control.dataset.requiredFor;
+      const conditionMatches = !requiredFor || requiredFor === whtType.value;
+      control.disabled = !selected || !conditionMatches;
+      control.required = selected &&
+        conditionMatches &&
+        control.dataset.required === "true";
     }
   }
 
@@ -477,6 +487,7 @@ function setTaxHead(head, focusTab = false) {
   calculatedResults.hidden = true;
   emptyResults.hidden = false;
   form.dataset.taxHead = head;
+  updateWithholdingFields();
   form.setAttribute("aria-labelledby", selectedTab.id);
   if (focusTab) selectedTab.focus();
 }
@@ -501,6 +512,7 @@ whtType.addEventListener("change", () => {
   designatedPayerField.hidden =
     !["resident-supply", "vat-withholding"].includes(whtType.value);
   supplierInvoiceField.hidden = whtType.value !== "vat-withholding";
+  updateWithholdingFields();
 });
 
 customsDirection.addEventListener("change", updateCustomsMode);
@@ -510,6 +522,20 @@ rentalResidency.addEventListener("change", updateRentalMode);
 for (const panel of taxFields) {
   const requiredControl = panel.querySelector("input, select");
   if (requiredControl) requiredControl.dataset.required = "true";
+}
+
+function updateWithholdingFields() {
+  const isBetting = whtType.value === "betting-winnings";
+  const withholdingActive = form.dataset.taxHead === "withholding";
+  bettingStakeField.hidden = !isBetting;
+  nationalLotteryField.hidden = !isBetting;
+  bettingStake.disabled = !withholdingActive || !isBetting;
+  bettingStake.required = withholdingActive && isBetting;
+  nationalLotteryWinnings.disabled = !withholdingActive || !isBetting;
+  whtGrossLabel.textContent = isBetting ? "Payout amount (including stake)" : "Gross payment";
+  whtGrossHelp.textContent = isBetting
+    ? "Enter the payout before deducting the stake. Withholding is computed on payout less stake."
+    : "For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.";
 }
 
 function renderResult({
@@ -792,12 +818,14 @@ function showWithholdingTax() {
     whtType.value,
     document.querySelector("#designated-payer").checked,
     document.querySelector("#supplier-issued-invoice").checked,
+    bettingStake.value === "" ? 0 : bettingStake.valueAsNumber,
+    nationalLotteryWinnings.checked,
   );
 
   renderResult({
     value: estimate.tax,
     label: "Estimated withholding to deduct",
-    context: `Applicable rate: ${formatPercent(estimate.rate)}`,
+    context: `${whtType.value === "betting-winnings" ? `Winnings subject to withholding: ${formatUgx(estimate.taxBase)} · ` : ""}Applicable rate: ${formatPercent(estimate.rate)}`,
     breakdown: estimate.breakdown,
     note: estimate.note,
     breakdownHeading: "Payment calculation",

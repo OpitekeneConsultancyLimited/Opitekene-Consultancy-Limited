@@ -338,11 +338,12 @@
                   <option value="nonresident-transport">Non-resident air, sea or road transport operator (2%)</option>
                   <option value="nonresident-telecom">Non-resident telecommunications or direct-to-home TV income (5%)</option>
                   <option value="resident-entertainer">Resident public entertainer (6%; any payer, from 1 July 2026)</option>
-                  <option value="betting-winnings">Betting or gaming winnings (15%; from 1 July 2026)</option>
+                  <option value="betting-winnings">Betting or gaming winnings (15% of payout less stake; from 1 July 2026)</option>
+                  <option value="resident-telecom-commission">Telecom, mobile-network or mobile-money commissions (10%; from 1 July 2026)</option>
                   <option value="payment-service-commission">Payment service provider commission (10%)</option>
                   <option value="insurance-agent-commission">Insurance agent commission (10%; final tax from 1 July 2026)</option>
                   <option value="advertising-agent-commission">Advertising agent commission (10%)</option>
-                  <option value="mobile-money-commission">Airtime distribution or mobile money commission (10%)</option>
+                  <option value="mobile-money-commission">Airtime distribution commission (10%)</option>
                   <option value="vat-withholding">VAT withholding (6%; supplier did not issue EFRIS invoice)</option>
                   <option value="nonresident-debenture-interest">Qualifying non-resident offshore debenture interest (5%; special conditions)</option>
                 </select>
@@ -355,9 +356,17 @@
                   <label class="checkbox-label" for="supplier-issued-invoice"><input id="supplier-issued-invoice" type="checkbox" disabled> Supplier issued an EFRIS e-invoice or e-receipt</label>
                 </div>
               <div class="field">
-                <label for="wht-gross">Gross payment</label>
+                <label id="wht-gross-label" for="wht-gross">Gross payment</label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="wht-gross" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
-                <p class="field-help">For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.</p>
+                <p class="field-help" id="wht-gross-help">For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.</p>
+              </div>
+              <div class="field" id="betting-stake-field" hidden>
+                <label for="betting-stake">Stake amount</label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="betting-stake" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 10000" data-required="true" data-required-for="betting-winnings" disabled></div>
+                <p class="field-help">The withholding base is winnings: payout less the stake amount.</p>
+              </div>
+              <div class="field" id="national-lottery-field" hidden>
+                <label class="checkbox-label" for="national-lottery-winnings"><input id="national-lottery-winnings" type="checkbox" disabled> Winnings paid by a person licensed to conduct a national lottery</label>
               </div>
             </div>
 
@@ -821,14 +830,16 @@
         <div class="law-updates-heading">
           <p class="eyebrow section-eyebrow">WHAT CHANGED</p>
           <h2 id="law-updates-title">FY 2026/27 updates</h2>
-          <p>These amendments generally took effect on 1 July 2026. This site applies them to estimates where relevant.</p>
+          <p>TaxComp reflects selected changes for the 2026/27 year of income. Its advisory and chatbot now index guidance against the 2025–2026 domestic tax-law compilation, covering income tax, VAT, tax procedures, international income, excise, stamp duty and gaming. The compilation warns that it is not a substitute for gazetted Acts. The Income Tax (Amendment) Act, 2026 and Excise Duty (Amendment) Act, 2026 are reported as enacted; proposals and final provisions can differ. This is a summary, not a complete amendment register.</p>
         </div>
         <div class="law-update-list">
           <article><span>01</span><div><h3>VAT registration thresholds increased</h3><p>UGX 300 million in annual taxable supplies or more than UGX 75 million in a three-month period.</p></div></article>
           <article><span>02</span><div><h3>VAT withholding narrowed</h3><p>VAT withholding applies to relevant taxable-supply payments where the supplier has not issued an EFRIS e-invoice or e-receipt. Input-credit recovery is also affected by e-invoice evidence and exempt supplies.</p></div></article>
-          <article><span>03</span><div><h3>New withholding categories</h3><p>Includes resident public entertainers and betting or gaming winnings, plus special rules for certain non-resident debenture interest and insurance-agent commissions.</p></div></article>
-          <article><span>04</span><div><h3>Individual rental tax filings are monthly</h3><p>Monthly filing and payment apply from 1 July 2026. The rental calculator still shows an annual estimate; confirm monthly obligations with URA.</p></div></article>
-          <article><span>05</span><div><h3>Targeted VAT exemptions</h3><p>The 2026 amendments add VAT-exempt supplies for specified nuclear-energy contractors and subcontractors. Confirm that the transaction qualifies before classifying it as exempt.</p></div></article>
+          <article><span>03</span><div><h3>Withholding expands to specified payments</h3><p>Includes 6% on gross payments to public entertainers, 15% on betting winnings (payout less stake), 10% on specified telecom/mobile-money commissions and 5% on qualifying offshore debenture interest. Scope, payer, exclusions and effective dates depend on the Act.</p></div></article>
+          <article><span>04</span><div><h3>Individuals may elect monthly provisional rental returns</h3><p>The enacted-law commentary describes monthly provisional returns as an option, not a general mandatory monthly filing requirement. TaxComp's rental calculator remains an annual estimate; confirm the applicable filing route with URA.</p></div></article>
+          <article><span>05</span><div><h3>Related-party arm’s-length rule stated expressly</h3><p>The 2026 Income Tax amendment adds an express arm’s-length obligation for controlled transactions. Review transaction substance, pricing support and current documentation requirements.</p></div></article>
+          <article><span>06</span><div><h3>Excise rates changed for specified goods</h3><p>The 2026 Excise Duty amendment changes some product-specific rates, including fuel, cement, sugar, cooking oil and plastics. TaxComp does not assume a rate: verify the exact goods, tariff and current statutory schedule.</p></div></article>
+          <p class="law-update-sources">Sources: <a href="https://ura.go.ug/" target="_blank" rel="noopener noreferrer">URA (official tax information)</a> · <a href="https://mrt.tax/2026/08/24/ugandas-2026-income-tax-and-excise-duty-amendments-now-law-key-changes-and-what-they-mean-for-taxpayers/" target="_blank" rel="noopener noreferrer">MRT Tax, August 2026 enacted-law commentary (secondary source)</a>. Confirm the enacted Acts and commencement provisions before applying a rule.</p>
         </div>
       </section>
 

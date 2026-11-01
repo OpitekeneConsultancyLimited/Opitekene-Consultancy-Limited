@@ -43,6 +43,15 @@ test("searches guidance by question terms and optional topic", () => {
   const healthCheck = searchGuidance("business tax health check VAT PAYE records", "business");
   const historicalComputation = searchGuidance("2024 historical company tax computation chargeable income", "business");
   const historicalWithholding = searchGuidance("2024 Burugo historical withholding WHT schedule", "withholding");
+  const incomeAmendments = searchGuidance("software royalty controlled transactions arm's length", "business");
+  const softwareRoyaltyAmendments = searchGuidance("software royalty 2026 amendments", "business");
+  const exciseAmendments = searchGuidance("2026 excise cement sugar rates", "customs");
+  const rentalReturns = searchGuidance("monthly rental provisional return", "rental");
+  const vatLifecycle = searchGuidance("VAT Act section 27 input credit invoice returns", "vat");
+  const recordsAndObjections = searchGuidance("Tax Procedures Code section 15 records section 26 objection", "business");
+  const digitalIncome = searchGuidance("section 86 digital services section 80 foreign tax credit", "international");
+  const legalFramework = searchGuidance("Uganda tax laws stamp duty gaming Excise Act", "business");
+  const exciseStampGaming = searchGuidance("Excise stamp duty gaming betting operator winnings", "customs");
 
   assert.ok(vat.some((item) => item.id === "vat-threshold"));
   assert.ok(rental.some((item) => item.id === "rental-company"));
@@ -59,6 +68,20 @@ test("searches guidance by question terms and optional topic", () => {
   assert.ok(healthCheck.some((item) => item.id === "business-tax-health-check"));
   assert.ok(historicalComputation.some((item) => item.id === "historical-company-tax-computation"));
   assert.ok(historicalWithholding.some((item) => item.id === "historical-withholding-schedule"));
+  const incomeAmendmentGuide = incomeAmendments.find((item) => item.id === "income-tax-amendments-2026");
+  assert.ok(incomeAmendmentGuide);
+  assert.ok(softwareRoyaltyAmendments.some((item) => item.id === "income-tax-amendments-2026"));
+  assert.ok(getSources(incomeAmendmentGuide.sourceKeys)
+    .some((source) => source.label.includes("secondary source")));
+  assert.ok(exciseAmendments.some((item) => item.id === "excise-amendments-2026"));
+  const rentalReturnsGuide = rentalReturns.find((item) => item.id === "rental-individual");
+  assert.ok(rentalReturnsGuide);
+  assert.match(rentalReturnsGuide.summary, /not a general mandatory monthly filing rule/i);
+  assert.ok(vatLifecycle.some((item) => item.id === "vat-transaction-lifecycle"));
+  assert.ok(recordsAndObjections.some((item) => item.id === "tax-records-assessments-objections"));
+  assert.ok(digitalIncome.some((item) => item.id === "international-income-and-digital-services"));
+  assert.ok(legalFramework.some((item) => item.id === "uganda-tax-law-framework"));
+  assert.ok(exciseStampGaming.some((item) => item.id === "excise-stamp-and-gaming"));
 });
 
 test("returns all guidance for an empty query and no unsupported answer for a miss", () => {
