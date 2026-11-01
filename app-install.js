@@ -9,7 +9,8 @@
   const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-  installButton.hidden = isStandalone || !isAppleMobile;
+  installButton.hidden = isStandalone;
+  installButton.textContent = isAppleMobile ? "Add to Home Screen" : "Install app";
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();

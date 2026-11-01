@@ -316,23 +316,6 @@ function renderAdvisoryGuidance() {
       }
       article.append(calculatorLink);
     }
-    const workedExample = {
-      "csi-bank": {
-        href: "#worked-example-csi-bank",
-        label: "Open the CSI Bank 2024 worked example",
-      },
-      "burugo-withholding": {
-        href: "#worked-example-burugo",
-        label: "Open the Burugo 2024 worked example",
-      },
-    }[item.workedExample];
-    if (workedExample) {
-      const workedExampleLink = document.createElement("a");
-      workedExampleLink.className = "advisory-calculator-link";
-      workedExampleLink.href = workedExample.href;
-      workedExampleLink.textContent = workedExample.label;
-      article.append(workedExampleLink);
-    }
     advisoryResults.append(article);
   }
 }
@@ -597,28 +580,31 @@ function showIncomeTax() {
     ? 0
     : document.querySelector("#tax-paid").valueAsNumber;
   const chargeability = ugandaTax.calculateChargeableIncome(income, 0, deductions);
-  const estimate = ugandaTax.calculateIndividualIncomeTax(
-    chargeability.chargeableIncome,
+  const estimate = ugandaTax.calculateSmartTaxSummary({
+    taxableIncome: chargeability.chargeableIncome,
+    deductions: 0,
+    taxAlreadyPaid: paid,
     isResident,
-  );
+  });
 
   renderResult({
-    value: estimate.totalTax,
+    value: estimate.estimate.totalTax,
     label: "Estimated annual individual income tax",
-    context: `Chargeable income: ${formatUgx(chargeability.chargeableIncome)} · ${isResident ? "Resident" : "Non-resident"} · Effective rate: ${formatPercent(estimate.effectiveRate)} · Marginal rate: ${formatPercent(estimate.marginalRate)}`,
-    balance: estimate.totalTax - paid,
+    context: `Chargeable income: ${formatUgx(chargeability.chargeableIncome)} · ${isResident ? "Resident" : "Non-resident"} · Effective rate: ${formatPercent(estimate.estimate.effectiveRate)} · Marginal rate: ${formatPercent(estimate.estimate.marginalRate)}`,
+    balance: estimate.estimate.totalTax - paid,
     breakdown: [
       { label: "Annual assessable income", rate: null, amount: chargeability.income },
       { label: "Less: allowable deductions entered", rate: null, amount: -chargeability.deductions },
       { label: "Estimated chargeable income", rate: null, amount: chargeability.chargeableIncome },
-      ...estimate.breakdown.map((band) => ({
+      ...estimate.estimate.breakdown.map((band) => ({
         label: `Tax band: ${band.label}`,
         rate: band.rate,
         amount: band.tax,
       })),
+      { label: "Smart-plan note: reliefs and employee NSSF relief", rate: null, amount: -estimate.reliefTotal - estimate.nssfRelief },
     ],
     breakdownCaption: "Income adjustments and tax by band",
-    note: `Standard ${isResident ? "resident" : "non-resident"} individual bands for FY 2026/27. Include income sources correctly and claim only deductions you have confirmed are allowable. Reliefs, exempt-income classification, loss relief, treaty rules and special regimes are not assessed.`,
+    note: `Standard ${isResident ? "resident" : "non-resident"} individual bands for FY 2026/27. This estimate applies deductions first, then a simple relief check and employee NSSF relief, before subtracting tax already paid. Include income sources correctly and claim only deductions you have confirmed are allowable. Reliefs, exempt-income classification, loss relief, treaty rules and special regimes are not assessed.`,
   });
 }
 
@@ -632,13 +618,14 @@ function showPaye() {
     ? monthlyIncome
     : grossInput.valueAsNumber;
   const isResident = document.querySelector("#paye-residency").value === "resident";
-  const estimate = ugandaTax.calculatePaye(monthlyIncome, isResident, monthlyGross);
+  const payeResult = ugandaTax.calculatePaye(monthlyIncome, isResident, monthlyGross);
+  const smartEstimate = payeResult.smartEstimate;
 
   renderResult({
-    value: estimate.monthlyTax,
+    value: payeResult.monthlyTax,
     label: "Estimated PAYE per month",
-    context: `Annualized PAYE: ${formatUgx(estimate.monthlyTax * 12)} · Employee NSSF: ${formatUgx(estimate.monthlyEmployeeNssf)}/month · Employer NSSF: ${formatUgx(estimate.monthlyEmployerNssf)}/month`,
-    breakdown: estimate.breakdown.map((band) => ({
+    context: `Annualized PAYE: ${formatUgx(payeResult.monthlyTax * 12)} · Employee NSSF: ${formatUgx(payeResult.monthlyEmployeeNssf)}/month · Employer NSSF: ${formatUgx(payeResult.monthlyEmployerNssf)}/month · Smart-plan review: ${formatUgx(smartEstimate.totalTax / 12)}/month after reliefs`,
+    breakdown: payeResult.breakdown.map((band) => ({
       label: band.label,
       rate: band.rate,
       amount: band.tax,
@@ -647,12 +634,13 @@ function showPaye() {
       { label: "Monthly cash salary", rate: null, amount: salary },
       ...taxableItems.map((item) => ({ label: item.label, rate: null, amount: item.amount })),
       { label: "Estimated monthly taxable pay", rate: null, amount: monthlyIncome },
-      { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
-      { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
+      { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: payeResult.monthlyEmployeeNssf },
+      { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: payeResult.monthlyEmployerNssf },
+      { label: "Smart-plan relief applied", rate: null, amount: -(smartEstimate.nssfRelief / 12) },
     ],
     breakdownHeading: "Monthly PAYE and payroll",
     breakdownCaption: "NSSF is not income tax",
-    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly pay throughout the year. You must assess whether each item is taxable and enter its correct monthly taxable value. This annualized estimate does not value benefits or determine exemptions, special treatment of lump sums, termination pay or share schemes. Do not double count salary or benefits; verify exceptions against the current law. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
+    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly pay throughout the year. This smart view compares the raw annualized band estimate with a practical planning view that offsets employee NSSF relief, but the core estimate remains the standard PAYE calculation. You must assess whether each item is taxable and enter its correct monthly taxable value. This annualized estimate does not value benefits or determine exemptions, lump-sum treatment, termination pay or share schemes. Do not double count salary or benefits; verify exceptions against the current law. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
   });
 }
 

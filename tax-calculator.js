@@ -160,6 +160,54 @@
     };
   }
 
+  function calculateSmartTaxSummary({
+    taxableIncome,
+    deductions = 0,
+    taxAlreadyPaid = 0,
+    employeeNssf = 0,
+    spouseRelief = 0,
+    dependentRelief = 0,
+    otherRelief = 0,
+    isResident = true,
+  } = {}) {
+    requireNonNegative(taxableIncome, "Taxable income");
+    requireNonNegative(deductions, "Allowable deductions");
+    requireNonNegative(taxAlreadyPaid, "Tax already paid");
+    requireNonNegative(employeeNssf, "Employee NSSF contribution");
+    requireNonNegative(spouseRelief, "Spouse relief");
+    requireNonNegative(dependentRelief, "Dependent relief");
+    requireNonNegative(otherRelief, "Other relief");
+
+    const chargeableIncome = Math.max(0, taxableIncome - deductions);
+    const estimate = calculateIndividualIncomeTax(chargeableIncome, isResident);
+    const reliefTotal = spouseRelief + dependentRelief + otherRelief;
+    const taxBeforeCredit = estimate.totalTax;
+    const taxAfterRelief = Math.max(0, taxBeforeCredit - reliefTotal);
+    const nssfRelief = Math.min(employeeNssf, taxAfterRelief);
+    const finalTax = Math.max(0, taxAfterRelief - nssfRelief);
+    const balance = Math.max(0, finalTax - taxAlreadyPaid);
+    const refundableCredit = Math.max(0, taxAlreadyPaid - finalTax);
+
+    return {
+      taxableIncome,
+      deductions,
+      chargeableIncome,
+      estimate,
+      reliefTotal,
+      nssfRelief,
+      taxBeforeCredit,
+      taxAfterRelief,
+      totalTax: finalTax,
+      balance,
+      refundableCredit,
+      effectiveRate: chargeableIncome === 0 ? 0 : finalTax / chargeableIncome,
+      marginalRate: estimate.marginalRate,
+      note: taxAlreadyPaid > 0
+        ? "This estimate reflects the tax after allowable deductions, reliefs and employee NSSF relief, then subtracts tax already paid. Any excess payment is treated as a potential refundable credit."
+        : "This estimate reflects the tax after allowable deductions, reliefs and employee NSSF relief. Confirm whether the annual income is correctly classified before filing.",
+    };
+  }
+
   function calculatePaye(
     monthlyTaxableIncome,
     isResident = true,
@@ -181,6 +229,11 @@
         rate: band.rate,
         tax: band.tax / 12,
       })),
+      smartEstimate: calculateSmartTaxSummary({
+        taxableIncome: monthlyTaxableIncome * 12,
+        employeeNssf: monthlyGrossEarnings * 0.05 * 12,
+        isResident,
+      }),
     };
   }
 

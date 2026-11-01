@@ -197,33 +197,63 @@ MOBILE_FIX_CSS = """
 </style>
 """
 
-PROJECT_URL = (
-    "https://codeload.github.com/"
-    "OpitekeneConsultancyLimited/OpitekeneconsTax/zip/refs/heads/main"
-)
 DOWNLOAD_LIMIT = 100 * 1024 * 1024
 EXTRACTED_LIMIT = 250 * 1024 * 1024
 FILE_LIMIT = 2_000
 HOST = "127.0.0.1"
 
 
-def download_archive():
-    request = Request(
-        PROJECT_URL,
-        headers={"User-Agent": "TaxComp-single-file-Python-launcher"},
-    )
-    try:
-        with urlopen(request, timeout=60) as response:
-            data = response.read(DOWNLOAD_LIMIT + 1)
-    except (URLError, TimeoutError) as error:
-        raise RuntimeError(
-            "Could not download TaxComp. Check this computer's internet "
-            "connection and try again."
-        ) from error
+def archive_candidates():
+    repo_names = [
+        "Opitekene-Consultancy-Limited",
+        "OpitekeneconsTax",
+    ]
+    branches = ["main", "master"]
+    urls = []
+    for repo_name in repo_names:
+        for branch in branches:
+            urls.append(
+                f"https://codeload.github.com/OpitekeneConsultancyLimited/{repo_name}/zip/refs/heads/{branch}"
+            )
+    return urls
 
-    if len(data) > DOWNLOAD_LIMIT:
-        raise RuntimeError("The TaxComp download is larger than the allowed limit.")
-    return data
+
+def find_index_path(files):
+    if "index.html" in files:
+        return "index.html"
+
+    preferred = ["docs/index.html", "site/index.html", "public/index.html"]
+    for candidate in preferred:
+        if candidate in files:
+            return candidate
+
+    for candidate in sorted(files):
+        if candidate.lower().endswith("index.html"):
+            return candidate
+    return None
+
+
+def download_archive():
+    last_error = None
+    for project_url in archive_candidates():
+        request = Request(
+            project_url,
+            headers={"User-Agent": "TaxComp-single-file-Python-launcher"},
+        )
+        try:
+            with urlopen(request, timeout=60) as response:
+                data = response.read(DOWNLOAD_LIMIT + 1)
+            if len(data) > DOWNLOAD_LIMIT:
+                raise RuntimeError("The TaxComp download is larger than the allowed limit.")
+            return data
+        except (URLError, TimeoutError) as error:
+            last_error = error
+            continue
+
+    raise RuntimeError(
+        "Could not download TaxComp. Check this computer's internet "
+        "connection and try again."
+    ) from last_error
 
 
 def load_site(archive_data):
@@ -275,8 +305,11 @@ def load_site(archive_data):
     except zipfile.BadZipFile as error:
         raise RuntimeError("GitHub returned an invalid TaxComp archive.") from error
 
-    if "index.html" not in files:
+    index_path = find_index_path(files)
+    if index_path is None:
         raise RuntimeError("The downloaded project does not contain index.html.")
+    if index_path != "index.html":
+        files["index.html"] = files[index_path]
     return files
 
 

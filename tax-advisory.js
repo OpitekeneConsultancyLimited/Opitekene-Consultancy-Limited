@@ -251,26 +251,6 @@
       calculator: "customs",
     },
     {
-      id: "historical-company-tax-computation",
-      topic: "business",
-      title: "How is a historical company tax computation reconciled?",
-      keywords: ["2024 historical company tax computation CSI Bank profit before tax add backs deductions chargeable income provisions wear tear building allowance bad debts impairment burial expenses gratuity BOU penalty tax before credits withholding credits net payable"],
-      summary: "The supplied CSI Bank 2024 example reconciles profit before tax of UGX 13,831,170,000 to chargeable income of UGX 5,472,543,563 using supplied add-backs and deductions. At the supplied 30% rate, tax before credits is UGX 1,641,763,069; after the supplied UGX 24,322,000 withholding credit, net tax payable is UGX 1,617,441,069. The detailed schedule rechecks provisions, wear-and-tear and industrial-building totals; it checks arithmetic only, not whether those items are deductible or legally correct.",
-      nextStep: "Open the 2024 CSI Bank worked example to inspect the supplied adjustments and arithmetic checks. Do not treat it as FY 2026/27 advice or reuse a tax adjustment without checking its law, source records and eligibility for the relevant year.",
-      sourceKeys: ["ura", "corporate"],
-      workedExample: "csi-bank",
-    },
-    {
-      id: "historical-withholding-schedule",
-      topic: "withholding",
-      title: "How can withholding tax transactions be reconciled?",
-      keywords: ["2024 Burugo historical withholding WHT schedule treasury bills bonds rental telecom commission reinsurance management fees gross amount rate total 143970000 final creditable"],
-      summary: "The supplied Burugo 2024 schedule recomputes withholding on Treasury-bill interest (UGX 2,840,000), Treasury-bond interest (UGX 2,620,000), rent (UGX 48,000,000), telecom commission (UGX 56,000,000) and reinsurance premiums (UGX 34,510,000), for total WHT of UGX 143,970,000. It reproduces supplied rates and final/creditable labels; arithmetic agreement does not confirm the legal rate, residency, classification or treatment.",
-      nextStep: "Open the Burugo worked example to review its transaction-by-transaction reconciliation. Confirm the law, taxpayer status, payment date and certificates before using any rate or treating withholding as final or creditable.",
-      sourceKeys: ["ura", "withholding"],
-      workedExample: "burugo-withholding",
-    },
-    {
       id: "business-tax-audit",
       topic: "business",
       title: "How can a business prepare for a URA tax audit?",
@@ -387,6 +367,66 @@
       nextStep: "Keep contracts, invoices, residency certificates, workday logs, related-party support, customs records, foreign tax assessments and payment evidence; calendar local filing and objection dates.",
       sourceKeys: ["ura", "corporate"],
       calculator: "international",
+    },
+    {
+      id: "fiscal-decentralization-policy",
+      topic: "business",
+      title: "How should fiscal decentralization and local government finance be structured?",
+      keywords: ["fiscal decentralization local government transfers own-source revenue equalization grant conditional grant tax assignment intergovernmental finance local autonomy accountability"],
+      summary: "Fiscal decentralization works best when revenue assignments, grants, service mandates and accountability rules are aligned. A sound design separates own-source revenue, shared taxes and transfers, sets clear service responsibilities, and builds monitoring around local performance, collection effort and compliance. The policy issue is not simply how much money is transferred, but whether the design supports service delivery without creating incentives for poor tax administration or duplication.",
+      nextStep: "Map local functions, tax bases, transfers and service costs; then review whether the allocation reflects a realistic local tax capacity and measurable service outcomes. Document the legal basis for each assignment and the data needed to track performance.",
+      sourceKeys: ["ura", "domesticTaxCompendium"],
+      calculator: null,
+    },
+    {
+      id: "tax-treaty-negotiation",
+      topic: "international",
+      title: "What matters in tax treaty negotiation and legal policy design?",
+      keywords: ["tax treaty negotiation double taxation agreement legal policy beneficial ownership source rules withholding relief treaty article anti-abuse exchange of information"],
+      summary: "Treaty negotiation should balance revenue protection, investment attraction and legal certainty. The core issues are residence, source, beneficial ownership, withholding relief, anti-abuse safeguards, dispute resolution and administrative cooperation. A strong treaty framework clarifies how a contract, payment or service activity is taxed and reduces uncertainty for investors and tax administrators.",
+      nextStep: "Start with the payment type, residence of the payer and recipient, treaty article, beneficial ownership, and the practical compliance burden. Use a clear policy memo to document the legal objective, the fiscal effect, and any safeguards or reporting requirements before final treaty text is agreed.",
+      sourceKeys: ["ura", "withholding", "transferPricing"],
+      calculator: "international",
+    },
+    {
+      id: "public-procurement-governance",
+      topic: "business",
+      title: "What governance issues arise in public procurement and contract management?",
+      keywords: ["public procurement tender evaluation contract award value for money procurement law compliance supplier scrutiny market access integrity due diligence bid review"],
+      summary: "Public procurement should be designed around competition, value for money, transparency and accountability. The key controls are bid solicitation, qualification checks, evaluation criteria, conflict-of-interest management, contract award records and post-award monitoring. A tax or fiscal review is only one part of a broader governance framework that protects public funds and service delivery.",
+      nextStep: "Review the procurement rules, bidding process, evaluation matrix, contract structure and monitoring plan. Document how the selected supplier will be supervised and how procurement decisions will be justified against value-for-money and integrity criteria.",
+      sourceKeys: ["ura", "domesticTaxCompendium"],
+      calculator: null,
+    },
+    {
+      id: "public-private-partnerships",
+      topic: "business",
+      title: "How should a public-private partnership be assessed?",
+      keywords: ["public private partnership PPP concession risk sharing viability gap funding infrastructure contract asset ownership pricing service obligation performance monitoring"],
+      summary: "PPP arrangements work when the risk allocation, project structure and fiscal exposure match the government's capabilities and the private partner's role. A good review examines traffic or demand assumptions, concession terms, financing structure, government support, asset ownership, performance standards and long-term fiscal commitments. Without this discipline, a project can appear affordable on paper yet create hidden obligations later.",
+      nextStep: "Map the project lifecycle, risk allocation, payment mechanism, government support and termination provisions. Stress-test the projected fiscal cost and service outcome under different demand and financing scenarios before approval.",
+      sourceKeys: ["corporate", "ura"],
+      calculator: null,
+    },
+    {
+      id: "budget-preparation-and-execution",
+      topic: "business",
+      title: "What is the professional approach to budget preparation and execution?",
+      keywords: ["budget preparation execution fiscal strategy revenue forecast expenditure control cash management budget performance monitoring variance analysis fiscal rules"],
+      summary: "Strong budget preparation links policy priorities to revenue estimates, spending ceilings, cash planning and measurable outputs. Execution then requires procurement discipline, spending control, commitment tracking, variance analysis and corrective action when performance deviates from plan. Budget credibility depends on both the quality of the forecast and the ability to deliver against it.",
+      nextStep: "Build the budget around clear policy priorities, revenue assumptions, legal constraints and performance targets. Then track execution monthly against cash, commitments, delivery milestones and variance thresholds, with corrective actions documented promptly.",
+      sourceKeys: ["ura", "domesticTaxCompendium"],
+      calculator: null,
+    },
+    {
+      id: "anti-corruption-planning",
+      topic: "business",
+      title: "How do anti-corruption planning and performance checks work in practice?",
+      keywords: ["anti-corruption planning performance integrity risk assessment control environment complaint handling sanctions audit compliance internal controls oversight and accountability"],
+      summary: "Anti-corruption planning should identify corruption risks, map the control environment, clarify accountability, and set measurable performance indicators for prevention, detection and response. Performance monitoring is not only about sanctioning misconduct; it is about whether systems prevent collusion, procurement abuse or financial leakage before they become material losses.",
+      nextStep: "Assess the highest-risk transactions, control points and reporting lines; then document preventive controls, reporting channels and response procedures. Use independent review and follow-up to ensure the control design works in practice, not only on paper.",
+      sourceKeys: ["ura", "domesticTaxCompendium"],
+      calculator: null,
     },
     {
       id: "individual-residence",
@@ -587,25 +627,104 @@
       "who", "with", "you", "your", "on",
     ]);
     const aliases = {
+      amendment: "amendment",
       amendments: "amendment",
       amended: "amendment",
       changes: "change",
       deductions: "deduction",
+      expense: "expense",
       expenses: "expense",
-      latest: "recent",
+      fiscal: "fiscal",
+      finance: "finance",
+      financial: "finance",
+      forecasting: "forecast",
+      government: "government",
+      law: "law",
       laws: "law",
+      levy: "levy",
+      management: "management",
+      policy: "policy",
+      practices: "practice",
+      procurement: "procurement",
       records: "record",
       returns: "return",
+      winning: "winning",
       winnings: "winning",
+      treaties: "treaty",
+      treaty: "treaty",
+      transfer: "transfer",
+      pricing: "pricing",
+      ppp: "ppp",
+      partnership: "partnership",
+      partnerships: "partnership",
+      anti: "anti",
+      corruption: "corruption",
+      decentralization: "decentralization",
+      decentralisation: "decentralization",
+      local: "local",
+      intergovernmental: "intergovernmental",
+      concession: "concession",
+      compliance: "compliance",
+      planning: "planning",
+      dta: "treaty",
+      agreement: "agreement",
+      agreements: "agreement",
+      related: "related",
+      party: "relatedparty",
+      parties: "relatedparty",
+      beneficial: "beneficial",
+      ownership: "ownership",
+      procurement: "procurement",
+      tender: "procurement",
+      contracts: "contract",
+      contract: "contract",
+      public: "public",
+      private: "private",
+      budget: "budget",
+      expenditure: "expenditure",
+      revenue: "revenue",
+      internet: "digital",
+      digital: "digital",
+      online: "digital",
+      vat: "vat",
+      wht: "withholding",
+      withholding: "withholding",
+      paye: "employment",
+      employment: "employment",
+      payroll: "employment",
+      custom: "customs",
+      customs: "customs",
+      duty: "duty",
+      duties: "duty",
+      international: "international",
+      foreign: "international",
+      offshore: "international",
+      tax: "tax",
     };
-    let terms = (query.toLowerCase().match(/[a-z0-9]+/g) || [])
+    const expandedPhrases = [
+      ["public finance", "finance", "budget", "financial management", "public financial management"],
+      ["fiscal decentralization", "decentralization", "fiscal decentralisation", "local government finance", "intergovernmental transfers"],
+      ["transfer pricing", "related party pricing", "arm's length", "associated enterprise pricing"],
+      ["tax treaty", "treaty relief", "double tax agreement", "tax agreement", "beneficial ownership treaty"],
+      ["procurement", "public procurement", "tender evaluation", "contract management", "value for money"],
+      ["public private partnership", "ppp", "concession agreement", "viability gap funding", "risk sharing"],
+      ["budget preparation", "budget execution", "revenue forecast", "expenditure control", "fiscal rules"],
+      ["anti corruption", "anticorruption", "integrity risk", "corruption planning", "fraud prevention"],
+    ];
+
+    const normalized = query.trim().toLowerCase().replace(/[’']/g, "");
+    let terms = (normalized.match(/[a-z0-9]+/g) || [])
       .map((term) => aliases[term] || term)
       .filter((term) => term.length > 1 && !stopWords.has(term));
     if (terms.length > 1) {
       terms = terms.filter((term) => term !== "tax");
     }
 
-    if (terms.length === 0) {
+    const phraseBoost = expandedPhrases.filter((phraseSet) =>
+      phraseSet.some((phrase) => normalized.includes(phrase))
+    );
+
+    if (terms.length === 0 && phraseBoost.length === 0) {
       return guidance.filter((item) => topic === "all" || item.topic === topic);
     }
 
@@ -617,19 +736,22 @@
         const body = `${item.summary} ${item.nextStep} ${item.topic}`.toLowerCase();
         const searchable = `${title} ${keywords} ${body}`;
         const matched = terms.filter((term) => searchable.includes(term));
+        const phraseMatches = phraseBoost.filter((phraseSet) =>
+          phraseSet.some((phrase) => searchable.includes(phrase))
+        ).length;
         const score = terms.reduce((total, term) => (
           total + (title.includes(term) ? 4 : 0) +
             (keywords.includes(term) ? 2 : 0) +
             (body.includes(term) ? 1 : 0)
-        ), 0);
-        return { item, matched: new Set(matched).size, score };
+        ), 0) + (phraseMatches * 8);
+        return { item, matched: new Set(matched).size + phraseMatches, score };
       });
     const minimumMatches = terms.length > 2
       ? Math.max(2, Math.ceil(terms.length * 0.4))
       : 1;
 
     return ranked
-      .filter((entry) => entry.matched >= minimumMatches)
+      .filter((entry) => entry.matched >= minimumMatches || entry.score >= 10)
       .sort((a, b) => b.score - a.score)
       .slice(0, 12)
       .map((entry) => entry.item);

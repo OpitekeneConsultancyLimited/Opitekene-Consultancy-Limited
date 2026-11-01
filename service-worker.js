@@ -9,7 +9,6 @@ const APP_SHELL = [
   "./tax-calculator.js",
   "./tax-chat.js",
   "./international-tax.js",
-  "./tax-worked-examples.js",
   "./audit-health.js",
   "./manifest.webmanifest",
   "./icons/taxcomp-180.png",

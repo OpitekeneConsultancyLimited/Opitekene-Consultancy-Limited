@@ -41,10 +41,6 @@ test("searches guidance by question terms and optional topic", () => {
   const transferPricing = searchGuidance("related party transfer pricing arm's length", "international");
   const audit = searchGuidance("business tax audit prepare notice evidence", "business");
   const healthCheck = searchGuidance("business tax health check VAT PAYE records", "business");
-  const historicalComputation = searchGuidance("2024 historical company tax computation chargeable income", "business");
-  const historicalWithholding = searchGuidance("2024 Burugo historical withholding WHT schedule", "withholding");
-  const csiExample = searchGuidance("2024 CSI Bank tax before credits withholding credit net payable", "business");
-  const burugoExample = searchGuidance("Burugo 2024 WHT total 143970000 telecom rental", "withholding");
   const incomeAmendments = searchGuidance("software royalty controlled transactions arm's length", "business");
   const softwareRoyaltyAmendments = searchGuidance("software royalty 2026 amendments", "business");
   const exciseAmendments = searchGuidance("2026 excise cement sugar rates", "customs");
@@ -71,17 +67,6 @@ test("searches guidance by question terms and optional topic", () => {
   assert.equal(treaty.find((item) => item.id === "international-treaties").calculator, "international");
   assert.ok(audit.some((item) => item.id === "business-tax-audit"));
   assert.ok(healthCheck.some((item) => item.id === "business-tax-health-check"));
-  assert.ok(historicalComputation.some((item) => item.id === "historical-company-tax-computation"));
-  assert.ok(historicalWithholding.some((item) => item.id === "historical-withholding-schedule"));
-  const csiGuide = csiExample.find((item) => item.id === "historical-company-tax-computation");
-  assert.ok(csiGuide);
-  assert.equal(csiGuide.workedExample, "csi-bank");
-  assert.match(csiGuide.summary, /tax before credits is UGX 1,641,763,069/i);
-  assert.match(csiGuide.summary, /net tax payable is UGX 1,617,441,069/i);
-  const burugoGuide = burugoExample.find((item) => item.id === "historical-withholding-schedule");
-  assert.ok(burugoGuide);
-  assert.equal(burugoGuide.workedExample, "burugo-withholding");
-  assert.match(burugoGuide.summary, /total WHT of UGX 143,970,000/);
   const incomeAmendmentGuide = incomeAmendments.find((item) => item.id === "income-tax-amendments-2026");
   assert.ok(incomeAmendmentGuide);
   assert.ok(softwareRoyaltyAmendments.some((item) => item.id === "income-tax-amendments-2026"));
@@ -101,6 +86,26 @@ test("searches guidance by question terms and optional topic", () => {
   assert.ok(naturalLanguage.length <= 12);
   assert.ok(deductions.some((item) => item.id === "business-deductions-and-losses"));
   assert.ok(taxAppeals.some((item) => item.id === "tax-decisions-and-appeals"));
+});
+
+test("covers public-finance, treaty, procurement, PPP and anti-corruption topics", () => {
+  const fiscalDecentralization = searchGuidance("fiscal decentralization intergovernmental transfers local government tax assignment", "business");
+  const treatyNegotiation = searchGuidance("tax treaty negotiation legal policy issues beneficial ownership", "international");
+  const procurement = searchGuidance("public procurement tender evaluation contract management value for money", "business");
+  const ppp = searchGuidance("public private partnership concession risk sharing viability gap funding", "business");
+  const budget = searchGuidance("budget preparation and execution revenue forecasting expenditure control fiscal rules", "business");
+  const antiCorruption = searchGuidance("anti-corruption planning and performance integrity risk controls oversight", "business");
+  const publicFinance = searchGuidance("public finance and financial management", "business");
+  const doubleTaxAgreement = searchGuidance("double tax agreement and treaty relief for dividends", "international");
+
+  assert.ok(fiscalDecentralization.some((item) => item.id === "fiscal-decentralization-policy"));
+  assert.ok(treatyNegotiation.some((item) => item.id === "tax-treaty-negotiation"));
+  assert.ok(procurement.some((item) => item.id === "public-procurement-governance"));
+  assert.ok(ppp.some((item) => item.id === "public-private-partnerships"));
+  assert.ok(budget.some((item) => item.id === "budget-preparation-and-execution"));
+  assert.ok(antiCorruption.some((item) => item.id === "anti-corruption-planning"));
+  assert.ok(publicFinance.some((item) => item.id === "budget-preparation-and-execution"));
+  assert.ok(doubleTaxAgreement.some((item) => item.id === "tax-treaty-negotiation"));
 });
 
 test("returns all guidance for an empty query and no unsupported answer for a miss", () => {

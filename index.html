@@ -23,7 +23,6 @@
     <script src="app.js?v=direct-worked-example-links-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-calculator-links-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
-    <script src="tax-worked-examples.js?v=20261101-shared-tax-knowledge-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-1" defer></script>
   </head>
@@ -80,6 +79,26 @@
           </div>
           <span class="art-spark spark-one">✳</span>
           <span class="art-spark spark-two">✳</span>
+        </div>
+      </section>
+
+      <section class="practice-areas-section" aria-labelledby="practice-areas-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">PRACTICE AREAS</p>
+            <h2 id="practice-areas-title">Tax law, policy, and public-sector advisory.</h2>
+          </div>
+        </div>
+        <div class="practice-areas-grid">
+          <article><span>01</span><h3>Tax Law and Policy</h3></article>
+          <article><span>02</span><h3>Fiscal Decentralization</h3></article>
+          <article><span>03</span><h3>Transfer Pricing</h3></article>
+          <article><span>04</span><h3>International Taxation</h3></article>
+          <article><span>05</span><h3>Tax Treaty Negotiation: Legal &amp; Policy Issues</h3></article>
+          <article><span>06</span><h3>Public Procurement</h3></article>
+          <article><span>07</span><h3>Public Private Partnerships</h3></article>
+          <article><span>08</span><h3>Budget Preparation &amp; Execution</h3></article>
+          <article><span>09</span><h3>Anti-Corruption Planning &amp; Performances</h3></article>
         </div>
       </section>
 
@@ -625,25 +644,6 @@
         </p>
       </section>
 
-      <section class="worked-examples-section" id="tax-worked-examples" aria-labelledby="tax-worked-examples-title">
-        <div class="advisory-heading">
-          <div>
-            <p class="eyebrow section-eyebrow">HISTORICAL WORKED EXAMPLES</p>
-            <h2 id="tax-worked-examples-title">Uganda income tax solutions · 2024.</h2>
-            <p>Review the supplied CSI Bank income-tax computation and Burugo withholding-tax schedule.</p>
-          </div>
-        </div>
-        <div class="worked-examples-caveat" role="note">
-          These examples use figures, classifications and tax treatments supplied for year of income 2024 under the stated 2023 Revision. TaxComp checks the arithmetic only; it has not independently verified the legal treatment, the source records or the statute cited. This historical example is separate from the FY 2026/27 calculators and must not be used as current-year filing advice.
-        </div>
-        <p id="worked-example-metadata" class="worked-example-metadata"></p>
-        <article class="worked-example-card" id="worked-example-csi-bank"></article>
-        <article class="worked-example-card" id="worked-example-burugo"></article>
-        <p class="worked-examples-sources">
-          For current requirements, consult the <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority</a> and a qualified Ugandan tax professional.
-        </p>
-      </section>
-
       <section class="audit-health-section" id="audit-health" aria-labelledby="audit-health-title">
         <div class="advisory-heading">
           <div>
@@ -732,16 +732,12 @@
             </select>
             <button type="submit">Search guidance</button>
           </div>
-          <div class="advisory-quick-questions" aria-label="Example questions">
-            <span>Try:</span>
-            <button type="button" data-advisory-query="VAT registration threshold">VAT registration threshold</button>
+          <div class="advisory-quick-questions" aria-label="Popular tax questions">
+            <span>Popular:</span>
+            <button type="button" data-advisory-query="VAT registration threshold">VAT threshold</button>
             <button type="button" data-advisory-query="non-resident rent withholding">Non-resident rent</button>
-            <button type="button" data-advisory-query="2026 withholding changes">2026 WHT changes</button>
-            <button type="button" data-advisory-query="income tax deduction bad debts section 24">Income-tax deductions</button>
-            <button type="button" data-advisory-query="tax procedure records objection assessment">Tax records &amp; objections</button>
-            <button type="button" data-advisory-query="2026 amendments recent rental software royalty excise">Recent amendments</button>
-            <button type="button" data-advisory-query="2024 CSI Bank company tax computation">CSI Bank 2024 example</button>
-            <button type="button" data-advisory-query="2024 Burugo withholding total 143970000">Burugo 2024 WHT</button>
+            <button type="button" data-advisory-query="2026 withholding changes">2026 WHT</button>
+            <button type="button" data-advisory-query="tax treaty negotiation legal policy issues beneficial ownership">Treaty relief</button>
           </div>
         </form>
 
@@ -880,7 +876,7 @@
             <a class="payment-number" href="tel:+256753267505">+256 753 267 505</a>
           </article>
         </div>
-        <div class="business-contact" aria-label="Business contact details">
+        <div class="business-contact" id="contact" aria-label="Business contact details">
           <div>
             <span class="payment-provider">Email</span>
             <a href="mailto:opitekenecons@gmail.com">opitekenecons@gmail.com</a>
