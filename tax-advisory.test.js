@@ -52,6 +52,9 @@ test("searches guidance by question terms and optional topic", () => {
   const digitalIncome = searchGuidance("section 86 digital services section 80 foreign tax credit", "international");
   const legalFramework = searchGuidance("Uganda tax laws stamp duty gaming Excise Act", "business");
   const exciseStampGaming = searchGuidance("Excise stamp duty gaming betting operator winnings", "customs");
+  const naturalLanguage = searchGuidance("What do I need help with on the recent tax amendments?");
+  const deductions = searchGuidance("income tax deduction bad debts section 24");
+  const taxAppeals = searchGuidance("how can I appeal an assessment and prove tax");
 
   assert.ok(vat.some((item) => item.id === "vat-threshold"));
   assert.ok(rental.some((item) => item.id === "rental-company"));
@@ -82,6 +85,11 @@ test("searches guidance by question terms and optional topic", () => {
   assert.ok(digitalIncome.some((item) => item.id === "international-income-and-digital-services"));
   assert.ok(legalFramework.some((item) => item.id === "uganda-tax-law-framework"));
   assert.ok(exciseStampGaming.some((item) => item.id === "excise-stamp-and-gaming"));
+  assert.ok(naturalLanguage.some((item) => item.id === "income-tax-amendments-2026"));
+  assert.ok(naturalLanguage.some((item) => item.id === "excise-amendments-2026"));
+  assert.ok(naturalLanguage.length <= 12);
+  assert.ok(deductions.some((item) => item.id === "business-deductions-and-losses"));
+  assert.ok(taxAppeals.some((item) => item.id === "tax-decisions-and-appeals"));
 });
 
 test("returns all guidance for an empty query and no unsupported answer for a miss", () => {

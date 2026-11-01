@@ -37,7 +37,7 @@
       url: "https://mrt.tax/2026/08/24/ugandas-2026-income-tax-and-excise-duty-amendments-now-law-key-changes-and-what-they-mean-for-taxpayers/",
     },
     domesticTaxCompendium: {
-      label: "Domestic Tax Laws of Uganda compilation (2025–2026; non-gazetted reference; verify current law at URA)",
+      label: "Uganda domestic tax-law compilation (2025–2026; reference only; verify current law at URA)",
       url: "https://ura.go.ug/",
     },
     transferPricing: {
@@ -97,6 +97,93 @@
 
   const guidance = [
     {
+      id: "individual-income-scope",
+      topic: "individual",
+      title: "What counts as income for an individual taxpayer?",
+      keywords: ["income tax act sections 2 9 14 17 19 20 21 individual employment property business foreign source resident nonresident exempt income benefit allowance"],
+      summary: "The compendium indexes definitions and residence rules, gross income, employment and property income, exempt income, and taxation of individuals (including Income Tax Act sections 2, 9, 14, 17–21 and 62). Whether a receipt is taxable, exempt, Uganda-source or foreign-source depends on the applicable definition, facts and current amendments; the PAYE and individual calculators do not classify receipts for you.",
+      nextStep: "Describe the taxpayer, year, receipt, payer, work or asset location and any exemption claimed. Check the current Act and retain the evidence supporting classification and value.",
+      sourceKeys: ["domesticTaxCompendium", "individual", "ura"],
+      calculator: "individual",
+    },
+    {
+      id: "business-deductions-and-losses",
+      topic: "business",
+      title: "Which business expenses and tax losses should I review?",
+      keywords: ["Income Tax Act sections 22 23 24 25 26 27 28 30 31 32 33 34 35 36 deduction expense entertainment bad debt interest repairs depreciation building intangible research training donation farming apportionment carry forward loss"],
+      summary: "The compendium indexes business deduction rules for income-producing expenses, entertainment, bad debts, interest, repairs and minor capital equipment, depreciable assets, industrial buildings, intangible assets, research, training, donations, farming, apportionment and loss carry-forward (sections 22–36). It does not mean every expense in a category is deductible: purpose, evidence, statutory limits and amendments still matter.",
+      nextStep: "For each material item, retain invoices/contracts and business-purpose evidence, separate capital from revenue expenditure, apportion mixed use, and verify any loss restriction or special regime.",
+      sourceKeys: ["domesticTaxCompendium", "corporate", "capitalAllowances", "ura"],
+      calculator: "company",
+    },
+    {
+      id: "income-accounting-and-disposals",
+      topic: "business",
+      title: "How do tax accounting rules and asset disposals affect income?",
+      keywords: ["Income Tax Act sections 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 56 58 accrual cash inventory trading stock foreign exchange currency debts disposal capital gain cost base depreciation accounting year"],
+      summary: "The compendium indexes year-of-income and accounting-method rules, cash/accrual accounting, prepayments, trading stock, long-term contracts, foreign-currency debt, and gains and losses on disposal of assets (sections 37–52, 56 and 58). A disposal, exchange movement, inventory method or accounting entry may have a tax treatment different from its book presentation; the standard company worksheet does not calculate these special rules.",
+      nextStep: "Reconcile the tax and accounting treatment by transaction and year; preserve acquisition and disposal documents, inventory records, exchange-rate sources and tax written-down values.",
+      sourceKeys: ["domesticTaxCompendium", "corporate", "ura"],
+      calculator: "company",
+    },
+    {
+      id: "mining-petroleum-tax",
+      topic: "international",
+      title: "What special tax rules apply to mining and petroleum operations?",
+      keywords: ["Income Tax Act sections 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 mining petroleum extractive license exploration development rehabilitation decommissioning windfall farmout indirect transfer contractor"],
+      summary: "The compendium's Income Tax Act Part X indexes specialised rules for mining and petroleum licences, deduction limits, exploration and development expenditure, rehabilitation and decommissioning, windfall tax, farm-outs, indirect transfers, contractors, withholding, returns and audits (sections 89–115). Ordinary company-tax estimates are not designed to apply these industry-specific rules.",
+      nextStep: "Identify the licence, project, contract, expenditure pool, transaction and year; review the current sector-specific provisions, regulations, licence terms and URA requirements with an adviser experienced in extractive taxation.",
+      sourceKeys: ["domesticTaxCompendium", "ura", "amendments2026"],
+      calculator: "international",
+    },
+    {
+      id: "income-tax-withholding-map",
+      topic: "withholding",
+      title: "Which withholding-tax rules should I check?",
+      keywords: ["Income Tax Act sections 125 126 127 128 129 130 131 132 133 134 135 135A 136 137 138 139 140 141 142 143 employer interest dividends professional fees asset purchase betting winnings reinsurance telecom airtime mobile money insurance advertising payment service goods services international nonresident final tax credit"],
+      summary: "The compendium's withholding part indexes employer PAYE, resident interest and dividends, professional fees, asset purchases, betting winnings, reinsurance, airtime/mobile-money, insurance and advertising commissions, payment-service providers, goods/services, international and non-resident contracts, final-tax treatment, certificates and records (sections 125–146). The relevant payer, recipient, payment date, rate, exclusions and creditability must be checked separately. The 2026 changes are summarized in a separate note and are not all represented by the historic compilation.",
+      nextStep: "Classify each payment and recipient, confirm withholding-agent status and current rate/effective date, issue and reconcile certificates, then verify whether the tax is final or creditable.",
+      sourceKeys: ["domesticTaxCompendium", "withholding", "ura", "amendments2026"],
+      calculator: "withholding",
+    },
+    {
+      id: "tax-agents-and-representatives",
+      topic: "business",
+      title: "Who may act as a tax agent or tax representative?",
+      keywords: ["Tax Procedures Code Act sections 6 7 8 9 10 11 12 13 14 tax agent registration tax representative liability taxpayer business successor"],
+      summary: "The compendium indexes Tax Procedures Code Act provisions on the Tax Agents Registration Committee, registration and renewal of tax agents, changes or cancellation, tax representatives, successors and discontinuing a business (sections 6–14). A software tool cannot verify whether a person is currently registered or decide who is legally liable for a taxpayer's obligations.",
+      nextStep: "Check current registration and appointment documents, keep taxpayer particulars current, and obtain professional advice before relying on an agent or representative arrangement.",
+      sourceKeys: ["domesticTaxCompendium", "ura"],
+    },
+    {
+      id: "tax-decisions-and-appeals",
+      topic: "business",
+      title: "How can a tax decision be challenged?",
+      keywords: ["Tax Procedures Code Act sections 26 27 28 Tax Appeals Tribunals Act objection review appeal tribunal burden proof decision assessment URA deadline"],
+      summary: "The compendium indexes objections to tax decisions, review of objection decisions and the burden of proof under the Tax Procedures Code Act, followed by review of taxation decisions under the Tax Appeals Tribunals Act. Procedure, security, payment and time limits may be amended or depend on the decision and case facts; this guide does not calculate a deadline or advise whether to appeal.",
+      nextStep: "Read the decision and current procedural law immediately, preserve evidence and proof of service, and get qualified advice on the applicable objection, review or appeal route and deadline.",
+      sourceKeys: ["domesticTaxCompendium", "ura", "uliiJudgments"],
+    },
+    {
+      id: "stamp-duty-instruments",
+      topic: "business",
+      title: "When might stamp duty apply to an instrument?",
+      keywords: ["Stamp Duty Act sections 2 3 4 5 instrument agreement lease transfer mortgage sale insurance shares foreign currency stamp assessment objection"],
+      summary: "The compendium indexes stamp duty by chargeable instruments and schedules, including documents involving transactions, multiple matters, counterparts, timing and valuation. Whether a document is dutiable and who must pay depend on the current schedule, instrument and transaction facts; TaxComp does not classify or value legal instruments.",
+      nextStep: "Identify the executed document, parties, consideration, date and transaction; check the current Stamp Duty Act schedule and URA procedure before execution or registration.",
+      sourceKeys: ["domesticTaxCompendium", "ura"],
+    },
+    {
+      id: "gaming-operator-tax",
+      topic: "customs",
+      title: "What is the difference between gaming-operator tax and tax on winnings?",
+      keywords: ["Lotteries and Gaming Act Part VIII casino gaming betting operator tax gaming activity levy tax winnings player stake national lottery licence amendment 2026"],
+      summary: "The compendium has a separate Lotteries and Gaming Act part for taxation of casino, gaming and betting activities. That operator/activity-level regime is different from income-tax withholding on a recipient's betting winnings. Reported 2026 changes affect withholding calculations and exclusions; do not infer an operator's tax from a player's payout or the reverse.",
+      nextStep: "Establish whether the question concerns a licensed operator, activity-level tax, or a recipient's payout; confirm the current licence, tax head, amendment and statutory base with URA and the gaming regulator.",
+      sourceKeys: ["domesticTaxCompendium", "ura", "amendments2026"],
+      calculator: "withholding",
+    },
+    {
       id: "uganda-tax-law-framework",
       topic: "business",
       title: "Which Ugandan tax laws should a business check?",
@@ -119,7 +206,7 @@
       id: "returns-provisional-tax",
       topic: "individual",
       title: "What should I check for income-tax returns and provisional tax?",
-      keywords: ["Income Tax Act sections 118 119 120 121 122 123 124 return due date provisional estimated tax refunds rental tax monthly provisional return"],
+      keywords: ["recent current updated Income Tax Act sections 118 119 120 121 122 123 124 return due date provisional estimated tax refunds rental tax monthly provisional return amendment amendments 2026"],
       summary: "The compendium indexes Income Tax Act sections 118–123 for income-tax returns, payment, provisional tax, estimated tax and refunds, and section 124 for rental-tax procedure. Filing and payment rules depend on taxpayer type, income, year, elections and later amendments. Secondary commentary on the 2026 amendment describes monthly provisional rental returns as an option for an individual required to pay rental tax, not a general mandatory monthly-return rule.",
       nextStep: "Confirm the current section and any amendment for your taxpayer type and period; check the URA filing account and applicable due date rather than relying on a generic calendar or this annual estimator.",
       sourceKeys: ["domesticTaxCompendium", "ura", "amendments2026"],
@@ -403,7 +490,7 @@
       id: "vat-changes",
       topic: "vat",
       title: "What VAT changes are represented for FY 2026/27?",
-      keywords: ["2026 amendment amendments vat changes efris withholding exemption nuclear energy threshold"],
+      keywords: ["2026 recent latest current amendment amendments VAT changes update efris withholding exemption nuclear energy threshold"],
       summary: "The guide reflects the FY 2026/27 VAT registration thresholds, EFRIS-related conditions for VAT withholding and input-credit evidence, and a targeted exemption for specified supplies to nuclear-energy contractors and subcontractors. Those targeted conditions are narrow; do not classify a supply as exempt based only on a sector label.",
       nextStep: "Check the transaction against the amended VAT law and current URA guidance before applying a rate or exemption.",
       sourceKeys: ["vat", "ura", "domesticTaxCompendium", "amendments2026"],
@@ -413,7 +500,7 @@
       id: "withholding-changes",
       topic: "withholding",
       title: "Which new withholding rules are represented from 1 July 2026?",
-      keywords: ["withholding wht tax 2026 changes amendment entertainer betting gaming insurance agent debenture interest"],
+      keywords: ["recent latest current withholding wht tax 2026 changes amendment amendments entertainer betting gaming insurance agent debenture interest payout stake mobile money telecom commission"],
       summary: "The current guide represents 6% withholding on specified payments to public entertainers, 15% on betting/gaming winnings calculated on payout less stake (with a narrow national-lottery exclusion), 10% on specified telecommunications/mobile-network/mobile-money commissions, final-tax treatment for specified insurance-agent commission withholding, and a conditional 5% rate for qualifying non-resident debenture interest. Rates, commencement, payer scope, and exceptions must be checked against the Act; they are not universal sector rates.",
       nextStep: "Verify the payer and recipient, exact payment type, statutory conditions and exclusions, treaty position, effective date, and whether withholding is creditable or final.",
       sourceKeys: ["withholding", "ura", "domesticTaxCompendium", "amendments2026"],
@@ -423,7 +510,7 @@
       id: "income-tax-amendments-2026",
       topic: "business",
       title: "What other Income Tax changes were reported in 2026?",
-      keywords: ["2026 amendment amendments income tax software royalty controlled transactions arm's length tourism hotel microfinance bad debt Bujagali"],
+      keywords: ["recent latest current 2026 amendment amendments update income tax software royalty controlled transactions arm's length tourism hotel microfinance bad debt Bujagali"],
       summary: "Secondary commentary on the 2026 Income Tax amendment reports an express arm's-length requirement for controlled transactions, software being expressly included in the royalty definition, and targeted changes affecting qualifying hotel/tourism operations, specified microfinance bad-debt deductions and the Bujagali exemption. TaxComp does not determine eligibility or apply these reliefs automatically; the precise statutory wording, dates, and conditions control.",
       nextStep: "Review the enacted amendment and current URA guidance for the relevant provision, entity, transaction, effective date, evidence and any approval or election condition. Do not rely on a sector label alone.",
       sourceKeys: ["ura", "amendments2026"],
@@ -432,7 +519,7 @@
       id: "excise-amendments-2026",
       topic: "customs",
       title: "How should I use the 2026 excise amendments?",
-      keywords: ["2026 excise duty amendment fuel cement sugar cooking oil plastics rates enacted"],
+      keywords: ["recent latest current 2026 excise duty amendment amendments update fuel cement sugar cooking oil plastics rates enacted"],
       summary: "Secondary commentary reports product-specific 2026 excise changes, including fuel, cement, sugar, cooking oil and plastics. Rates can differ from Bill-stage proposals and depend on product classification and commencement. The customs estimator deliberately uses user-entered rates rather than an unverified lookup.",
       nextStep: "Check the final schedule in the enacted Excise Duty (Amendment) Act and current URA tariff guidance for the precise product, unit, rate and effective date.",
       sourceKeys: ["ura", "amendments2026"],
@@ -491,22 +578,59 @@
   ];
 
   function searchGuidance(query = "", topic = "all") {
-    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const stopWords = new Set([
+      "a", "an", "and", "are", "as", "at", "be", "can", "do", "does", "for",
+      "from", "help", "how", "i", "in", "is", "it", "me", "my", "of", "on",
+      "please", "the", "this", "to", "uganda", "what", "when", "where", "which",
+      "who", "with", "you", "your", "on",
+    ]);
+    const aliases = {
+      amendments: "amendment",
+      amended: "amendment",
+      changes: "change",
+      deductions: "deduction",
+      expenses: "expense",
+      latest: "recent",
+      laws: "law",
+      records: "record",
+      returns: "return",
+      winnings: "winning",
+    };
+    let terms = (query.toLowerCase().match(/[a-z0-9]+/g) || [])
+      .map((term) => aliases[term] || term)
+      .filter((term) => term.length > 1 && !stopWords.has(term));
+    if (terms.length > 1) {
+      terms = terms.filter((term) => term !== "tax");
+    }
 
-    return guidance.filter((item) => {
-      if (topic !== "all" && item.topic !== topic) return false;
-      if (terms.length === 0) return true;
+    if (terms.length === 0) {
+      return guidance.filter((item) => topic === "all" || item.topic === topic);
+    }
 
-      const searchable = [
-        item.title,
-        item.keywords,
-        item.summary,
-        item.nextStep,
-        item.topic,
-      ].join(" ").toLowerCase();
+    const ranked = guidance
+      .filter((item) => topic === "all" || item.topic === topic)
+      .map((item) => {
+        const title = item.title.toLowerCase();
+        const keywords = item.keywords.join(" ").toLowerCase();
+        const body = `${item.summary} ${item.nextStep} ${item.topic}`.toLowerCase();
+        const searchable = `${title} ${keywords} ${body}`;
+        const matched = terms.filter((term) => searchable.includes(term));
+        const score = terms.reduce((total, term) => (
+          total + (title.includes(term) ? 4 : 0) +
+            (keywords.includes(term) ? 2 : 0) +
+            (body.includes(term) ? 1 : 0)
+        ), 0);
+        return { item, matched: new Set(matched).size, score };
+      });
+    const minimumMatches = terms.length > 2
+      ? Math.max(2, Math.ceil(terms.length * 0.4))
+      : 1;
 
-      return terms.every((term) => searchable.includes(term));
-    });
+    return ranked
+      .filter((entry) => entry.matched >= minimumMatches)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12)
+      .map((entry) => entry.item);
   }
 
   function getSources(sourceKeys) {
