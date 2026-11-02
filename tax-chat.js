@@ -66,6 +66,7 @@
         sources: [],
         matches: [],
         calculators: [],
+        answerSource: "local",
       };
     }
 
@@ -86,6 +87,7 @@
         sources: [],
         matches: [],
         calculators: [],
+        answerSource: "local",
       };
     }
 
@@ -112,6 +114,7 @@
       calculators: [...new Set(matches
         .map(({ item, type }) => type === "guidance" ? item.calculator : null)
         .filter(isKnownCalculator))],
+      answerSource: "local",
     };
   }
 
@@ -144,7 +147,7 @@
     let busy = false;
 
     status.textContent = endpoint
-      ? "AI chat is connected. Replies use reviewed TaxComp notes; avoid sharing confidential information."
+      ? "Chat is connected. Replies identify whether they use live web sources or local TaxComp notes; avoid sharing confidential information."
       : "AI setup is pending. You can chat with the reviewed TaxComp notes while the secure Gemini connection is being set up.";
 
     function renderMessage(role, text, sources = [], calculators = []) {
@@ -204,7 +207,7 @@
       renderMessage(
         "assistant",
         endpoint
-          ? "Hello! Ask me about Uganda tax or related international-tax topics. I use reviewed TaxComp notes and search the web for current sources when needed; check the cited sources before relying on an answer."
+          ? "Hello! Ask me about Uganda tax or related international-tax topics. When live web research is available, I include its sources; otherwise, I use reviewed local TaxComp notes and say so. Check cited sources and effective dates before relying on an answer."
           : "Hello! Ask me about Uganda tax or related international-tax topics. This chat currently uses TaxComp's reviewed local notes only; live web search is not connected yet.",
       );
     }
@@ -240,6 +243,9 @@
           sources: Array.isArray(data.sources) ? data.sources : [],
           calculators: Array.isArray(data.calculators) ? data.calculators : [],
           webGrounded: data.webGrounded === true,
+          answerSource: data.answerSource === "local"
+            ? "local"
+            : data.webGrounded === true ? "web" : "unverified",
         };
       } finally {
         clearTimeout(timeout);
@@ -276,9 +282,11 @@
           { role: "model", text: result.answer },
         );
         if (endpoint) {
-          status.textContent = result.webGrounded
-            ? "AI reply includes Google Search sources. Verify important tax positions against the cited primary source and effective date."
-            : "No web sources were returned for this answer. Treat it as unverified and check current official guidance.";
+          status.textContent = result.answerSource === "local"
+            ? "This reply uses reviewed local TaxComp notes only; no live web search was performed. Confirm current law and effective dates."
+            : result.webGrounded
+              ? "AI reply includes Google Search sources. Verify important tax positions against the cited primary source and effective date."
+              : "No web sources were returned for this answer. Treat it as unverified and check current official guidance.";
         } else {
           status.textContent = "Live web search is not connected; this reply came only from reviewed local notes and may not reflect current law.";
         }

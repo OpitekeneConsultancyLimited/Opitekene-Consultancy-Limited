@@ -8,6 +8,15 @@ const MAX_ANSWER_LENGTH = 6_000;
 const RATE_LIMIT = 8;
 const RATE_PERIOD_SECONDS = 60;
 const MAX_WEB_SOURCES = 8;
+const UPSTREAM_TIMEOUT_MS = 25_000;
+const MAX_UPSTREAM_RETRIES = 1;
+const DEFAULT_MODEL = "gemini-3.5-flash-lite";
+const MODEL_PREFERENCE = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.8-flash",
+  "gemini-3.6-flash",
+];
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 const SYSTEM_INSTRUCTION = [
   "You are TaxComp's Uganda tax information assistant.",
@@ -48,6 +57,7 @@ function getCorsHeaders(request, env) {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Expose-Headers": "X-Gemini-Upstream-Status, X-TaxComp-Answer-Source",
     "Access-Control-Max-Age": "600",
     "Vary": "Origin",
   };
@@ -222,55 +232,127 @@ function addGroundedWebCitations(answer, groundingMetadata, evidenceSources) {
 
 async function callGemini(question, history, evidence, env) {
   if (!env.GEMINI_API_KEY) {
-    return { error: "The AI assistant is not configured yet.", status: 503 };
+    return { fallback: true, reason: "missing_api_key" };
   }
 
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = env.GEMINI_MODEL || DEFAULT_MODEL;
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) {
-    return { error: "The AI service configuration is invalid.", status: 503 };
+    return { fallback: true, reason: "invalid_model_configuration" };
   }
 
   const contents = [
     ...history,
     { role: "user", parts: [{ text: question }] },
   ];
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const requestBody = JSON.stringify({
+    systemInstruction: {
+      parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${evidence.text}` }],
+    },
+    contents,
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 650,
+    },
+    tools: [{ google_search: {} }],
+  });
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": env.GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: `${SYSTEM_INSTRUCTION}\n\n${evidence.text}` }],
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 650,
-        },
-        tools: [{ google_search: {} }],
-      }),
-      signal: controller.signal,
-    });
+    let response = await requestGemini(model, requestBody, env.GEMINI_API_KEY, controller.signal);
+    let responseModel = model;
+    let providerError = response instanceof Response
+      ? await getProviderError(response)
+      : null;
+
+    if (response instanceof Response && !response.ok &&
+        isModelNotFound(response.status, providerError)) {
+      console.error("Configured Gemini model was not found", {
+        apiVersion: "v1beta",
+        model,
+        httpStatus: response.status,
+        providerStatus: providerError?.status || null,
+        providerCode: providerError?.code || null,
+        providerMessage: sanitizeProviderMessage(
+          providerError?.message || "",
+          env.GEMINI_API_KEY,
+          [question, ...history.map((item) => item.text), evidence.text],
+        ),
+      });
+      const availableModels = await listAvailableModels(
+        env.GEMINI_API_KEY,
+        controller.signal,
+        model,
+      );
+      console.info("Gemini model access check", {
+        apiVersion: "v1beta",
+        listStatus: availableModels.status,
+        listProviderStatus: availableModels.providerStatus,
+        listProviderMessage: availableModels.providerMessage,
+        availableGenerateContentModels: availableModels.models,
+      });
+      const alternateModel = MODEL_PREFERENCE.find((candidate) => (
+        candidate !== model && availableModels.models.includes(candidate)
+      ));
+      if (alternateModel) {
+        responseModel = alternateModel;
+        response = await requestGemini(
+          alternateModel,
+          requestBody,
+          env.GEMINI_API_KEY,
+          controller.signal,
+        );
+        providerError = response instanceof Response
+          ? await getProviderError(response)
+          : null;
+      }
+    }
+
+    if (!(response instanceof Response)) {
+      console.error("Gemini API request failed", {
+        apiVersion: "v1beta",
+        model: responseModel,
+        failure: response.failure,
+      });
+      return {
+        fallback: true,
+        reason: response.failure,
+      };
+    }
 
     if (!response.ok) {
-      console.error("Gemini API request failed", { status: response.status });
+      const category = classifyProviderError(response.status, providerError);
+      console.error("Gemini API request failed", {
+        apiVersion: "v1beta",
+        model: responseModel,
+        httpStatus: response.status,
+        providerStatus: providerError?.status || null,
+        providerCode: providerError?.code || null,
+        providerMessage: sanitizeProviderMessage(
+          providerError?.message || "",
+          env.GEMINI_API_KEY,
+          [question, ...history.map((item) => item.text), evidence.text],
+        ),
+        category,
+      });
       return {
-        error: response.status === 429
-          ? "The AI service is busy. Please try again shortly."
-          : "The AI service could not answer right now. Please try again later.",
-        status: response.status === 429 ? 429 : 502,
+        fallback: true,
+        reason: category,
         upstreamStatus: response.status,
       };
     }
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      console.error("Gemini API returned invalid JSON", {
+        apiVersion: "v1beta",
+        model: responseModel,
+        failure: "invalid_response",
+      });
+      return { fallback: true, reason: "invalid_response" };
+    }
     const candidate = data.candidates?.[0];
     const generatedAnswer = candidate?.content?.parts
       ?.map((part) => typeof part.text === "string" ? part.text : "")
@@ -278,23 +360,217 @@ async function callGemini(question, history, evidence, env) {
       .trim();
 
     if (!generatedAnswer || generatedAnswer.length > MAX_ANSWER_LENGTH) {
-      return { error: "The AI service returned no usable answer.", status: 502 };
+      console.error("Gemini API returned no usable answer", {
+        apiVersion: "v1beta",
+        model: responseModel,
+        failure: "invalid_response",
+      });
+      return { fallback: true, reason: "invalid_response" };
     }
 
     const validatedAnswer = validateCitations(generatedAnswer, evidence.sources);
-    return addGroundedWebCitations(
+    const result = addGroundedWebCitations(
       validatedAnswer,
       candidate.groundingMetadata,
       evidence.sources,
     );
-  } catch {
-    return {
-      error: "The AI service could not be reached. Please try again later.",
-      status: 502,
-    };
+    if (!result.webGrounded) {
+      console.info("Gemini response had no Google Search grounding", {
+        apiVersion: "v1beta",
+        model: responseModel,
+      });
+      return { fallback: true, reason: "grounding_unavailable" };
+    }
+    return { ...result, answerSource: "web" };
+  } catch (error) {
+    const failure = controller.signal.aborted
+      ? "timeout"
+      : "network_error";
+    console.error("Gemini API request failed", {
+      apiVersion: "v1beta",
+      model,
+      failure,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return { fallback: true, reason: failure };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function requestGemini(model, requestBody, apiKey, signal) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  for (let attempt = 0; attempt <= MAX_UPSTREAM_RETRIES; attempt += 1) {
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: requestBody,
+        signal,
+      });
+    } catch (error) {
+      if (signal.aborted || error?.name === "AbortError") {
+        return { failure: "timeout" };
+      }
+      if (attempt === MAX_UPSTREAM_RETRIES) return { failure: "network_error" };
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      continue;
+    }
+
+    if (attempt === MAX_UPSTREAM_RETRIES ||
+        !await shouldRetryResponse(response)) return response;
+
+    const retryAfter = Number(response.headers.get("Retry-After"));
+    const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? Math.min(retryAfter * 1000, 1_000)
+      : 250;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    if (signal.aborted) return { failure: "timeout" };
+  }
+  return { failure: "network_error" };
+}
+
+async function shouldRetryResponse(response) {
+  if (response.status !== 429) return RETRYABLE_STATUSES.has(response.status);
+  if (Number(response.headers.get("Retry-After")) > 0) return true;
+  const providerError = await getProviderError(response);
+  const message = providerError?.message || "";
+  if (/quota|daily limit|plan and billing details/i.test(message)) return false;
+  return /rate.?limit|requests per (?:minute|second)|too many requests|retry shortly/i
+    .test(message);
+}
+
+async function getProviderError(response) {
+  try {
+    const body = await response.clone().json();
+    return {
+      status: typeof body?.error?.status === "string"
+        ? body.error.status
+        : null,
+      code: Number.isInteger(body?.error?.code) ? body.error.code : null,
+      message: typeof body?.error?.message === "string"
+        ? body.error.message.slice(0, 1_000)
+        : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeProviderMessage(message, apiKey, privateValues) {
+  let safeMessage = String(message || "");
+  const values = [apiKey, ...privateValues]
+    .filter((value) => typeof value === "string" && value.length >= 4)
+    .sort((left, right) => right.length - left.length);
+  for (const value of values) {
+    safeMessage = safeMessage.split(value).join("[redacted]");
+  }
+  return safeMessage
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]")
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[redacted-email]")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .slice(0, 500);
+}
+
+function classifyProviderError(status, providerError) {
+  const message = providerError?.message || "";
+  if ((status === 400 || status === 403) &&
+      /google[_ ]search|search grounding|grounding.*(?:billing|tier|available|support)/i.test(message)) {
+    return "grounding_unavailable";
+  }
+  if (status === 401 || status === 403) return "authentication_or_access";
+  if (status === 404) return "model_or_endpoint_not_found";
+  if (status === 400) return "invalid_request";
+  if (status === 402) return "billing_required";
+  if (status === 429 &&
+      /quota|daily limit|plan and billing details/i.test(message)) {
+    return "quota_exceeded";
+  }
+  if (status === 429) return "rate_limit";
+  if (status >= 500) return "google_service_failure";
+  return "upstream_error";
+}
+
+function isModelNotFound(status, providerError) {
+  return status === 404 &&
+    (providerError?.status === "NOT_FOUND" ||
+      providerError?.status === "MODEL_NOT_FOUND" ||
+      /model.{0,80}(?:not found|does not exist|not supported)/i.test(providerError?.message || ""));
+}
+
+async function listAvailableModels(apiKey, signal, configuredModel) {
+  try {
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+      {
+        headers: { "x-goog-api-key": apiKey },
+        signal,
+      },
+    );
+    if (!response.ok) {
+      const providerError = await getProviderError(response);
+      return {
+        status: response.status,
+        providerStatus: providerError?.status || null,
+        providerMessage: sanitizeProviderMessage(
+          providerError?.message || "",
+          apiKey,
+          [],
+        ),
+        models: [],
+      };
+    }
+    const data = await response.json();
+    const models = Array.isArray(data.models) ? data.models : [];
+    return {
+      status: response.status,
+      providerStatus: null,
+      providerMessage: "",
+      models: models
+        .filter((model) => (
+          typeof model?.name === "string" &&
+          Array.isArray(model.supportedGenerationMethods) &&
+          model.supportedGenerationMethods.includes("generateContent")
+        ))
+        .map((model) => model.name.replace(/^models\//, ""))
+        .filter((name) => (
+          MODEL_PREFERENCE.includes(name) || name === configuredModel
+        )),
+    };
+  } catch {
+    return {
+      status: signal.aborted ? 0 : null,
+      providerStatus: null,
+      providerMessage: "",
+      models: [],
+    };
+  }
+}
+
+function createLocalFallback(knowledge) {
+  const notes = [
+    ...knowledge.guidance.map((item) => (
+      `${item.title}: ${item.summary}`
+    )),
+    ...knowledge.cases.map((item) => (
+      `${item.title} (${item.citation}): ${item.summary}`
+    )),
+  ];
+  const answer = notes.length
+    ? `Live web research is unavailable. This reply uses reviewed TaxComp local notes only; no Google Search was performed.\n\n${notes.join("\n\n")}\n\nThese notes may not reflect the latest law. Confirm the effective date and your circumstances with URA or a qualified Ugandan tax adviser.`
+    : "Live web research is unavailable and no Google Search was performed. I could not find a reviewed TaxComp local note for this question, so I will not guess. Check current guidance with URA or a qualified Ugandan tax adviser.";
+
+  return {
+    answer,
+    sources: knowledge.sources,
+    calculators: knowledge.calculators,
+    webGrounded: false,
+    answerSource: "local",
+  };
 }
 
 export async function handleRequest(request, env) {
@@ -374,20 +650,21 @@ export async function handleRequest(request, env) {
     evidence,
     env,
   );
-  if (result.error) {
-    const response = jsonResponse({ error: result.error }, result.status, corsHeaders);
-    if (typeof result.upstreamStatus === "number") {
-      response.headers.set("X-Gemini-Upstream-Status", String(result.upstreamStatus));
-    }
-    return response;
+  const answer = result.fallback
+    ? createLocalFallback(knowledge)
+    : {
+      answer: result.answer,
+      sources: result.sources,
+      calculators: knowledge.calculators,
+      webGrounded: result.webGrounded,
+      answerSource: result.answerSource,
+    };
+  const response = jsonResponse(answer, 200, corsHeaders);
+  response.headers.set("X-TaxComp-Answer-Source", answer.answerSource);
+  if (typeof result.upstreamStatus === "number") {
+    response.headers.set("X-Gemini-Upstream-Status", String(result.upstreamStatus));
   }
-
-  return jsonResponse({
-    answer: result.answer,
-    sources: result.sources,
-    calculators: knowledge.calculators,
-    webGrounded: result.webGrounded,
-  }, 200, corsHeaders);
+  return response;
 }
 
 export default { fetch: handleRequest };

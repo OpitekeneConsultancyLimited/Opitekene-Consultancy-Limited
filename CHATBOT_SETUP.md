@@ -1,12 +1,12 @@
 # TaxComp chat setup
 
 When the secure endpoint is connected, the chat sends the question to a
-Cloudflare Worker. Gemini can use Google Search grounding to find current public
-web sources, alongside the relevant reviewed TaxComp notes and cases. The
-answer includes links to sources returned by Google Search. Without the
-endpoint, the browser can only search its bundled TaxComp notes and cannot
-browse the web. The Gemini API key must never be added to the site or committed
-to this repository.
+Cloudflare Worker. The Worker uses Gemini with Google Search grounding only
+when the configured key, model and API tier support it. If live grounded
+research is unavailable, the Worker returns matching, reviewed local TaxComp
+notes and clearly says that no Google Search was performed. Without the
+endpoint, the browser can only search its bundled TaxComp notes. The Gemini
+API key must never be added to the site or committed to this repository.
 
 Web search can improve currency and provide citations, but it does not
 guarantee accuracy or completeness, and the assistant does not monitor laws
@@ -18,10 +18,12 @@ Never enter confidential personal or business data.
 
 1. Create a Cloudflare account and enable Workers, then install Node.js if it is
    not already installed.
-2. Create a Gemini API key in Google AI Studio. Google Search grounding is
-   enabled in the Worker using Gemini's built-in `google_search` tool; no
-   separate search API key is needed. Check current Gemini pricing and
-   grounding terms. Do not send the key in chat, email, or a source file.
+2. Create a Gemini API key in Google AI Studio. The Worker checks Google's
+   `v1beta/models` listing when its configured model is not found and retries
+   only with a listed model that supports `generateContent`. It uses the
+   built-in `google_search` tool; no separate search API key is needed. Check
+   current Gemini pricing and grounding terms. Do not send the key in chat,
+   email, or a source file.
 3. In PowerShell, change to the repository root (the directory containing
    `wrangler.toml`) and authenticate:
 
@@ -44,10 +46,11 @@ Never enter confidential personal or business data.
    ```
 
    The Wrangler config enables Worker Observability at a 100% sampling rate.
-   The Worker logs only the upstream Gemini HTTP status on provider errors; it
-   does not log the API key or provider response body. Failed responses also
-   include the numeric upstream status in the `X-Gemini-Upstream-Status`
-   header, without exposing Google's error body.
+   Persistent logs include a redacted provider error message, HTTP status,
+   model and classification, but never the API key, user question or provider
+   response body. Responses identify their source through
+   `X-TaxComp-Answer-Source`; provider failures include only the numeric
+   upstream status in `X-Gemini-Upstream-Status`.
 
 6. In `index.html`, set the `taxcomp-chat-endpoint` meta tag's `content` to the
    deployed Worker URL followed by `/chat`, for example:
@@ -60,17 +63,21 @@ Never enter confidential personal or business data.
    updated site.
 
 The Worker restricts browser calls to the TaxComp GitHub Pages origin, limits
-each IP address to eight requests per minute, limits questions and response
-size, retrieves relevant curated TaxComp notes for Uganda tax questions, and
-does not store chat history. It asks Gemini to use Google Search for current
-tax information and prioritise official sources. The Worker validates
-grounding links as HTTPS and returns only source metadata; it never exposes
-the Gemini key to the browser. Search results and AI-generated answers can
-still be wrong or out of date, so verify primary sources and effective dates.
+each IP address to eight requests per minute, validates request size and
+content, and does not store chat history. It retries only transient upstream
+failures, then falls back to relevant curated TaxComp notes rather than
+returning an ungrounded Gemini answer. The fallback says that no live search
+was performed and links its local sources. The Worker validates web-grounding
+links as HTTPS and never exposes the Gemini key to the browser. Search results,
+local notes and AI-generated answers can still be wrong or out of date; verify
+primary sources and effective dates.
 
 ## Before enabling public AI replies
 
 - Check Gemini's current terms, data handling and pricing for your account.
+- Google Search grounding availability and pricing depend on the Gemini API
+  tier. The free tier may not provide API grounding; this Worker does not
+  activate billing or trials and retains the local-note fallback instead.
 - Configure and monitor Gemini quotas/billing limits before publishing the
   Worker URL. Per-IP rate limiting helps but does not prevent all automated
   usage or guarantee a spending ceiling.

@@ -8,7 +8,7 @@ head_sampling_rate = 1
 
 [vars]
 ALLOWED_ORIGIN = "https://opitekeneconsultancylimited.github.io"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 [[unsafe.bindings]]
 name = "CHAT_LIMITER"

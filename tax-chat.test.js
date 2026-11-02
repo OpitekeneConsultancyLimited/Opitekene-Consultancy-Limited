@@ -10,6 +10,7 @@ test("answers common VAT questions from reviewed guidance and includes citations
   assert.ok(result.sources.some((source) => source.url === "https://www.ura.go.ug/"));
   assert.ok(result.matches.some((item) => item.id === "vat-threshold"));
   assert.ok(result.calculators.includes("vat"));
+  assert.equal(result.answerSource, "local");
 });
 
 test("answers tax-procedure questions from the compendium-indexed guidance", () => {
@@ -53,10 +54,12 @@ test("does not invent a local answer for unsupported questions", () => {
   assert.match(result.answer, /couldn't find a reviewed TaxComp note/i);
   assert.equal(result.matches.length, 0);
   assert.deepEqual(result.calculators, []);
+  assert.equal(result.answerSource, "local");
 });
 
 test("offers useful prompts when the user enters a greeting", () => {
   const result = findLocalAnswer("Hello", advisory);
 
   assert.match(result.answer, /Uganda taxes, cross-border tax topics/i);
+  assert.equal(result.answerSource, "local");
 });
