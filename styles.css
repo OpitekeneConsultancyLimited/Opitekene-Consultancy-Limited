@@ -2838,3 +2838,409 @@ td:first-child {
     margin-bottom: 4px;
   }
 }
+
+.multi-tax-section {
+  width: min(1120px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+  scroll-margin-top: 24px;
+}
+
+.multi-tax-heading,
+.multi-tax-results-header,
+.multi-tax-register-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.multi-tax-heading h2 {
+  margin: 5px 0 10px;
+  font: 500 34px/1.12 var(--serif);
+  letter-spacing: -0.7px;
+}
+
+.multi-tax-heading > div > p:last-child {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.multi-tax-notice {
+  margin: 22px 0;
+  padding: 15px 18px;
+  border: 1px solid #e8d7a8;
+  border-radius: 10px;
+  background: #fff8e9;
+  color: #59451e;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.multi-tax-notice strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.multi-tax-form,
+.multi-tax-results,
+.multi-tax-register {
+  margin-top: 18px;
+  padding: 23px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+}
+
+.multi-tax-form-heading,
+.multi-tax-form-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.multi-tax-form-heading {
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.multi-tax-form-heading h3,
+.multi-tax-results-header h3,
+.multi-tax-register-heading h3 {
+  margin: 0;
+  font: 500 23px/1.2 var(--serif);
+}
+
+.multi-tax-form-heading p {
+  max-width: 450px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.multi-tax-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.multi-tax-fields .field {
+  min-width: 0;
+}
+
+.multi-tax-fields .field > input:not([type="checkbox"]),
+.multi-tax-fields .field > select,
+.multi-tax-fields .field > textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #dfe6dc;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+  font: 12px var(--sans);
+}
+
+.multi-tax-fields textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.multi-tax-fields .input-wrap input:not([type="checkbox"]) {
+  padding-left: 52px;
+}
+
+.multi-tax-fields .field-help {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.multi-tax-wide {
+  grid-column: 1 / -1;
+}
+
+.multi-tax-form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 41px;
+  padding: 10px 15px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  cursor: pointer;
+  font: 700 11px var(--sans);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.primary-button {
+  background: var(--green);
+  color: #fff;
+}
+
+.primary-button:hover {
+  background: var(--green-dark);
+}
+
+.secondary-button {
+  border-color: #dfe6dc;
+  background: #fff;
+  color: #43564a;
+}
+
+.secondary-button:hover {
+  border-color: #b8cdbb;
+  background: #f7faf6;
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible {
+  outline: 3px solid rgba(198, 147, 54, 0.65);
+  outline-offset: 2px;
+}
+
+.multi-tax-form-actions .form-error {
+  width: 100%;
+}
+
+.multi-tax-results,
+.multi-tax-register {
+  scroll-margin-top: 24px;
+}
+
+.multi-tax-results-header {
+  align-items: center;
+  margin-bottom: 13px;
+}
+
+.multi-tax-results-header .eyebrow,
+.multi-tax-register-heading .eyebrow {
+  margin-bottom: 5px;
+}
+
+.assessment-status,
+.multi-tax-summary {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.multi-tax-risk-flags {
+  margin: 16px 0;
+  padding: 12px 15px;
+  border-left: 3px solid #d9a83b;
+  background: #fff8e9;
+  color: #59451e;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.multi-tax-risk-flags:empty {
+  display: none;
+}
+
+.multi-tax-risk-flags h4 {
+  margin: 0 0 5px;
+}
+
+.multi-tax-risk-flags ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.multi-tax-head-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.multi-tax-head-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fcfdfb;
+}
+
+.multi-tax-head-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.multi-tax-head-heading h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.assessment-pill {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 99px;
+  background: #edf0ed;
+  color: #4d5c52;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.assessment-pill-calculated {
+  background: #e7f2ea;
+  color: var(--green-dark);
+}
+
+.assessment-pill-information_required {
+  background: #fff2d5;
+  color: #75530f;
+}
+
+.assessment-pill-not_indicated {
+  background: #eff1ef;
+  color: #64736a;
+}
+
+.multi-tax-head-card > p,
+.assessment-calculation p,
+.assessment-calculation li {
+  color: #536459;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.assessment-detail,
+.assessment-information,
+.assessment-verification {
+  margin: 7px 0 0;
+}
+
+.assessment-information {
+  color: #75530f !important;
+}
+
+.assessment-verification {
+  color: #66756c !important;
+}
+
+.assessment-calculation {
+  margin-top: 11px;
+  padding: 10px;
+  border-radius: 7px;
+  background: var(--green-light);
+}
+
+.assessment-calculation > strong {
+  color: var(--green-dark);
+  font-size: 11px;
+}
+
+.assessment-calculation p {
+  margin-bottom: 0;
+}
+
+.assessment-calculation details {
+  margin-top: 7px;
+  color: #40564a;
+  font-size: 10px;
+}
+
+.assessment-calculation ul {
+  padding-left: 17px;
+}
+
+.multi-tax-total-note {
+  margin: 17px 0 0;
+  padding: 12px;
+  border-radius: 7px;
+  background: #f3f5f2;
+  color: #536459;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.multi-tax-register-heading {
+  align-items: center;
+}
+
+.multi-tax-register > p {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.multi-tax-register-list {
+  display: grid;
+  gap: 8px;
+}
+
+.multi-tax-register-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.multi-tax-register-row > div {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.multi-tax-register-row > div > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .multi-tax-section {
+    width: calc(100% - 40px);
+    padding: 37px 0 46px;
+  }
+
+  .multi-tax-heading,
+  .multi-tax-form-heading,
+  .multi-tax-results-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .multi-tax-heading h2 {
+    font-size: 29px;
+  }
+
+  .multi-tax-fields,
+  .multi-tax-head-list {
+    grid-template-columns: 1fr;
+  }
+
+  .multi-tax-form,
+  .multi-tax-results,
+  .multi-tax-register {
+    padding: 17px;
+  }
+
+  .multi-tax-form-heading {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .multi-tax-section {
+    width: calc(100% - 32px);
+  }
+}
