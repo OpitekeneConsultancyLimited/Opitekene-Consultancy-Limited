@@ -16,10 +16,11 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
     <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
-    <link rel="stylesheet" href="styles.css?v=tax-chat-calculator-links-1">
+    <link rel="stylesheet" href="styles.css?v=transaction-analysis-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-calculator.js?v=paye-role-selector-1" defer></script>
+    <script src="tax-transaction.js?v=transaction-analysis-1" defer></script>
     <script src="app.js?v=paye-role-selector-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
@@ -839,27 +840,164 @@
           this chat does not accept uploaded client documents. Always check cited sources and effective dates.
         </p>
         <div class="tax-chat-panel">
-          <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-          <form class="tax-chat-form" id="tax-chat-form">
-            <label for="tax-chat-input">Your question</label>
-            <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
-            <label class="tax-chat-record-consent" for="tax-chat-record-unanswered">
-              <input id="tax-chat-record-unanswered" type="checkbox">
-              If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
-            </label>
-            <p class="tax-chat-consent-withdrawal">If you later withdraw consent or want this record deleted sooner, TaxComp provides a reference and an email-draft option after saving. The email is not sent automatically; do not resend confidential information.</p>
-            <div class="tax-chat-form-footer">
-              <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
-              <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
+          <div class="tax-chat-mode-switch" role="tablist" aria-label="TaxComp chat mode">
+            <button id="tax-chat-question-tab" type="button" role="tab" aria-selected="true" aria-controls="tax-chat-question-mode" data-tax-chat-mode="question">Ask a tax question</button>
+            <button id="tax-chat-transaction-tab" type="button" role="tab" aria-selected="false" aria-controls="tax-chat-transaction-mode" data-tax-chat-mode="transaction" tabindex="-1">Analyse a transaction</button>
+          </div>
+          <div id="tax-chat-question-mode" role="tabpanel" aria-labelledby="tax-chat-question-tab">
+            <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <form class="tax-chat-form" id="tax-chat-form">
+              <label for="tax-chat-input">Your question</label>
+              <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
+              <label class="tax-chat-record-consent" for="tax-chat-record-unanswered">
+                <input id="tax-chat-record-unanswered" type="checkbox">
+                If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
+              </label>
+              <p class="tax-chat-consent-withdrawal">If you later withdraw consent or want this record deleted sooner, TaxComp provides a reference and an email-draft option after saving. The email is not sent automatically; do not resend confidential information.</p>
+              <div class="tax-chat-form-footer">
+                <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
+                <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
+              </div>
+            </form>
+            <div class="tax-chat-shortcuts" aria-label="Example chat questions">
+              <span>Try asking:</span>
+              <button type="button" data-chat-question="What are the VAT registration thresholds?">VAT thresholds</button>
+              <button type="button" data-chat-question="Which employment benefits can affect PAYE?">PAYE benefits</button>
+              <button type="button" data-chat-question="What should I check before claiming a tax treaty rate?">Tax treaties</button>
+              <button type="button" data-chat-question="How is wear-and-tear calculated by asset class?">Wear and tear</button>
+              <button type="button" data-chat-question="What did the Quickway input VAT case decide?">Tax case summary</button>
             </div>
-          </form>
-          <div class="tax-chat-shortcuts" aria-label="Example chat questions">
-            <span>Try asking:</span>
-            <button type="button" data-chat-question="What are the VAT registration thresholds?">VAT thresholds</button>
-            <button type="button" data-chat-question="Which employment benefits can affect PAYE?">PAYE benefits</button>
-            <button type="button" data-chat-question="What should I check before claiming a tax treaty rate?">Tax treaties</button>
-            <button type="button" data-chat-question="How is wear-and-tear calculated by asset class?">Wear and tear</button>
-            <button type="button" data-chat-question="What did the Quickway input VAT case decide?">Tax case summary</button>
+          </div>
+          <div id="tax-chat-transaction-mode" class="tax-chat-transaction-mode" role="tabpanel" aria-labelledby="tax-chat-transaction-tab" hidden>
+            <p class="tax-transaction-privacy" role="note">This screening tool does not send transaction details to Gemini, save them, or accept uploads. Do not enter TINs, names, account details, or confidential information. It is limited to UGX and FY 2026/27.</p>
+            <form id="tax-transaction-form" class="tax-transaction-form">
+              <label class="tax-transaction-field" for="transaction-type">Transaction type
+                <select id="transaction-type" name="type" required>
+                  <option value="">Choose a transaction</option>
+                  <option value="property-purchase">Purchase of land or a building</option>
+                  <option value="property-disposal">Sale or disposal of land or a building</option>
+                  <option value="consultancy-payment">Consultancy or professional-services payment</option>
+                  <option value="construction-contract">Construction or engineering contract</option>
+                  <option value="rental-income">Rental income or property letting</option>
+                  <option value="employee-compensation">Employee remuneration or benefits</option>
+                  <option value="goods-import">Import of goods</option>
+                  <option value="goods-export">Export of goods</option>
+                  <option value="machinery-purchase">Business machinery acquisition</option>
+                  <option value="other">Other business transaction</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-description">Non-confidential description
+                <textarea id="transaction-description" name="description" maxlength="1000" required rows="2" placeholder="Describe the goods, services or asset without names, TINs or account details."></textarea>
+              </label>
+              <label class="tax-transaction-field" for="transaction-date">Transaction date
+                <input id="transaction-date" name="transactionDate" type="date" required>
+              </label>
+              <label class="tax-transaction-field" for="transaction-amount">Transaction amount (UGX)
+                <input id="transaction-amount" name="amount" type="number" min="0" step="0.01" required>
+              </label>
+              <label class="tax-transaction-field" for="transaction-currency">Currency
+                <select id="transaction-currency" name="currency" required>
+                  <option value="UGX">UGX</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-party-role">Your role in the transaction
+                <select id="transaction-party-role" name="partyRole" required>
+                  <option value="">Choose your role</option>
+                  <option value="buyer">Buyer</option>
+                  <option value="seller">Seller</option>
+                  <option value="payer">Payer</option>
+                  <option value="supplier">Supplier</option>
+                  <option value="landlord">Landlord</option>
+                  <option value="tenant">Tenant</option>
+                  <option value="employer">Employer</option>
+                  <option value="employee">Employee</option>
+                  <option value="importer">Importer</option>
+                  <option value="exporter">Exporter</option>
+                  <option value="asset-owner">Asset owner</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-taxpayer-type">Your taxpayer type
+                <select id="transaction-taxpayer-type" name="taxpayerType" required>
+                  <option value="">Choose a type</option>
+                  <option value="individual">Individual</option>
+                  <option value="company">Company</option>
+                  <option value="unknown">Not yet known</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-taxpayer-residency">Your tax residence
+                <select id="transaction-taxpayer-residency" name="taxpayerResidency" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="resident">Uganda resident</option>
+                  <option value="nonresident">Non-resident</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-counterparty-residency">Counterparty tax residence
+                <select id="transaction-counterparty-residency" name="counterpartyResidency" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="resident">Uganda resident</option>
+                  <option value="nonresident">Non-resident</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-vat-registration">VAT registration status
+                <select id="transaction-vat-registration" name="vatRegistration" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="yes">Registered</option>
+                  <option value="no">Not registered</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-withholding-agent">Withholding-agent status
+                <select id="transaction-withholding-agent" name="withholdingAgent" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="yes">Designated/required to withhold</option>
+                  <option value="no">Not designated (as currently understood)</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-related-party">Related-party relationship
+                <select id="transaction-related-party" name="relatedParty" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="yes">Related parties</option>
+                  <option value="no">Not related (as currently understood)</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-employment-relationship">Work relationship
+                <select id="transaction-employment-relationship" name="employmentRelationship" required>
+                  <option value="">Choose or mark not applicable</option>
+                  <option value="employee">Employment relationship</option>
+                  <option value="independent">Independent contractor (needs fact review)</option>
+                  <option value="uncertain">Uncertain</option>
+                  <option value="not-applicable">Not applicable</option>
+                </select>
+              </label>
+              <label class="tax-transaction-field" for="transaction-efris-invoice">EFRIS invoice or receipt
+                <select id="transaction-efris-invoice" name="efrisInvoice" required>
+                  <option value="">Choose or mark unknown</option>
+                  <option value="yes">Available</option>
+                  <option value="no">Not available</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </label>
+              <label class="tax-transaction-confirm">
+                <input type="checkbox" name="factsConfirmed" required>
+                I have reviewed these non-confidential facts and confirm they are accurate to the best of my knowledge.
+              </label>
+              <button class="tax-transaction-submit" type="submit">Identify potential tax heads</button>
+            </form>
+            <p id="tax-transaction-status" class="tax-chat-status" role="status" aria-live="polite"></p>
+            <div id="tax-transaction-assessment" class="tax-transaction-assessment" hidden></div>
+            <form id="tax-transaction-calculator-form" class="tax-transaction-calculator-form" hidden>
+              <label class="tax-transaction-field" for="tax-transaction-calculator">Run an existing deterministic calculator
+                <select id="tax-transaction-calculator" required></select>
+              </label>
+              <div id="tax-transaction-calculator-fields" class="tax-transaction-fields"></div>
+              <button class="tax-transaction-submit" type="submit">Calculate indicative amount</button>
+            </form>
+            <div id="tax-transaction-calculation-results" class="tax-transaction-results" aria-live="polite"></div>
           </div>
         </div>
         <p class="tax-chat-status" id="tax-chat-status" aria-live="polite"></p>
