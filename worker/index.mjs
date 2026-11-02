@@ -561,10 +561,10 @@ async function requestGemini(model, requestBody, apiKey, signal) {
 
 async function shouldRetryResponse(response) {
   if (response.status !== 429) return RETRYABLE_STATUSES.has(response.status);
-  if (Number(response.headers.get("Retry-After")) > 0) return true;
   const providerError = await getProviderError(response);
   const message = providerError?.message || "";
   if (/quota|daily limit|plan and billing details/i.test(message)) return false;
+  if (Number(response.headers.get("Retry-After")) > 0) return true;
   return /rate.?limit|requests per (?:minute|second)|too many requests|retry shortly/i
     .test(message);
 }
@@ -687,7 +687,9 @@ function createLocalFallback(knowledge) {
   ];
   const answer = notes.length
     ? `Live web research is unavailable. This reply uses reviewed TaxComp local notes only; no Google Search was performed.\n\n${notes.join("\n\n")}\n\nFurther verification is required: the local note does not record enough verified legislation, provision, effective-date and review-date details to establish the current legal position. Check the original legislation and current URA publications or consult a qualified Ugandan tax adviser.`
-    : "Live web research is unavailable and no Google Search was performed. I could not find a reviewed TaxComp local note for this question, so I will not guess. Check current guidance with URA or a qualified Ugandan tax adviser.";
+    : knowledge.requestedFinancialYear
+      ? `Live web research is unavailable and no Google Search was performed. I could not find a reviewed TaxComp local note for FY ${knowledge.requestedFinancialYear}. Further verification is required; I will not substitute current-year rules or guess. Check the legislation and URA publications for that period or consult a qualified Ugandan tax adviser.`
+      : "Live web research is unavailable and no Google Search was performed. I could not find a reviewed TaxComp local note for this question. Further verification is required; I will not guess. Check current guidance with URA or a qualified Ugandan tax adviser.";
 
   return {
     answer,
@@ -703,7 +705,8 @@ function createLocalFallback(knowledge) {
 
 function equalSecret(expected, supplied) {
   if (typeof expected !== "string" || !expected ||
-      typeof supplied !== "string" || expected.length !== supplied.length) {
+      expected.length < 32 || typeof supplied !== "string" ||
+      supplied.length < 32 || expected.length !== supplied.length) {
     return false;
   }
   let difference = 0;
@@ -776,6 +779,27 @@ async function handleAdminRequest(request, env) {
   if (request.method !== "GET" && request.method !== "DELETE") {
     return jsonResponse({ error: "Use GET or DELETE for this admin endpoint." }, 405);
   }
+  if (typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
+      env.ADMIN_DASHBOARD_TOKEN.length < 32) {
+    console.error("Admin dashboard token is missing or shorter than the minimum length");
+    return jsonResponse({ error: "Admin authentication is not configured safely." }, 503);
+  }
+  if (!env.CHAT_LIMITER || typeof env.CHAT_LIMITER.limit !== "function") {
+    console.error("Admin request rate limiter is not configured");
+    return jsonResponse({ error: "Admin access is not configured safely." }, 503);
+  }
+  let adminLimit;
+  try {
+    adminLimit = await env.CHAT_LIMITER.limit({
+      key: `admin:${request.headers.get("CF-Connecting-IP") || "unknown"}`,
+    });
+  } catch {
+    return jsonResponse({ error: "Admin access is temporarily unavailable." }, 503);
+  }
+  if (!adminLimit.success) {
+    return jsonResponse({ error: "Too many admin requests. Please wait a minute and try again." }, 429);
+  }
+
   const authorization = request.headers.get("Authorization") || "";
   const supplied = authorization.startsWith("Bearer ")
     ? authorization.slice("Bearer ".length)
@@ -810,7 +834,9 @@ async function handleAdminRequest(request, env) {
 }
 
 async function recordUnansweredQuestion(env, question) {
-  if (!env.UNANSWERED_QUESTIONS || !env.ADMIN_DASHBOARD_TOKEN) {
+  if (!env.UNANSWERED_QUESTIONS ||
+      typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
+      env.ADMIN_DASHBOARD_TOKEN.length < 32) {
     console.error("Unanswered-question storage is missing its database or admin credential");
     return false;
   }

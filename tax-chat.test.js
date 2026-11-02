@@ -41,15 +41,17 @@ test("uses a documented verification date to classify a local note as recently r
   assert.ok(result.legalReferences.some((item) => item.freshness === "recently_reviewed"));
 });
 
-test("answers tax-procedure questions from the compendium-indexed guidance", () => {
+test("answers tax-procedure questions from current reviewed guidance without inventing a provision", () => {
   const result = findLocalAnswer(
     "What records should I keep for a tax assessment or objection?",
     advisory,
   );
 
-  assert.ok(result.matches.some((item) => item.id === "tax-records-assessments-objections"));
-  assert.match(result.answer, /section 15 on accounts and records/i);
-  assert.ok(result.sources.some((source) => source.url === "https://ura.go.ug/"));
+  assert.ok(result.matches.some((item) => item.id === "business-tax-audit"));
+  assert.match(result.answer, /Preserve the relevant accounting, invoice, payroll, customs and filing records/i);
+  assert.match(result.answer, /Confirm deadlines and response requirements with URA/i);
+  assert.match(result.answer, /Further verification is required/i);
+  assert.ok(result.sources.some((source) => source.url === "https://www.ura.go.ug/"));
 });
 
 test("answers case questions with case-specific caveats and judgment link", () => {
@@ -83,6 +85,20 @@ test("does not invent a local answer for unsupported questions", () => {
   assert.equal(result.matches.length, 0);
   assert.deepEqual(result.calculators, []);
   assert.equal(result.answerSource, "local");
+});
+
+test("does not reuse current-year guidance for an unrepresented historical year", () => {
+  const result = findLocalAnswer(
+    "What were the VAT registration thresholds for FY 2020/21?",
+    advisory,
+  );
+
+  assert.equal(result.matches.length, 0);
+  assert.equal(result.legalReferences.length, 0);
+  assert.equal(result.verificationRequired, true);
+  assert.match(result.answer, /TaxComp note for FY 2020\/21/i);
+  assert.match(result.answer, /Further verification is required/i);
+  assert.doesNotMatch(result.answer, /UGX 300 million/);
 });
 
 test("offers useful prompts when the user enters a greeting", () => {

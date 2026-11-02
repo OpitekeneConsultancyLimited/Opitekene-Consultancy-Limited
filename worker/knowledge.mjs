@@ -210,6 +210,18 @@ export const taxCases = [
   },
 ];
 
+function getFinancialYear(text) {
+  const match = String(text || "")
+    .match(/\b(?:FY|financial year)\s*(20\d{2})\s*[/-]\s*(\d{2,4})\b/i);
+  if (!match) return null;
+
+  const endYear = Number(match[2].length === 2
+    ? `${match[1].slice(0, 2)}${match[2]}`
+    : match[2]);
+  if (endYear !== Number(match[1]) + 1) return null;
+  return `${match[1]}/${String(endYear).slice(-2)}`;
+}
+
 const stopWords = new Set([
   "about", "after", "also", "and", "are", "can", "does", "for", "from",
   "give", "help", "how", "into", "like", "need", "please", "tell", "that",
@@ -226,6 +238,17 @@ export function queryTerms(text) {
 
 export function retrieveKnowledge(question) {
   const terms = queryTerms(question);
+  const requestedFinancialYear = getFinancialYear(question);
+  const appliesToRequestedYear = (item) => !requestedFinancialYear ||
+    getFinancialYear([
+      item.financialYear,
+      item.title,
+      item.keywords,
+      item.summary,
+    ].filter(Boolean).join(" ")) === requestedFinancialYear;
+  const applicableGuidance = guidance.filter(appliesToRequestedYear);
+  const applicableCases = taxCases.filter(appliesToRequestedYear);
+
   if (terms.length === 0) {
     return {
       guidance: [],
@@ -233,6 +256,7 @@ export function retrieveKnowledge(question) {
       sources: [],
       calculators: [],
       sufficient: false,
+      requestedFinancialYear,
     };
   }
 
@@ -254,8 +278,8 @@ export function retrieveKnowledge(question) {
     .slice(0, limit)
     .map(({ item }) => item);
 
-  const rankedGuidance = top(guidance, 4);
-  const rankedCases = top(taxCases, 3);
+  const rankedGuidance = top(applicableGuidance, 4);
+  const rankedCases = top(applicableCases, 3);
   const selectedGuidance = rankedGuidance.filter((item) => rank(item) >= 3);
   const selectedCases = rankedCases.filter((item) => rank(item) >= 3);
   const sourceKeys = new Set(
@@ -273,5 +297,6 @@ export function retrieveKnowledge(question) {
     sources: selectedSources,
     calculators,
     sufficient: selectedGuidance.length > 0 || selectedCases.length > 0,
+    requestedFinancialYear,
   };
 }

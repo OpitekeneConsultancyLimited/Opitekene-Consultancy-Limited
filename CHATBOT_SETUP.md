@@ -87,17 +87,20 @@ after 90 days; a daily Worker schedule removes expired rows. Do not enter
 confidential information. Administrators can inspect and delete questions at
 `https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin`.
 
-Before enabling storage or dashboard access, set a strong, private Worker
-secret from the project directory:
+Before enabling storage or dashboard access, set a unique, randomly generated
+Worker secret of at least 32 characters from the project directory:
 
 ```powershell
 npx wrangler secret put ADMIN_DASHBOARD_TOKEN
 ```
 
 Enter the token only in Wrangler's secure prompt and keep it in a password
-manager. The dashboard API requires this token and does not store it in the
-browser. Without the secret, question logging stays disabled and the chat
-reports that a requested save failed.
+manager. The dashboard API requires this token, applies an eight-request per
+minute per-IP limit, and does not store the token in browser storage. Rotate
+the secret immediately if it may have been exposed, and verify authenticated
+dashboard access after rotation. Without a token meeting the minimum length,
+question logging stays disabled and the chat reports that a requested save
+failed.
 
 The consultation link opens an email draft to Opitekene; it never sends
 automatically. Users should remove confidential details before sending.

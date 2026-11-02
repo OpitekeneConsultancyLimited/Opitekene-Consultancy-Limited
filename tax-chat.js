@@ -57,6 +57,18 @@
       ?.filter((term) => term.length > 2 && !stopWords.has(term)) || [];
   }
 
+  function getFinancialYear(text) {
+    const match = String(text || "")
+      .match(/\b(?:FY|financial year)\s*(20\d{2})\s*[/-]\s*(\d{2,4})\b/i);
+    if (!match) return null;
+
+    const endYear = Number(match[2].length === 2
+      ? `${match[1].slice(0, 2)}${match[2]}`
+      : match[2]);
+    if (endYear !== Number(match[1]) + 1) return null;
+    return `${match[1]}/${String(endYear).slice(-2)}`;
+  }
+
   function scoreDocument(document, terms) {
     const title = `${document.title || ""} ${document.name || ""}`.toLowerCase();
     const keywords = (document.keywords || []).join(" ").toLowerCase();
@@ -147,6 +159,7 @@
 
   function findLocalAnswer(query, advisory) {
     const terms = getTerms(query);
+    const requestedFinancialYear = getFinancialYear(query);
     const isGreeting = /^(?:hi|hello|hey|good morning|good afternoon|good evening|greetings)[.!?,\s]*$/i
       .test(String(query || "").trim());
     if (isGreeting || terms.length === 0) {
@@ -160,10 +173,20 @@
       };
     }
 
+    const appliesToRequestedYear = (item) => !requestedFinancialYear ||
+      getFinancialYear([
+        item.financialYear,
+        item.title,
+        item.keywords,
+        item.summary,
+        item.nextStep,
+      ].filter(Boolean).join(" ")) === requestedFinancialYear;
     const guidance = advisory.guidance
+      .filter(appliesToRequestedYear)
       .map((item) => ({ item, type: "guidance", score: scoreDocument(item, terms) }))
       .filter((entry) => entry.score > 0);
     const cases = advisory.taxCases
+      .filter(appliesToRequestedYear)
       .map((item) => ({ item, type: "case", score: scoreDocument(item, terms) }))
       .filter((entry) => entry.score > 0);
     const matches = [...guidance, ...cases]
@@ -172,8 +195,11 @@
       .slice(0, 3);
 
     if (matches.length === 0) {
+      const financialYearNote = requestedFinancialYear
+        ? ` for FY ${requestedFinancialYear}`
+        : "";
       return {
-        answer: "I couldn't find a reviewed TaxComp note that answers that question. Further verification is required; I will not guess a tax rule or legal citation. Check the original legislation and current URA publications or ask a qualified Ugandan tax adviser. Please don't send TINs or confidential documents in chat.",
+        answer: `I couldn't find a reviewed TaxComp note${financialYearNote} that answers that question. Further verification is required; I will not substitute current-year guidance or guess a tax rule or legal citation. Check the legislation and URA publications for the relevant period or ask a qualified Ugandan tax adviser. Please don't send TINs or confidential documents in chat.`,
         sources: [],
         matches: [],
         calculators: [],

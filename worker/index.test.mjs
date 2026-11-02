@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { freshnessStatus, handleRequest, limits } from "./index.mjs";
+import worker, { freshnessStatus, handleRequest, limits } from "./index.mjs";
 import { retrieveKnowledge } from "./knowledge.mjs";
 
 const origin = "https://opitekeneconsultancylimited.github.io";
+const testAdminToken = "test-admin-token-with-at-least-32-characters";
 const env = {
   ALLOWED_ORIGIN: origin,
   GEMINI_API_KEY: "test-key-not-a-real-secret",
@@ -20,6 +21,21 @@ test("retrieves scoped international-tax notes and relevant references", () => {
   assert.ok(treaty.sources.some((source) => source.url.endsWith("/corporate/withholding-taxes")));
   assert.ok(transferPricing.guidance.some((item) => item.title === "International transfer pricing"));
   assert.ok(transferPricing.sources.some((source) => source.url.includes("transfer-pricing")));
+});
+
+test("does not apply current-period notes to an unrepresented historical financial year", () => {
+  const historical = retrieveKnowledge(
+    "What were the VAT registration thresholds for FY 2020/21?",
+  );
+  const current = retrieveKnowledge(
+    "What are the VAT registration thresholds for FY 2026/27?",
+  );
+
+  assert.equal(historical.requestedFinancialYear, "2020/21");
+  assert.equal(historical.sufficient, false);
+  assert.deepEqual(historical.guidance, []);
+  assert.deepEqual(historical.cases, []);
+  assert.ok(current.guidance.some((item) => item.title === "VAT registration thresholds"));
 });
 
 function request(body, options = {}) {
@@ -526,7 +542,10 @@ test("does not retry an exhausted Google quota", async () => {
         status: "RESOURCE_EXHAUSTED",
         message: "You exceeded your current quota; check your plan and billing details.",
       },
-    }), { status: 429 });
+    }), {
+      status: 429,
+      headers: { "Retry-After": "30" },
+    });
   };
   try {
     const response = await handleRequest(request({ message: "VAT threshold" }), env);
@@ -614,6 +633,38 @@ test("returns local guidance when the key is missing", async () => {
   }
 });
 
+test("requires further verification when no local note covers the requested historical year", async () => {
+  const response = await handleRequest(
+    request({ message: "What were the VAT registration thresholds for FY 2020/21?" }),
+    { ...env, GEMINI_API_KEY: "" },
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.answerSource, "local");
+  assert.equal(body.legalReferences.length, 0);
+  assert.equal(body.sourceIndicators.find((item) => item.kind === "live_web").used, false);
+  assert.match(body.answer, /no Google Search was performed/i);
+  assert.match(body.answer, /reviewed TaxComp local note for FY 2020\/21/i);
+  assert.match(body.answer, /Further verification is required/i);
+  assert.doesNotMatch(body.answer, /UGX 300 million/);
+});
+
+test("requires further verification when no local evidence answers a tax question", async () => {
+  const response = await handleRequest(
+    request({ message: "What tax applies to an alien zorb?" }),
+    { ...env, GEMINI_API_KEY: "" },
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.answerSource, "local");
+  assert.equal(body.legalReferences.length, 0);
+  assert.match(body.answer, /Further verification is required/i);
+  assert.match(body.answer, /no Google Search was performed/i);
+  assert.equal(body.sourceIndicators.find((item) => item.kind === "live_web").used, false);
+});
+
 test("marks legislation outdated after 180 days without verification", () => {
   const now = Date.parse("2026-11-02T00:00:00Z");
   assert.equal(freshnessStatus("2026-08-04", now), "recently_reviewed");
@@ -676,7 +727,7 @@ test("records an unanswered question only after explicit user consent", async ()
       {
         ...env,
         GEMINI_API_KEY: "",
-        ADMIN_DASHBOARD_TOKEN: "test-admin-token",
+        ADMIN_DASHBOARD_TOKEN: testAdminToken,
         UNANSWERED_QUESTIONS: database,
       },
     );
@@ -688,7 +739,7 @@ test("records an unanswered question only after explicit user consent", async ()
       {
         ...env,
         GEMINI_API_KEY: "",
-        ADMIN_DASHBOARD_TOKEN: "test-admin-token",
+        ADMIN_DASHBOARD_TOKEN: testAdminToken,
         UNANSWERED_QUESTIONS: database,
       },
     );
@@ -705,6 +756,38 @@ test("records an unanswered question only after explicit user consent", async ()
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+test("scheduled retention cleanup deletes records whose expiry has passed", async () => {
+  const executions = [];
+  const database = {
+    prepare(statement) {
+      return {
+        bind(...values) {
+          return {
+            run: async () => {
+              executions.push({ statement, values });
+              return { success: true };
+            },
+          };
+        },
+      };
+    },
+  };
+  let scheduledCleanup;
+  worker.scheduled({}, { UNANSWERED_QUESTIONS: database }, {
+    waitUntil(promise) {
+      scheduledCleanup = promise;
+    },
+  });
+  await scheduledCleanup;
+
+  assert.equal(executions.length, 1);
+  assert.match(
+    executions[0].statement,
+    /DELETE FROM unanswered_questions WHERE expires_at <= \?/,
+  );
+  assert.ok(Number.isFinite(Date.parse(executions[0].values[0])));
 });
 
 test("does not store opted-in questions until the admin credential is configured", async () => {
@@ -742,8 +825,40 @@ test("does not store opted-in questions until the admin credential is configured
   }
 });
 
+test("rejects an administrator token shorter than 32 characters", async () => {
+  const response = await handleRequest(
+    new Request("https://worker.example/admin/questions"),
+    { ...env, ADMIN_DASHBOARD_TOKEN: "short-admin-token" },
+  );
+
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /not configured safely/i);
+});
+
+test("rate limits admin API requests with a separate per-IP key", async () => {
+  const keys = [];
+  const response = await handleRequest(
+    new Request("https://worker.example/admin/questions", {
+      headers: { "CF-Connecting-IP": "192.0.2.10" },
+    }),
+    {
+      ...env,
+      ADMIN_DASHBOARD_TOKEN: testAdminToken,
+      CHAT_LIMITER: {
+        limit: async ({ key }) => {
+          keys.push(key);
+          return { success: false };
+        },
+      },
+    },
+  );
+
+  assert.equal(response.status, 429);
+  assert.deepEqual(keys, ["admin:192.0.2.10"]);
+});
+
 test("protects the unanswered-question dashboard and lists records after authentication", async () => {
-  const token = "test-admin-token";
+  const token = testAdminToken;
   const database = {
     prepare(statement) {
       const statementResult = {
