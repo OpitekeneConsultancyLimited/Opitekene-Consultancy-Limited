@@ -12,7 +12,7 @@
   const transactionTypes = {
     "property-purchase": {
       label: "Purchase of land or a building",
-      calculators: ["stamp-duty", "vat"],
+      calculators: ["vat"],
       taxHeads: [
         ["Stamp Duty", "Buyer and parties to a chargeable instrument", "Confirm the instrument, execution date, valuation basis, applicable rate and any relief."],
         ["VAT", "Supplier; purchaser may have an input-tax question", "Confirm whether the property is a taxable supply, the seller's status, property use, invoice evidence and any exemption."],
@@ -24,7 +24,7 @@
     },
     "property-disposal": {
       label: "Sale or disposal of land or a building",
-      calculators: ["capital-gains", "vat"],
+      calculators: ["vat"],
       taxHeads: [
         ["Income tax on disposal", "Seller", "Confirm asset classification, taxable-business-asset status, historic cost evidence, related-party terms and the specific statutory adjustment."],
         ["Industrial building deduction adjustment", "Seller", "Retrieve deductions allowed or that would have been allowed; do not subtract unrelated capital allowances."],
@@ -120,8 +120,6 @@
   };
 
   const calculatorLabels = {
-    "stamp-duty": "Stamp Duty arithmetic",
-    "capital-gains": "Entered disposal-gain arithmetic",
     withholding: "Withholding Tax",
     vat: "VAT",
     rental: "Rental income tax",
@@ -133,22 +131,6 @@
   };
 
   const calculatorFields = {
-    "stamp-duty": [
-      { name: "chargeableInstrumentConfirmed", label: "I confirmed the instrument is chargeable", type: "boolean", required: true },
-      { name: "chargeableAmount", label: "Chargeable amount / valuation base (UGX)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "adValoremRatePercent", label: "Applicable ad valorem rate (%) — enter only after checking the law", type: "number", required: true, min: 0, max: 100, step: "0.01" },
-      { name: "fixedDuty", label: "Fixed duty (UGX; enter 0 if none)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "reliefAmount", label: "Approved relief (UGX; enter 0 if none)", type: "number", required: true, min: 0, step: "0.01" },
-    ],
-    "capital-gains": [
-      { name: "businessAssetTreatmentConfirmed", label: "I have confirmed the asset and disposal belong in this entered-rate workpaper", type: "boolean", required: true },
-      { name: "disposalProceeds", label: "Disposal proceeds (UGX)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "acquisitionCost", label: "Acquisition cost (UGX)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "improvementCosts", label: "Documented improvement costs (UGX; enter 0 if none)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "incidentalCosts", label: "Documented incidental costs (UGX; enter 0 if none)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "allowableLossRelief", label: "Separately verified allowable loss relief (UGX; enter 0 if none)", type: "number", required: true, min: 0, step: "0.01" },
-      { name: "taxRatePercent", label: "Rate (%) — enter only after checking the applicable law", type: "number", required: true, min: 0, max: 100, step: "0.01" },
-    ],
     withholding: [
       { name: "grossPayment", label: "Gross payment (UGX)", type: "number", required: true, min: 0, step: "0.01" },
       { name: "paymentType", label: "Payment category", type: "select", required: true, options: [
@@ -238,8 +220,6 @@
   };
 
   const calculationFunctions = {
-    "stamp-duty": "calculateStampDuty",
-    "capital-gains": "calculateCapitalGainsTax",
     withholding: "calculateWithholdingTax",
     vat: "calculateVat",
     rental: "calculateRentalIncomeTax",
@@ -393,28 +373,6 @@
 
   function callCalculator(calculator, module, inputs, transaction) {
     switch (module) {
-      case "stamp-duty":
-        if (!confirmedBoolean(inputs, "chargeableInstrumentConfirmed")) {
-          throw new Error("Confirm that the instrument is chargeable before calculating Stamp Duty.");
-        }
-        return calculator.calculateStampDuty({
-          chargeableAmount: numericInput(inputs, "chargeableAmount"),
-          adValoremRatePercent: numericInput(inputs, "adValoremRatePercent"),
-          fixedDuty: numericInput(inputs, "fixedDuty"),
-          reliefAmount: numericInput(inputs, "reliefAmount"),
-        });
-      case "capital-gains":
-        if (!confirmedBoolean(inputs, "businessAssetTreatmentConfirmed")) {
-          throw new Error("Confirm the entered disposal treatment before running this arithmetic-only workpaper.");
-        }
-        return calculator.calculateCapitalGainsTax({
-          disposalProceeds: numericInput(inputs, "disposalProceeds"),
-          acquisitionCost: numericInput(inputs, "acquisitionCost"),
-          improvementCosts: numericInput(inputs, "improvementCosts"),
-          incidentalCosts: numericInput(inputs, "incidentalCosts"),
-          allowableLossRelief: numericInput(inputs, "allowableLossRelief"),
-          taxRatePercent: numericInput(inputs, "taxRatePercent"),
-        });
       case "withholding":
         return calculator.calculateWithholdingTax(
           numericInput(inputs, "grossPayment"),
@@ -601,7 +559,7 @@
     }
     if (analysis.type === "property-disposal") {
       appendText(container, "p", "tax-transaction-disclaimer",
-        "The linked capital-gains calculator is arithmetic using user-entered rates. It does not replace industrial-building or machinery balancing-adjustment analysis.");
+        "This screen does not calculate capital gains, industrial-building deduction adjustments or machinery balancing adjustments. Reconcile the asset records and the applicable statutory treatment separately.");
     }
     calculatorSelect.replaceChildren();
     const prompt = document.createElement("option");
@@ -637,8 +595,6 @@
     const summaryKeys = {
       vat: ["netVat", "Indicative net VAT from entered figures"],
       withholding: ["tax", "Indicative withholding from entered category"],
-      "stamp-duty": ["tax", "Indicative duty using entered rate and base"],
-      "capital-gains": ["tax", "Arithmetic using entered disposal assumptions and rate"],
       rental: ["tax", "Indicative rental tax from entered annual figures"],
       paye: ["monthlyTax", "Indicative monthly PAYE"],
       "wear-and-tear": ["allowance", "Indicative wear-and-tear allowance"],
@@ -742,9 +698,7 @@
       const description = calculatorFields[calculatorSelect.value];
       if (description) {
         appendText(calculatorFieldsContainer, "p", "tax-transaction-disclaimer",
-          calculatorSelect.value === "capital-gains"
-            ? "This legacy calculator uses user-entered rates and a simplified cost base. It is not the asset workspace's statutory disposal schedule."
-            : "Enter every material input from reviewed source records. Rates and eligibility are not verified here.");
+          "Enter every material input from reviewed source records. Rates and eligibility are not verified here.");
       }
     });
 

@@ -156,17 +156,19 @@ test("runs the existing VAT and import/export functions for selected transaction
   assert.equal(customs.result.totalCharges, 298_000);
 });
 
-test("requires a chargeable instrument before calculating entered-rate Stamp Duty", () => {
-  const analysis = analyzeTransaction(facts({ type: "property-purchase" }));
+test("does not offer Stamp Duty or capital-gains calculators absent from the published calculator", () => {
+  const purchase = analyzeTransaction(facts({ type: "property-purchase", taxpayerType: "individual" }));
+  const disposal = analyzeTransaction(facts({ type: "property-disposal", taxpayerType: "individual" }));
+
+  assert.deepEqual(purchase.calculatorModules, ["vat"]);
+  assert.deepEqual(disposal.calculatorModules, ["vat"]);
   assert.throws(
-    () => calculateTransactionEstimate(analysis, "stamp-duty", {
-      chargeableInstrumentConfirmed: "no",
-      chargeableAmount: 100_000_000,
-      adValoremRatePercent: 1.5,
-      fixedDuty: 0,
-      reliefAmount: 0,
-    }, calculator),
-    /Confirm that the instrument is chargeable/,
+    () => calculateTransactionEstimate(purchase, "stamp-duty", {}, calculator),
+    /not available for the selected transaction type/,
+  );
+  assert.throws(
+    () => calculateTransactionEstimate(disposal, "capital-gains", {}, calculator),
+    /not available for the selected transaction type/,
   );
 });
 
