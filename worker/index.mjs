@@ -734,7 +734,7 @@ time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
 <body>
 <main>
 <h1>Unanswered TaxComp questions</h1>
-<p>Only questions submitted with explicit user consent appear here. Records expire after 90 days. Treat them as confidential.</p>
+<p>Only questions submitted with explicit user consent appear here. Consent timestamps are recorded; records expire after 90 days. Treat them as confidential.</p>
 <form id="login"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button>Load questions</button></form>
 <p id="status" role="status" aria-live="polite"></p>
 <ul id="questions"></ul>
@@ -742,7 +742,7 @@ time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
 <script>
 const form=document.querySelector("#login"),tokenInput=document.querySelector("#token"),status=document.querySelector("#status"),list=document.querySelector("#questions");
 let token="";
-async function loadQuestions(){status.textContent="Loading…";list.replaceChildren();const response=await fetch("/admin/questions",{headers:{Authorization:"Bearer "+token}});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not load questions.");for(const row of data.questions){const item=document.createElement("li"),question=document.createElement("p"),time=document.createElement("time"),button=document.createElement("button");question.textContent=row.question;time.textContent=new Date(row.createdAt).toLocaleString();time.dateTime=row.createdAt;button.type="button";button.textContent="Delete";button.addEventListener("click",async()=>{const result=await fetch("/admin/questions/"+encodeURIComponent(row.id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});if(!result.ok){status.textContent="Could not delete the question.";return}item.remove()});item.append(question,time,button);list.append(item)}status.textContent=data.questions.length?data.questions.length+" question(s).":"No unanswered questions recorded."}
+async function loadQuestions(){status.textContent="Loading…";list.replaceChildren();const response=await fetch("/admin/questions",{headers:{Authorization:"Bearer "+token}});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not load questions.");for(const row of data.questions){const item=document.createElement("li"),question=document.createElement("p"),time=document.createElement("time"),consent=document.createElement("small"),button=document.createElement("button");question.textContent=row.question;time.textContent=new Date(row.createdAt).toLocaleString();time.dateTime=row.createdAt;consent.textContent=row.consentedAt?"Consent recorded "+new Date(row.consentedAt).toLocaleString():"Consent timestamp unavailable for this older record.";button.type="button";button.textContent="Delete";button.addEventListener("click",async()=>{const result=await fetch("/admin/questions/"+encodeURIComponent(row.id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});if(!result.ok){status.textContent="Could not delete the question.";return}item.remove()});item.append(question,time,consent,button);list.append(item)}status.textContent=data.questions.length?data.questions.length+" question(s).":"No unanswered questions recorded."}
 form.addEventListener("submit",async event=>{event.preventDefault();token=tokenInput.value;try{await loadQuestions()}catch(error){status.textContent=error.message;status.className="error";token=""}});
 </script>
 </body>
@@ -828,7 +828,7 @@ async function handleAdminRequest(request, env) {
 
   await cleanupExpiredQuestions(env);
   const { results } = await env.UNANSWERED_QUESTIONS.prepare(
-    "SELECT id, question, created_at AS createdAt FROM unanswered_questions ORDER BY created_at DESC LIMIT 200",
+    "SELECT id, question, created_at AS createdAt, consented_at AS consentedAt FROM unanswered_questions ORDER BY created_at DESC LIMIT 200",
   ).all();
   return jsonResponse({ questions: results || [] }, 200);
 }
@@ -841,19 +841,22 @@ async function recordUnansweredQuestion(env, question) {
     return false;
   }
   const now = new Date();
+  const consentedAt = now.toISOString();
   const expiresAt = new Date(now.getTime() +
     UNANSWERED_RETENTION_DAYS * 86_400_000);
+  const questionId = crypto.randomUUID();
   try {
     await cleanupExpiredQuestions(env);
     await env.UNANSWERED_QUESTIONS.prepare(
-      "INSERT INTO unanswered_questions (id, question, created_at, expires_at) VALUES (?, ?, ?, ?)",
+      "INSERT INTO unanswered_questions (id, question, created_at, consented_at, expires_at) VALUES (?, ?, ?, ?, ?)",
     ).bind(
-      crypto.randomUUID(),
+      questionId,
       question.slice(0, MAX_QUESTION_LENGTH),
-      now.toISOString(),
+      consentedAt,
+      consentedAt,
       expiresAt.toISOString(),
     ).run();
-    return true;
+    return questionId;
   } catch (error) {
     console.error("Could not save an opted-in unanswered question", {
       errorName: error instanceof Error ? error.name : "UnknownError",
@@ -976,11 +979,14 @@ export async function handleRequest(request, env) {
   const responseBody = {
     ...answer,
     ...metadata,
-    questionRecordStatus: recordRequested
-      ? unansweredQuestion === true ? "saved"
+    questionRecordStatus: !recordRequested
+      ? "not_requested"
+      : typeof unansweredQuestion === "string" ? "saved"
         : unansweredQuestion === false ? "failed"
-          : result.fallback ? "not_needed" : "answered"
-      : "not_requested",
+          : result.fallback ? "not_needed" : "answered",
+    questionRecordId: typeof unansweredQuestion === "string"
+      ? unansweredQuestion
+      : null,
   };
   const response = jsonResponse(responseBody, 200, corsHeaders);
   response.headers.set("X-TaxComp-Answer-Source", answer.answerSource);

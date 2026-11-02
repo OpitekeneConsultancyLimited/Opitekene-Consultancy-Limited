@@ -83,8 +83,11 @@ underlying legislation or publication.
 The Cloudflare D1 database `taxcomp-unanswered-questions` stores only a
 question explicitly submitted with the unchecked research-consent box, and
 only when the fallback cannot verify the answer. Stored questions expire
-after 90 days; a daily Worker schedule removes expired rows. Do not enter
-confidential information. Administrators can inspect and delete questions at
+after 90 days; the UTC consent timestamp is stored alongside the creation and
+expiry timestamps, and a daily Worker schedule removes expired rows. After a
+successful save, the user receives a random reference and can request earlier
+deletion through a prefilled email draft; the email is not sent automatically.
+Administrators can inspect the consent timestamp and delete questions at
 `https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin`.
 
 Before enabling storage or dashboard access, set a unique, randomly generated

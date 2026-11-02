@@ -7,20 +7,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Opitekene TaxComp">
-    <meta name="description" content="Opitekene TaxComp empowers individuals and businesses with Uganda tax estimates, source-linked guidance, and professional compliance support.">
-    <meta name="taxcomp-chat-endpoint" content="https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/chat">
-    <meta property="og:url" content="https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/">
+    <meta
+      name="description"
+      content="Explore Uganda FY 2026/27 tax estimates, source-linked guidance and Ugandan tax case summaries."
+    >
+    <meta name="taxcomp-chat-endpoint" content="">
     <title>Opitekene TaxComp | Uganda tax solutions</title>
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
     <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
     <link rel="stylesheet" href="styles.css?v=tax-chat-calculator-links-1">
-    <script src="tax-advisory.js?v=20261101-shared-tax-knowledge-1" defer></script>
+    <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
-    <script src="tax-calculator.js?v=20261102-smart-summary-export-1" defer></script>
-    <script src="app.js?v=direct-worked-example-links-1" defer></script>
+    <script src="tax-calculator.js?v=wear-tear-classes-1" defer></script>
+    <script src="app.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
+    <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-1" defer></script>
   </head>
@@ -55,18 +58,30 @@
             professional advice, and compliance support.
           </p>
           <p class="hero-tagline">Where Technology Meets Trusted Finance.</p>
+          <div class="hero-product-actions" aria-label="Popular tax services">
+            <a class="hero-product-action primary" href="#estimator">
+              <strong>Calculate my tax</strong>
+              <span>Explore tax estimates</span>
+            </a>
+            <a class="hero-product-action" href="#tax-chat">
+              <strong>Ask TaxComp AI</strong>
+              <span>Get source-linked guidance</span>
+            </a>
+            <a class="hero-product-action" href="#audit-health">
+              <strong>Check tax health</strong>
+              <span>Review a compliance checklist</span>
+            </a>
+            <a class="hero-product-action" href="#contact">
+              <strong>Talk to a consultant</strong>
+              <span>Book professional support</span>
+            </a>
+          </div>
           <div class="trust-note">
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M10 2.5 3.75 5v4.2c0 3.7 2.65 7.15 6.25 8.3 3.6-1.15 6.25-4.6 6.25-8.3V5L10 2.5Z"></path>
               <path d="m7.2 9.9 1.8 1.8 3.8-4"></path>
             </svg>
             Calculator figures stay in this browser. If AI chat is connected, messages are sent to Gemini through Cloudflare; don't share confidential details.
-          </div>
-          <div class="hero-product-actions" aria-label="Popular tax services">
-            <a class="hero-product-action primary" href="#estimator"><strong>Calculate my tax</strong><span>Explore tax estimates</span></a>
-            <a class="hero-product-action" href="#tax-chat"><strong>Ask TaxComp AI</strong><span>Get source-linked guidance</span></a>
-            <a class="hero-product-action" href="#audit-health"><strong>Check tax health</strong><span>Review a compliance checklist</span></a>
-            <a class="hero-product-action" href="#contact"><strong>Talk to a consultant</strong><span>Book professional support</span></a>
           </div>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -339,12 +354,11 @@
                   <option value="nonresident-transport">Non-resident air, sea or road transport operator (2%)</option>
                   <option value="nonresident-telecom">Non-resident telecommunications or direct-to-home TV income (5%)</option>
                   <option value="resident-entertainer">Resident public entertainer (6%; any payer, from 1 July 2026)</option>
-                  <option value="betting-winnings">Betting or gaming winnings (15% of payout less stake; from 1 July 2026)</option>
-                  <option value="resident-telecom-commission">Telecom, mobile-network or mobile-money commissions (10%; from 1 July 2026)</option>
+                  <option value="betting-winnings">Betting or gaming winnings (15%; from 1 July 2026)</option>
                   <option value="payment-service-commission">Payment service provider commission (10%)</option>
                   <option value="insurance-agent-commission">Insurance agent commission (10%; final tax from 1 July 2026)</option>
                   <option value="advertising-agent-commission">Advertising agent commission (10%)</option>
-                  <option value="mobile-money-commission">Airtime distribution commission (10%)</option>
+                  <option value="mobile-money-commission">Airtime distribution or mobile money commission (10%)</option>
                   <option value="vat-withholding">VAT withholding (6%; supplier did not issue EFRIS invoice)</option>
                   <option value="nonresident-debenture-interest">Qualifying non-resident offshore debenture interest (5%; special conditions)</option>
                 </select>
@@ -357,17 +371,9 @@
                   <label class="checkbox-label" for="supplier-issued-invoice"><input id="supplier-issued-invoice" type="checkbox" disabled> Supplier issued an EFRIS e-invoice or e-receipt</label>
                 </div>
               <div class="field">
-                <label id="wht-gross-label" for="wht-gross">Gross payment</label>
+                <label for="wht-gross">Gross payment</label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="wht-gross" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
-                <p class="field-help" id="wht-gross-help">For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.</p>
-              </div>
-              <div class="field" id="betting-stake-field" hidden>
-                <label for="betting-stake">Stake amount</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="betting-stake" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 10000" data-required="true" data-required-for="betting-winnings" disabled></div>
-                <p class="field-help">The withholding base is winnings: payout less the stake amount.</p>
-              </div>
-              <div class="field" id="national-lottery-field" hidden>
-                <label class="checkbox-label" for="national-lottery-winnings"><input id="national-lottery-winnings" type="checkbox" disabled> Winnings paid by a person licensed to conduct a national lottery</label>
+                <p class="field-help">For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.</p>
               </div>
             </div>
 
@@ -625,6 +631,25 @@
         </p>
       </section>
 
+      <section class="worked-examples-section" id="tax-worked-examples" aria-labelledby="tax-worked-examples-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">HISTORICAL WORKED EXAMPLES</p>
+            <h2 id="tax-worked-examples-title">Uganda income tax solutions · 2024.</h2>
+            <p>Review the supplied CSI Bank income-tax computation and Burugo withholding-tax schedule.</p>
+          </div>
+        </div>
+        <div class="worked-examples-caveat" role="note">
+          These examples use figures, classifications and tax treatments supplied for year of income 2024 under the stated 2023 Revision. TaxComp checks the arithmetic only; it has not independently verified the legal treatment, the source records or the statute cited. This historical example is separate from the FY 2026/27 calculators and must not be used as current-year filing advice.
+        </div>
+        <p id="worked-example-metadata" class="worked-example-metadata"></p>
+        <article class="worked-example-card" id="worked-example-csi-bank"></article>
+        <article class="worked-example-card" id="worked-example-burugo"></article>
+        <p class="worked-examples-sources">
+          For current requirements, consult the <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority</a> and a qualified Ugandan tax professional.
+        </p>
+      </section>
+
       <section class="audit-health-section" id="audit-health" aria-labelledby="audit-health-title">
         <div class="advisory-heading">
           <div>
@@ -687,7 +712,7 @@
             <h2 id="advisory-title">Find a tax answer.</h2>
             <p>Search practical, source-linked guidance for the tax topics covered by TaxComp.</p>
           </div>
-          <span class="advisory-review-date">Content reviewed 31 Oct 2026 ? FY 2026/27</span>
+          <span class="advisory-review-date">Content reviewed 31 Oct 2026 · FY 2026/27</span>
         </div>
 
         <div class="advisory-caveat" role="note">
@@ -701,7 +726,7 @@
         <form class="advisory-search" id="tax-advisory-search" role="search">
           <label for="advisory-query">What do you need help with?</label>
           <div class="advisory-search-row">
-            <input id="advisory-query" type="search" placeholder="Search a tax topic, Act section, or 2026 amendment" autocomplete="off">
+            <input id="advisory-query" type="search" placeholder="e.g. Can I deduct rental expenses as a company?" autocomplete="off">
             <select id="advisory-topic" aria-label="Filter guidance by topic">
               <option value="all">All tax topics</option>
               <option value="individual">Individual income</option>
@@ -715,12 +740,11 @@
             </select>
             <button type="submit">Search guidance</button>
           </div>
-          <div class="advisory-quick-questions" aria-label="Popular tax questions">
-            <span>Popular:</span>
-            <button type="button" data-advisory-query="VAT registration threshold">VAT threshold</button>
+          <div class="advisory-quick-questions" aria-label="Example questions">
+            <span>Try:</span>
+            <button type="button" data-advisory-query="VAT registration threshold">VAT registration threshold</button>
             <button type="button" data-advisory-query="non-resident rent withholding">Non-resident rent</button>
-            <button type="button" data-advisory-query="2026 withholding changes">2026 WHT</button>
-            <button type="button" data-advisory-query="tax treaty negotiation legal policy issues beneficial ownership">Treaty relief</button>
+            <button type="button" data-advisory-query="2026 withholding changes">2026 WHT changes</button>
           </div>
         </form>
 
@@ -761,6 +785,7 @@
               <input id="tax-chat-record-unanswered" type="checkbox">
               If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
             </label>
+            <p class="tax-chat-consent-withdrawal">If you later withdraw consent or want this record deleted sooner, TaxComp provides a reference and an email-draft option after saving. The email is not sent automatically; do not resend confidential information.</p>
             <div class="tax-chat-form-footer">
               <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
               <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
@@ -820,16 +845,14 @@
         <div class="law-updates-heading">
           <p class="eyebrow section-eyebrow">WHAT CHANGED</p>
           <h2 id="law-updates-title">FY 2026/27 updates</h2>
-          <p>TaxComp reflects selected changes for the 2026/27 year of income. Its advisory and chatbot now index guidance against the 2025–2026 domestic tax-law compilation, covering income tax, VAT, tax procedures, international income, excise, stamp duty and gaming. The compilation warns that it is not a substitute for gazetted Acts. The Income Tax (Amendment) Act, 2026 and Excise Duty (Amendment) Act, 2026 are reported as enacted; proposals and final provisions can differ. This is a summary, not a complete amendment register.</p>
+          <p>These amendments generally took effect on 1 July 2026. This site applies them to estimates where relevant.</p>
         </div>
         <div class="law-update-list">
           <article><span>01</span><div><h3>VAT registration thresholds increased</h3><p>UGX 300 million in annual taxable supplies or more than UGX 75 million in a three-month period.</p></div></article>
           <article><span>02</span><div><h3>VAT withholding narrowed</h3><p>VAT withholding applies to relevant taxable-supply payments where the supplier has not issued an EFRIS e-invoice or e-receipt. Input-credit recovery is also affected by e-invoice evidence and exempt supplies.</p></div></article>
-          <article><span>03</span><div><h3>Withholding expands to specified payments</h3><p>Includes 6% on gross payments to public entertainers, 15% on betting winnings (payout less stake), 10% on specified telecom/mobile-money commissions and 5% on qualifying offshore debenture interest. Scope, payer, exclusions and effective dates depend on the Act.</p></div></article>
-          <article><span>04</span><div><h3>Individuals may elect monthly provisional rental returns</h3><p>The enacted-law commentary describes monthly provisional returns as an option, not a general mandatory monthly filing requirement. TaxComp's rental calculator remains an annual estimate; confirm the applicable filing route with URA.</p></div></article>
-          <article><span>05</span><div><h3>Related-party arm’s-length rule stated expressly</h3><p>The 2026 Income Tax amendment adds an express arm’s-length obligation for controlled transactions. Review transaction substance, pricing support and current documentation requirements.</p></div></article>
-          <article><span>06</span><div><h3>Excise rates changed for specified goods</h3><p>The 2026 Excise Duty amendment changes some product-specific rates, including fuel, cement, sugar, cooking oil and plastics. TaxComp does not assume a rate: verify the exact goods, tariff and current statutory schedule.</p></div></article>
-          <p class="law-update-sources">Sources: <a href="https://ura.go.ug/" target="_blank" rel="noopener noreferrer">URA (official tax information)</a> · <a href="https://mrt.tax/2026/08/24/ugandas-2026-income-tax-and-excise-duty-amendments-now-law-key-changes-and-what-they-mean-for-taxpayers/" target="_blank" rel="noopener noreferrer">MRT Tax, August 2026 enacted-law commentary (secondary source)</a>. Confirm the enacted Acts and commencement provisions before applying a rule.</p>
+          <article><span>03</span><div><h3>New withholding categories</h3><p>Includes resident public entertainers and betting or gaming winnings, plus special rules for certain non-resident debenture interest and insurance-agent commissions.</p></div></article>
+          <article><span>04</span><div><h3>Individual rental tax filings are monthly</h3><p>Monthly filing and payment apply from 1 July 2026. The rental calculator still shows an annual estimate; confirm monthly obligations with URA.</p></div></article>
+          <article><span>05</span><div><h3>Targeted VAT exemptions</h3><p>The 2026 amendments add VAT-exempt supplies for specified nuclear-energy contractors and subcontractors. Confirm that the transaction qualifies before classifying it as exempt.</p></div></article>
         </div>
       </section>
 
@@ -870,10 +893,6 @@
             <a href="mailto:opitekenecons@gmail.com">opitekenecons@gmail.com</a>
           </div>
           <div>
-            <span class="payment-provider">Phone</span>
-            <a href="tel:+256782092825">0782092825</a>
-          </div>
-          <div>
             <span class="payment-provider">Location</span>
             <span>Kampala, Uganda</span>
           </div>
@@ -910,6 +929,26 @@
         </div>
       </section>
 
+      <section class="disclaimer" aria-labelledby="disclaimer-title">
+        <span class="disclaimer-mark" aria-hidden="true">i</span>
+        <div>
+          <h2 id="disclaimer-title">A helpful guide, not a tax filing.</h2>
+          <p>
+            Estimates cover standard cases and tax amendments effective 1 July 2026.
+            VAT input-credit restrictions, exemptions, treaty rates, eligibility
+            rules, presumptive schedules and special taxpayer situations can change
+            the result. See the
+            <a href="https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income" target="_blank" rel="noopener noreferrer">Uganda individual income tax reference</a>,
+            <a href="https://taxsummaries.pwc.com/uganda/corporate/taxes-on-corporate-income" target="_blank" rel="noopener noreferrer">company tax reference</a>,
+            <a href="https://taxsummaries.pwc.com/uganda/corporate/other-taxes" target="_blank" rel="noopener noreferrer">VAT reference</a>,
+            <a href="https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes" target="_blank" rel="noopener noreferrer">withholding tax reference</a>,
+            and
+            <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority</a>
+            or a qualified tax professional before filing or paying. Read the
+            <a href="tax-law-notes.md">calculation assumptions and source notes</a>.
+          </p>
+        </div>
+      </section>
     </main>
 
     <footer class="site-footer">

@@ -359,6 +359,25 @@
           consultation.append(note);
           article.append(consultation);
         }
+
+        if (metadata.questionRecordStatus === "saved" &&
+            typeof metadata.questionRecordId === "string" &&
+            /^[a-f0-9-]{36}$/i.test(metadata.questionRecordId)) {
+          const retention = document.createElement("p");
+          retention.className = "tax-chat-record-retention";
+          const link = document.createElement("a");
+          const subject = encodeURIComponent("TaxComp question deletion request");
+          const body = encodeURIComponent(
+            `Please delete the unanswered-question record with reference ${metadata.questionRecordId}.`,
+          );
+          link.href = `mailto:opitekenecons@gmail.com?subject=${subject}&body=${body}`;
+          link.textContent = "Request deletion of this saved question";
+          retention.append(link);
+          const note = document.createElement("span");
+          note.textContent = " Provide the reference only; the request opens an email draft and is not sent automatically.";
+          retention.append(note);
+          article.append(retention);
+        }
       }
 
       const validSources = sources.map(allowedSource).filter(Boolean);
@@ -447,6 +466,9 @@
           verificationRequired: data.verificationRequired === true,
           unansweredQuestionEligible: data.unansweredQuestionEligible === true,
           questionRecordStatus: data.questionRecordStatus || "not_requested",
+          questionRecordId: typeof data.questionRecordId === "string"
+            ? data.questionRecordId
+            : null,
         };
       } finally {
         clearTimeout(timeout);

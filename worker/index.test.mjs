@@ -731,7 +731,9 @@ test("records an unanswered question only after explicit user consent", async ()
         UNANSWERED_QUESTIONS: database,
       },
     );
-    assert.equal((await withoutConsent.json()).questionRecordStatus, "not_requested");
+    const noConsentBody = await withoutConsent.json();
+    assert.equal(noConsentBody.questionRecordStatus, "not_requested");
+    assert.equal(noConsentBody.questionRecordId, null);
     assert.equal(inserts.length, 0);
 
     const response = await handleRequest(
@@ -746,12 +748,17 @@ test("records an unanswered question only after explicit user consent", async ()
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.questionRecordStatus, "saved");
+    assert.match(body.questionRecordId, /^[a-f0-9-]{36}$/i);
     assert.equal(inserts.length, 2);
     const insert = inserts.find((item) => /INSERT INTO unanswered_questions/.test(item.statement));
     assert.ok(insert);
+    assert.match(insert.statement, /consented_at/);
+    assert.equal(body.questionRecordId, insert.values[0]);
     assert.equal(insert.values[1], question);
     const created = Date.parse(insert.values[2]);
-    const expires = Date.parse(insert.values[3]);
+    const consented = Date.parse(insert.values[3]);
+    const expires = Date.parse(insert.values[4]);
+    assert.equal(consented, created);
     assert.equal(expires - created, 90 * 86_400_000);
   } finally {
     globalThis.fetch = previousFetch;
@@ -859,15 +866,22 @@ test("rate limits admin API requests with a separate per-IP key", async () => {
 
 test("protects the unanswered-question dashboard and lists records after authentication", async () => {
   const token = testAdminToken;
+  let adminQuery = "";
   const database = {
     prepare(statement) {
+      adminQuery = statement;
       const statementResult = {
         bind() {
           return statementResult;
         },
         run: async () => ({ success: true }),
         all: async () => ({
-          results: [{ id: "01234567-89ab-cdef-0123-456789abcdef", question: "Test", createdAt: "2026-11-02T00:00:00.000Z" }],
+          results: [{
+            id: "01234567-89ab-cdef-0123-456789abcdef",
+            question: "Test",
+            createdAt: "2026-11-02T00:00:00.000Z",
+            consentedAt: "2026-11-02T00:00:00.000Z",
+          }],
         }),
       };
       return statementResult;
@@ -890,7 +904,9 @@ test("protects the unanswered-question dashboard and lists records after authent
   );
   assert.equal(dashboard.status, 200);
   assert.match(dashboard.headers.get("Content-Security-Policy"), /frame-ancestors 'none'/);
-  assert.match(await dashboard.text(), /Unanswered TaxComp questions/);
+  const dashboardHtml = await dashboard.text();
+  assert.match(dashboardHtml, /Unanswered TaxComp questions/);
+  assert.match(dashboardHtml, /Consent timestamps are recorded/);
 
   const authorized = await handleRequest(
     new Request("https://worker.example/admin/questions", {
@@ -899,5 +915,8 @@ test("protects the unanswered-question dashboard and lists records after authent
     adminEnv,
   );
   assert.equal(authorized.status, 200);
-  assert.equal((await authorized.json()).questions[0].question, "Test");
+  assert.match(adminQuery, /consented_at AS consentedAt/);
+  const authorizedBody = await authorized.json();
+  assert.equal(authorizedBody.questions[0].question, "Test");
+  assert.equal(authorizedBody.questions[0].consentedAt, "2026-11-02T00:00:00.000Z");
 });
