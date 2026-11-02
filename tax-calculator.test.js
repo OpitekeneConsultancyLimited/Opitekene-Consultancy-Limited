@@ -8,6 +8,7 @@ const {
   calculateCompanyTaxBase,
   calculateCustomsEstimate,
   calculateIndividualIncomeTax,
+  calculateSmartTaxSummary,
   calculatePaye,
   calculatePresumptiveTax,
   calculateRentalIncomeTax,
@@ -42,6 +43,19 @@ test("returns band breakdown and effective and marginal rates", () => {
   assert.equal(estimate.taxRuleSet.id, rules.id);
   assert.equal(estimate.taxRuleSet.approvedForFiling, false);
   assert.equal(estimate.taxRuleSet.sourceReferences[0].sourceType, "curated-secondary-summary");
+});
+
+test("exports the smart individual-tax summary used by the calculator UI", () => {
+  const estimate = calculateSmartTaxSummary({
+    taxableIncome: 48_000_000,
+    employeeNssf: 2_400_000,
+    isResident: true,
+  });
+
+  assert.equal(estimate.estimate.totalTax, 13_059_000);
+  assert.equal(estimate.nssfRelief, 2_400_000);
+  assert.equal(estimate.totalTax, 10_659_000);
+  assert.equal(estimate.estimate.taxRuleSet.id, "UG-FY2026-27-v1");
 });
 
 test("tags PAYE, company tax and wear-and-tear estimates with their ruleset", () => {

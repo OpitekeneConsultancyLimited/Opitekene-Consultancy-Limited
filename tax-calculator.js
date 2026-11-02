@@ -711,6 +711,7 @@
     wearAndTearClasses,
     calculateCustomsEstimate,
     calculateIndividualIncomeTax,
+    calculateSmartTaxSummary,
     calculatePaye,
     calculateCompanyIncomeTax,
     calculateVat,
