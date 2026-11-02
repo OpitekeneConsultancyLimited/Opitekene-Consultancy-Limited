@@ -266,6 +266,7 @@ async function callGemini(question, history, evidence, env) {
           ? "The AI service is busy. Please try again shortly."
           : "The AI service could not answer right now. Please try again later.",
         status: response.status === 429 ? 429 : 502,
+        upstreamStatus: response.status,
       };
     }
 
@@ -374,7 +375,11 @@ export async function handleRequest(request, env) {
     env,
   );
   if (result.error) {
-    return jsonResponse({ error: result.error }, result.status, corsHeaders);
+    const response = jsonResponse({ error: result.error }, result.status, corsHeaders);
+    if (typeof result.upstreamStatus === "number") {
+      response.headers.set("X-Gemini-Upstream-Status", String(result.upstreamStatus));
+    }
+    return response;
   }
 
   return jsonResponse({
