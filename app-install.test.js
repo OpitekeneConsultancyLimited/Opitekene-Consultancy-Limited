@@ -10,9 +10,10 @@ function createInstallPage({
   standalone = false,
   platform = "Linux",
   maxTouchPoints = 0,
+  mobileViewport = true,
 } = {}) {
   const windowListeners = new Map();
-  const elements = ["header", "hero"].map(() => ({
+  const elements = ["header", "hero", "phone"].map(() => ({
     hidden: true,
     disabled: false,
     listeners: new Map(),
@@ -32,15 +33,24 @@ function createInstallPage({
       this.scrollCount += 1;
     },
   };
+  const body = {
+    classList: {
+      toggle() {},
+      remove() {},
+    },
+  };
   const serviceWorkerRegistrations = [];
   const context = {
     document: {
       querySelectorAll: () => elements,
-      querySelector: () => help,
+      querySelector: (selector) => selector === "#install-help" ? help : elements[2],
+      body,
     },
     window: {
       isSecureContext: true,
-      matchMedia: () => ({ matches: standalone }),
+      matchMedia: (query) => ({
+        matches: query === "(display-mode: standalone)" ? standalone : mobileViewport,
+      }),
       addEventListener(name, callback) {
         windowListeners.set(name, callback);
       },
@@ -60,7 +70,7 @@ function createInstallPage({
     console,
   };
   vm.runInNewContext(script, context);
-  return { elements, help, windowListeners, serviceWorkerRegistrations };
+  return { elements, help, body, windowListeners, serviceWorkerRegistrations };
 }
 
 test("shows install controls and uses the browser install prompt when available", async () => {
@@ -109,4 +119,11 @@ test("hides the install controls after the app is installed", () => {
   assert.ok(page.elements.every((button) => button.hidden));
   assert.equal(page.help.hidden, true);
   assert.match(page.help.textContent, /installed on this device/);
+});
+
+test("keeps a phone install button visible and hides the sticky banner on desktop", () => {
+  const phone = createInstallPage({ mobileViewport: true });
+  const desktop = createInstallPage({ mobileViewport: false });
+  assert.equal(phone.elements[2].hidden, false);
+  assert.equal(desktop.elements[2].hidden, true);
 });

@@ -302,6 +302,30 @@ p {
   border-top: 1px solid #d5e1d7;
 }
 
+.mobile-install-banner {
+  display: none;
+}
+
+.mobile-install-banner[hidden] {
+  display: none;
+}
+
+.has-mobile-install-banner {
+  padding-bottom: calc(82px + env(safe-area-inset-bottom));
+}
+
+.mobile-install-action {
+  flex: 0 0 auto;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .trust-note {
   display: flex;
   align-items: center;
@@ -2503,6 +2527,38 @@ td:first-child {
 }
 
 @media (max-width: 760px) {
+  .mobile-install-banner:not([hidden]) {
+    position: fixed;
+    z-index: 20;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    min-height: 72px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid #d5e1d7;
+    background: #fff;
+    box-shadow: 0 -4px 18px rgba(23, 35, 59, 0.12);
+  }
+
+  .mobile-install-banner span {
+    display: grid;
+    gap: 2px;
+  }
+
+  .mobile-install-banner strong {
+    color: var(--ink);
+    font-size: 13px;
+  }
+
+  .mobile-install-banner small {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
   .site-header,
   .site-footer,
   .estimator-section,

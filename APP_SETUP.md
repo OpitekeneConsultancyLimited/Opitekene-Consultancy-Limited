@@ -9,6 +9,8 @@ native mobile codebase.
 - Open the official TaxComp site: <https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/>.
 - Select **Install TaxComp** on the home page to open the installation prompt or
   device-specific instructions.
+- On a phone, a **Get TaxComp on your phone** bar stays at the bottom of the
+  screen so people can install it at any time.
 - **Android:** open the site in Chrome, tap the three-dot menu, then choose
   **Install app** or **Add to Home screen**. The **Install TaxComp** button
   opens these steps if Chrome does not offer a direct install prompt.

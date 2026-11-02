@@ -1,19 +1,23 @@
 (function () {
   const installButtons = document.querySelectorAll("[data-install-app]");
   const installHelp = document.querySelector("#install-help");
-  if (!installButtons.length || !installHelp) return;
+  const mobileInstallBanner = document.querySelector("#mobile-install-banner");
+  if (!installButtons.length || !installHelp || !mobileInstallBanner) return;
 
   let installPrompt = null;
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
     navigator.standalone === true;
   const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isMobileViewport = window.matchMedia("(max-width: 760px)").matches;
   const isSafari = /Safari/i.test(navigator.userAgent) &&
     !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(navigator.userAgent);
 
   installButtons.forEach((button) => {
     button.hidden = isStandalone;
   });
+  mobileInstallBanner.hidden = isStandalone || !isMobileViewport;
+  document.body.classList.toggle("has-mobile-install-banner", !mobileInstallBanner.hidden);
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
@@ -28,6 +32,8 @@
     installButtons.forEach((button) => {
       button.hidden = true;
     });
+    mobileInstallBanner.hidden = true;
+    document.body.classList.remove("has-mobile-install-banner");
     installHelp.textContent = "TaxComp has been installed on this device.";
     installHelp.hidden = true;
   });
