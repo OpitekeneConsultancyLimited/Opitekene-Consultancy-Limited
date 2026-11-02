@@ -546,6 +546,7 @@ function renderResult({
   remainingLabel = "Estimated balance to pay",
   breakdown,
   note,
+  taxRuleSet,
   breakdownHeading = "How the estimate adds up",
   breakdownCaption = "Calculation details",
   extraRows = [],
@@ -566,7 +567,10 @@ function renderResult({
   columnRate.textContent = "Rate";
   columnTax.textContent = "Amount";
   renderBreakdown([...breakdown, ...extraRows]);
-  calculationNote.textContent = note;
+  const ruleSetNote = taxRuleSet
+    ? `Ruleset ${taxRuleSet.id} (${taxRuleSet.financialYear}); primary-source verification is pending and it is not approved for filing.`
+    : "";
+  calculationNote.textContent = [note, ruleSetNote].filter(Boolean).join(" ");
   emptyResults.hidden = true;
   calculatedResults.hidden = false;
 }
@@ -604,6 +608,7 @@ function showIncomeTax() {
       { label: "Smart-plan note: reliefs and employee NSSF relief", rate: null, amount: -estimate.reliefTotal - estimate.nssfRelief },
     ],
     breakdownCaption: "Income adjustments and tax by band",
+    taxRuleSet: estimate.estimate.taxRuleSet,
     note: `Standard ${isResident ? "resident" : "non-resident"} individual bands for FY 2026/27. This estimate applies deductions first, then a simple relief check and employee NSSF relief, before subtracting tax already paid. Include income sources correctly and claim only deductions you have confirmed are allowable. Reliefs, exempt-income classification, loss relief, treaty rules and special regimes are not assessed.`,
   });
 }
@@ -640,6 +645,7 @@ function showPaye() {
     ],
     breakdownHeading: "Monthly PAYE and payroll",
     breakdownCaption: "NSSF is not income tax",
+    taxRuleSet: payeResult.taxRuleSet,
     note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly pay throughout the year. This smart view compares the raw annualized band estimate with a practical planning view that offsets employee NSSF relief, but the core estimate remains the standard PAYE calculation. You must assess whether each item is taxable and enter its correct monthly taxable value. This annualized estimate does not value benefits or determine exemptions, lump-sum treatment, termination pay or share schemes. Do not double count salary or benefits; verify exceptions against the current law. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
   });
 }
@@ -724,7 +730,7 @@ function showCompanyTax() {
         amount: taxBase.currentYearLoss,
       }]
       : []),
-    { label: "Company income tax", rate: 0.3, amount: estimate.tax },
+    { label: "Company income tax", rate: estimate.taxRate, amount: estimate.tax },
     { label: "Less: provisional tax instalments paid", rate: null, amount: -paid },
     { label: "Less: creditable withholding tax entered", rate: null, amount: -withholdingCredits },
     { label: "Estimated balance after entered credits", rate: null, amount: estimate.balance },
@@ -735,11 +741,12 @@ function showCompanyTax() {
     label: "Estimated annual company income tax",
     context: taxBase.currentYearLoss > 0
       ? `Current-year tax loss entered: ${formatUgx(taxBase.currentYearLoss)} · confirm availability and carry-forward treatment`
-      : `Estimated chargeable income: ${formatUgx(taxBase.chargeableIncome)} · Standard resident company rate: 30%`,
+      : `Estimated chargeable income: ${formatUgx(taxBase.chargeableIncome)} · Standard resident company rate: ${formatPercent(estimate.taxRate)}`,
     balance: estimate.balance,
     breakdown: adjustmentRows,
     breakdownCaption: "Itemized tax reconciliation from accounting profit or loss",
-    note: "Uses the standard 30% company rate only when taxable chargeable income exists. Every adjustment must be confirmed for this taxpayer, year and tax treatment; enter each item once. This tool does not determine deductibility, asset classes/rates, loss restrictions, withholding creditability, exemptions, or special regimes. A displayed current-year tax loss is not a determination that it can be carried forward; confirm the assessment and statutory treatment before filing.",
+    taxRuleSet: estimate.taxRuleSet,
+    note: `Uses the standard ${formatPercent(estimate.taxRate)} company rate only when taxable chargeable income exists. Every adjustment must be confirmed for this taxpayer, year and tax treatment; enter each item once. This tool does not determine deductibility, asset classes/rates, loss restrictions, withholding creditability, exemptions, or special regimes. A displayed current-year tax loss is not a determination that it can be carried forward; confirm the assessment and statutory treatment before filing.`,
   });
 }
 
@@ -812,6 +819,7 @@ function showRentalTax() {
     balance: estimate.balance,
     breakdown: estimate.breakdown,
     note: estimate.note,
+    taxRuleSet: estimate.taxRuleSet,
     breakdownHeading: "Rental income computation",
     breakdownCaption: `${taxpayerType === "individual" ? "Individual" : "Company"} · ${residency === "resident" ? "Resident" : "Non-resident"}`,
   });
@@ -924,6 +932,7 @@ function showCapitalAllowance() {
     context: `${estimate.assetClass.label} · Reducing balance at ${formatPercent(estimate.rate)} · Closing pool: ${formatUgx(estimate.closingTaxWrittenDownValue)}`,
     breakdown: estimate.breakdown,
     breakdownCaption: "Class-based tax pool reconciliation",
+    taxRuleSet: estimate.taxRuleSet,
     note: estimate.excessDisposalProceeds > 0
       ? "The excess disposal proceeds are flagged but no balancing charge or allowance is calculated. Confirm asset eligibility, tax basis, business-use apportionment and disposal treatment under the current Income Tax Act before using this result. Transfer only the supported allowance into the company tax reconciliation."
       : "This estimate applies the selected class rate on a reducing-balance pool after entered additions and disposals. It does not determine asset eligibility, minor-asset expensing, balancing adjustments, initial allowances, or industrial-building allowance. Confirm the current law and records; transfer only a supported allowance into the company tax reconciliation.",

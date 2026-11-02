@@ -14,6 +14,15 @@ status before relying on it.
 
 ## Rules represented in the calculators
 
+The initial versioned registry in `tax-rules.js` centralizes FY 2026/27
+resident and non-resident individual income-tax bands, the standard resident
+company rate, and the three wear-and-tear classes. These rules carry a
+financial-year ID and source links, and estimates identify the ruleset used.
+The rates remain pending verification against primary legislation and are
+explicitly not approved for filing. Other tax schedules and thresholds are
+not yet in the registry; no historical-year selection is available. Continue
+to verify every result against the applicable law and URA guidance.
+
 - **Individual income tax and PAYE:** Resident annual bands are UGX 0–4,020,000
   at 0%, UGX 4,020,001–4,920,000 at 20%, UGX 4,920,001–5,820,000 at 25%,
   UGX 5,820,001–120,000,000 at 30%, and income above UGX 120,000,000 at 40%.

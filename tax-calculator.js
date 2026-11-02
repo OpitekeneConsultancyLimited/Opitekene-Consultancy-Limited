@@ -1,44 +1,41 @@
 (function (root, factory) {
-  const calculator = factory();
+  const taxRules = typeof module === "object" && module.exports
+    ? require("./tax-rules.js")
+    : root.ugandaTaxRules;
+  const calculator = factory(taxRules);
 
   if (typeof module === "object" && module.exports) {
     module.exports = calculator;
   } else {
     root.ugandaTax = calculator;
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  const residentIndividualBands = [
-    { label: "UGX 0 – 4,020,000", lower: 0, upper: 4_020_000, rate: 0 },
-    { label: "UGX 4,020,001 – 4,920,000", lower: 4_020_000, upper: 4_920_000, rate: 0.2 },
-    { label: "UGX 4,920,001 – 5,820,000", lower: 4_920_000, upper: 5_820_000, rate: 0.25 },
-    { label: "UGX 5,820,001 – 120,000,000", lower: 5_820_000, upper: 120_000_000, rate: 0.3 },
-    { label: "Above UGX 120,000,000", lower: 120_000_000, upper: Infinity, rate: 0.4 },
-  ];
+})(typeof globalThis !== "undefined" ? globalThis : this, function (taxRules) {
+  if (!taxRules) {
+    throw new Error("Uganda tax rules must be loaded before the tax calculator.");
+  }
 
-  const nonResidentIndividualBands = [
-    { label: "UGX 0 – 4,020,000", lower: 0, upper: 4_020_000, rate: 0.1 },
-    { label: "UGX 4,020,001 – 4,920,000", lower: 4_020_000, upper: 4_920_000, rate: 0.2 },
-    { label: "UGX 4,920,001 – 120,000,000", lower: 4_920_000, upper: 120_000_000, rate: 0.3 },
-    { label: "Above UGX 120,000,000", lower: 120_000_000, upper: Infinity, rate: 0.4 },
-  ];
-
-  const wearAndTearClasses = [
-    {
-      id: "class-1",
-      label: "Class 1 — computers and data-handling equipment",
-      rate: 0.4,
-    },
-    {
-      id: "class-2",
-      label: "Class 2 — plant and machinery used in farming, manufacturing or mining",
-      rate: 0.3,
-    },
-    {
-      id: "class-3",
-      label: "Class 3 — vehicles, other specified equipment and assets not in Classes 1 or 2",
-      rate: 0.2,
-    },
-  ];
+  const activeTaxRules = taxRules.getRulesForFinancialYear(taxRules.currentFinancialYear);
+  const residentIndividualBands = activeTaxRules.individualIncomeTax.residentBands;
+  const nonResidentIndividualBands = activeTaxRules.individualIncomeTax.nonResidentBands;
+  const wearAndTearClasses = activeTaxRules.capitalAllowances.wearAndTearClasses;
+  const taxRuleSetMetadata = {
+    id: activeTaxRules.id,
+    financialYear: activeTaxRules.financialYear,
+    approvalStatus: activeTaxRules.approvalStatus,
+    approvedForFiling: activeTaxRules.approvedForFiling,
+  };
+  const individualTaxRuleSet = Object.freeze({
+    ...taxRuleSetMetadata,
+    sourceReferences: activeTaxRules.individualIncomeTax.sources,
+  });
+  const companyTaxRuleSet = Object.freeze({
+    ...taxRuleSetMetadata,
+    sourceReferences: activeTaxRules.companyIncomeTax.sources,
+  });
+  const capitalAllowanceRuleSet = Object.freeze({
+    ...taxRuleSetMetadata,
+    sourceReferences: activeTaxRules.capitalAllowances.wearAndTearSources,
+  });
 
   const withholdingRates = {
     "resident-supply": { label: "Resident supply / contract payment", rate: 0.06 },
@@ -96,6 +93,7 @@
       .find((band) => taxableIncome > band.lower)?.rate ?? 0;
 
     return {
+      taxRuleSet: individualTaxRuleSet,
       taxableIncome,
       isResident,
       totalTax,
@@ -219,6 +217,7 @@
     const annualEstimate = calculateIndividualIncomeTax(monthlyTaxableIncome * 12, isResident);
 
     return {
+      taxRuleSet: individualTaxRuleSet,
       monthlyTax: annualEstimate.totalTax / 12,
       effectiveRate: annualEstimate.effectiveRate,
       marginalRate: annualEstimate.marginalRate,
@@ -241,7 +240,8 @@
     requireNonNegative(chargeableIncome, "Chargeable company income");
     requireNonNegative(taxPaid, "Tax already paid");
     requireNonNegative(withholdingCredits, "Creditable withholding tax");
-    const tax = chargeableIncome * 0.3;
+    const taxRate = activeTaxRules.companyIncomeTax.standardResidentRate;
+    const tax = chargeableIncome * taxRate;
     const balance = tax - taxPaid - withholdingCredits;
 
     return {
@@ -250,11 +250,13 @@
       withholdingCredits,
       totalCredits: taxPaid + withholdingCredits,
       balance,
+      taxRate,
       effectiveRate: chargeableIncome === 0 ? 0 : tax / chargeableIncome,
       breakdown: [
         { label: "Chargeable company income", rate: null, amount: chargeableIncome },
-        { label: "Company income tax", rate: 0.3, amount: tax },
+        { label: "Company income tax", rate: taxRate, amount: tax },
       ],
+      taxRuleSet: companyTaxRuleSet,
     };
   }
 
@@ -295,6 +297,7 @@
     const closingTaxWrittenDownValue = poolAvailableForAllowance - allowance;
 
     return {
+      taxRuleSet: capitalAllowanceRuleSet,
       assetClass: selectedClass,
       rate: selectedClass.rate,
       openingTaxWrittenDownValue,
@@ -558,7 +561,7 @@
       );
       note = "Applies the individual rental-tax rule: 12% of annual gross rental income above UGX 2,820,000, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Secondary commentary describes monthly provisional returns as an option, not a general mandatory monthly filing rule; confirm the available filing route and any payment obligation with URA.";
     } else {
-      taxRate = 0.3;
+      taxRate = activeTaxRules.companyIncomeTax.standardResidentRate;
       const companyTaxBase = calculateCompanyTaxBase(
         grossRentalIncome,
         0,
@@ -597,6 +600,9 @@
       taxLabel,
       totalCredits,
       currentYearLoss,
+      ...(taxpayerType === "company" && residency !== "nonresident"
+        ? { taxRuleSet: companyTaxRuleSet }
+        : {}),
       breakdown,
       note,
     };

@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const taxRules = require("./tax-rules.js");
 const {
   calculateCompanyIncomeTax,
   calculateWearAndTear,
@@ -33,10 +34,29 @@ test("applies the 30% band and the additional 10% above UGX 120 million", () => 
 
 test("returns band breakdown and effective and marginal rates", () => {
   const estimate = calculateIndividualIncomeTax(130_000_000);
+  const rules = taxRules.getRulesForFinancialYear("2026/27");
 
   assert.equal(estimate.breakdown.length, 5);
   assert.equal(estimate.effectiveRate, 38_659_000 / 130_000_000);
   assert.equal(estimate.marginalRate, 0.4);
+  assert.equal(estimate.taxRuleSet.id, rules.id);
+  assert.equal(estimate.taxRuleSet.approvedForFiling, false);
+  assert.equal(estimate.taxRuleSet.sourceReferences[0].sourceType, "curated-secondary-summary");
+});
+
+test("tags PAYE, company tax and wear-and-tear estimates with their ruleset", () => {
+  const paye = calculatePaye(4_000_000);
+  const company = calculateCompanyIncomeTax(10_000_000);
+  const allowance = calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 1_000_000,
+    businessUsePercent: 100,
+  });
+
+  assert.equal(paye.taxRuleSet.id, "UG-FY2026-27-v1");
+  assert.equal(company.taxRuleSet.financialYear, "2026/27");
+  assert.equal(company.taxRate, 0.3);
+  assert.equal(allowance.taxRuleSet.approvedForFiling, false);
 });
 
 test("uses the non-resident individual income tax bands when selected", () => {
