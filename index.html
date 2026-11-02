@@ -19,8 +19,8 @@
     <link rel="stylesheet" href="styles.css?v=tax-chat-calculator-links-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
-    <script src="tax-calculator.js?v=wear-tear-classes-1" defer></script>
-    <script src="app.js?v=wear-tear-classes-1" defer></script>
+    <script src="tax-calculator.js?v=secondary-paye-1" defer></script>
+    <script src="app.js?v=secondary-paye-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
@@ -193,6 +193,11 @@
                   services. Confirm the current law before excluding an amount.
                 </p>
               </details>
+              <div class="field">
+                <label for="monthly-secondary-income">Monthly taxable income from secondary employment <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-secondary-income" type="number" min="0" step="1" inputmode="numeric" placeholder="Total from other employer(s)" disabled></div>
+                <p class="field-help">Enter the combined monthly taxable pay, including assessed taxable benefits, from all other employers. Secondary-employment PAYE withholding is estimated at the standard 40% rate. See <a href="https://ura.go.ug/en/domestic-taxes/paye-rates/" target="_blank" rel="noopener noreferrer">URA PAYE rates</a>. Confirm the primary employer designation and treatment with URA.</p>
+              </div>
               <div class="field">
                 <label for="monthly-gross-earnings">Monthly gross earnings for NSSF <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-gross-earnings" type="number" min="0" step="1" inputmode="numeric" placeholder="Defaults to taxable pay" disabled></div>

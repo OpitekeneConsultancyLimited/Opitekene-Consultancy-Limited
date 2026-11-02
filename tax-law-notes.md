@@ -37,7 +37,15 @@ reusing current-year guidance.
   exemptions, or calculate the special treatment that may apply to lump sums,
   share schemes or termination payments. Examples of possible exclusions are
   shown as reminders only; verify their statutory conditions before excluding
-  anything. Employee and employer NSSF are shown separately from income tax.
+  anything. Where a person has more than one employer, the calculator applies
+  progressive bands to the designated primary employment and the reported
+  standard 40% withholding rate to combined secondary employment income. The
+  40% rate is based on URA's clarification as reported by Uganda Radio Network;
+  verify the current Income Tax Act, regulations and URA instructions before
+  payroll use. The combined-income progressive comparison assumes 12 equal
+  months and excludes credits, reliefs and other adjustments; it is not a final
+  annual assessment or refund calculation. Employee and employer NSSF are
+  shown separately from income tax and only for the primary-employer amount.
 - **Chargeable-income worksheet:** For individuals, the estimator subtracts
   user-entered deductions from annual assessable income. For companies, it
   starts with accounting profit, adds user-entered non-deductible expenses,

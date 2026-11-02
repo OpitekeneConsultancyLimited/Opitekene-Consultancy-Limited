@@ -29,7 +29,13 @@
             url: "https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income",
             sourceType: "secondary-summary",
           },
+          {
+            label: "URA clarification on multiple employers (reported by Uganda Radio Network)",
+            url: "https://ugandaradionetwork.com/s/ura-clarifies-paye-rules-for-employees-with-multiple-employers/",
+            sourceType: "secondary-report-of-official-clarification",
+          },
         ],
+        secondaryEmploymentWithholdingRate: 0.4,
         residentBands: [
           { label: "UGX 0 – 4,020,000", lower: 0, upper: 4_020_000, rate: 0 },
           { label: "UGX 4,020,001 – 4,920,000", lower: 4_020_000, upper: 4_920_000, rate: 0.2 },

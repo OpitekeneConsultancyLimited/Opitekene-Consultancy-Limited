@@ -617,36 +617,61 @@ function showPaye() {
   const salary = document.querySelector("#monthly-salary").valueAsNumber;
   const taxableItems = readAdjustmentItems("data-paye-taxable-item");
   const taxableItemsTotal = taxableItems.reduce((total, item) => total + item.amount, 0);
-  const monthlyIncome = salary + taxableItemsTotal;
+  const primaryMonthlyIncome = salary + taxableItemsTotal;
+  const secondaryIncomeInput = document.querySelector("#monthly-secondary-income");
+  const secondaryMonthlyIncome = secondaryIncomeInput.value === ""
+    ? 0
+    : secondaryIncomeInput.valueAsNumber;
   const grossInput = document.querySelector("#monthly-gross-earnings");
-  const monthlyGross = grossInput.value === ""
-    ? monthlyIncome
+  const primaryMonthlyGross = grossInput.value === ""
+    ? primaryMonthlyIncome
     : grossInput.valueAsNumber;
   const isResident = document.querySelector("#paye-residency").value === "resident";
-  const payeResult = ugandaTax.calculatePaye(monthlyIncome, isResident, monthlyGross);
-  const smartEstimate = payeResult.smartEstimate;
+  const estimate = ugandaTax.calculatePayeWithSecondaryEmployment(
+    primaryMonthlyIncome,
+    secondaryMonthlyIncome,
+    isResident,
+    primaryMonthlyGross,
+  );
 
   renderResult({
-    value: payeResult.monthlyTax,
-    label: "Estimated PAYE per month",
-    context: `Annualized PAYE: ${formatUgx(payeResult.monthlyTax * 12)} · Employee NSSF: ${formatUgx(payeResult.monthlyEmployeeNssf)}/month · Employer NSSF: ${formatUgx(payeResult.monthlyEmployerNssf)}/month · Smart-plan review: ${formatUgx(smartEstimate.totalTax / 12)}/month after reliefs`,
-    breakdown: payeResult.breakdown.map((band) => ({
-      label: band.label,
+    value: estimate.totalMonthlyWithholding,
+    label: "Estimated total PAYE withholding per month",
+    context: `Primary PAYE: ${formatUgx(estimate.primaryMonthlyTax)} · Secondary withholding: ${formatUgx(estimate.secondaryMonthlyTax)} at 40% · Combined-income progressive estimate: ${formatUgx(estimate.estimatedMonthlyTaxOnCombinedIncome)}/month before credits or reliefs`,
+    breakdown: estimate.primaryBreakdown.map((band) => ({
+      label: `Primary employment — ${band.label}`,
       rate: band.rate,
       amount: band.tax,
     })),
     extraRows: [
-      { label: "Monthly cash salary", rate: null, amount: salary },
-      ...taxableItems.map((item) => ({ label: item.label, rate: null, amount: item.amount })),
-      { label: "Estimated monthly taxable pay", rate: null, amount: monthlyIncome },
-      { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: payeResult.monthlyEmployeeNssf },
-      { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: payeResult.monthlyEmployerNssf },
-      { label: "Smart-plan relief applied", rate: null, amount: -(smartEstimate.nssfRelief / 12) },
+      { label: "Primary employment — monthly cash salary", rate: null, amount: salary },
+      ...taxableItems.map((item) => ({
+        label: `Primary employment — ${item.label}`,
+        rate: null,
+        amount: item.amount,
+      })),
+      { label: "Primary employment — monthly taxable income", rate: null, amount: primaryMonthlyIncome },
+      {
+        label: "Secondary employment — monthly taxable income",
+        rate: null,
+        amount: secondaryMonthlyIncome,
+      },
+      {
+        label: "Secondary employment — PAYE withholding at 40%",
+        rate: estimate.secondaryRate,
+        amount: estimate.secondaryMonthlyTax,
+      },
+      { label: "Total PAYE withheld across both employments", rate: null, amount: estimate.totalMonthlyWithholding },
+      { label: "Combined annual employment income (assuming 12 equal months)", rate: null, amount: estimate.combinedAnnualTaxableIncome },
+      { label: "Indicative monthly tax on combined income using progressive bands", rate: null, amount: estimate.estimatedMonthlyTaxOnCombinedIncome },
+      { label: "Withholding above/(below) combined-income band estimate", rate: null, amount: estimate.monthlyWithholdingDifference },
+      { label: "Employee NSSF at primary employer (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
+      { label: "Employer NSSF at primary employer (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
     ],
     breakdownHeading: "Monthly PAYE and payroll",
-    breakdownCaption: "NSSF is not income tax",
-    taxRuleSet: payeResult.taxRuleSet,
-    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly pay throughout the year. This smart view compares the raw annualized band estimate with a practical planning view that offsets employee NSSF relief, but the core estimate remains the standard PAYE calculation. You must assess whether each item is taxable and enter its correct monthly taxable value. This annualized estimate does not value benefits or determine exemptions, lump-sum treatment, termination pay or share schemes. Do not double count salary or benefits; verify exceptions against the current law. NSSF is estimated separately at 5% employee and 10% employer; verify applicability. Local Service Tax and special reliefs are not included.`,
+    breakdownCaption: "Primary progressive PAYE and secondary 40% withholding; NSSF is separate",
+    taxRuleSet: estimate.taxRuleSet,
+    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly income for 12 months. The designated primary employer uses the progressive bands; secondary employment withholding is estimated at the standard 40% rate. The combined-income progressive estimate is a comparison before credits, reliefs or annual adjustments, not a final assessment or refund calculation. Confirm the employee's primary-employer designation and current treatment with URA. Enter secondary taxable income from all other employers once; assess taxable benefits separately and do not double count them. NSSF is shown only for the primary-employer gross earnings entered; assess each employer's obligations separately. The estimator does not value benefits, determine exemptions, or calculate special treatment for lump sums, share schemes or termination pay.`,
   });
 }
 

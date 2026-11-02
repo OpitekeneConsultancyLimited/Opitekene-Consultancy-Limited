@@ -236,6 +236,52 @@
     };
   }
 
+  function calculatePayeWithSecondaryEmployment(
+    primaryMonthlyTaxableIncome,
+    secondaryMonthlyTaxableIncome = 0,
+    isResident = true,
+    primaryMonthlyGrossEarnings = primaryMonthlyTaxableIncome,
+  ) {
+    requireNonNegative(
+      secondaryMonthlyTaxableIncome,
+      "Monthly secondary employment income",
+    );
+    const primary = calculatePaye(
+      primaryMonthlyTaxableIncome,
+      isResident,
+      primaryMonthlyGrossEarnings,
+    );
+    const secondaryRate =
+      activeTaxRules.individualIncomeTax.secondaryEmploymentWithholdingRate;
+    const secondaryMonthlyTax = secondaryMonthlyTaxableIncome * secondaryRate;
+    const combinedMonthlyTaxableIncome =
+      primaryMonthlyTaxableIncome + secondaryMonthlyTaxableIncome;
+    const combinedIncomeEstimate = calculatePaye(
+      combinedMonthlyTaxableIncome,
+      isResident,
+      combinedMonthlyTaxableIncome,
+    );
+
+    return {
+      taxRuleSet: primary.taxRuleSet,
+      primaryMonthlyTax: primary.monthlyTax,
+      primaryBreakdown: primary.breakdown,
+      secondaryMonthlyTaxableIncome,
+      secondaryRate,
+      secondaryMonthlyTax,
+      totalMonthlyWithholding: primary.monthlyTax + secondaryMonthlyTax,
+      combinedMonthlyTaxableIncome,
+      combinedAnnualTaxableIncome: combinedMonthlyTaxableIncome * 12,
+      estimatedMonthlyTaxOnCombinedIncome: combinedIncomeEstimate.monthlyTax,
+      estimatedAnnualTaxOnCombinedIncome: combinedIncomeEstimate.monthlyTax * 12,
+      monthlyWithholdingDifference:
+        primary.monthlyTax + secondaryMonthlyTax - combinedIncomeEstimate.monthlyTax,
+      monthlyEmployeeNssf: primary.monthlyEmployeeNssf,
+      monthlyEmployerNssf: primary.monthlyEmployerNssf,
+    };
+  }
+
+
   function calculateCompanyIncomeTax(chargeableIncome, taxPaid = 0, withholdingCredits = 0) {
     requireNonNegative(chargeableIncome, "Chargeable company income");
     requireNonNegative(taxPaid, "Tax already paid");
@@ -713,6 +759,7 @@
     calculateIndividualIncomeTax,
     calculateSmartTaxSummary,
     calculatePaye,
+    calculatePayeWithSecondaryEmployment,
     calculateCompanyIncomeTax,
     calculateVat,
     calculateRentalIncomeTax,

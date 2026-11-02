@@ -10,6 +10,7 @@ const {
   calculateIndividualIncomeTax,
   calculateSmartTaxSummary,
   calculatePaye,
+  calculatePayeWithSecondaryEmployment,
   calculatePresumptiveTax,
   calculateRentalIncomeTax,
   calculateVat,
@@ -123,6 +124,32 @@ test("annualizes monthly taxable pay for PAYE and returns a monthly breakdown", 
   assert.equal(calculatePaye(335_000).monthlyTax, 0);
   assert.ok(calculatePaye(335_001).monthlyTax > 0);
   assert.equal(calculatePaye(4_000_000, true, 5_000_000).monthlyEmployeeNssf, 250_000);
+});
+
+test("applies progressive primary PAYE and 40% secondary-employment withholding", () => {
+  const estimate = calculatePayeWithSecondaryEmployment(3_000_000, 1_000_000);
+
+  assert.equal(estimate.primaryMonthlyTax, 788_250);
+  assert.equal(estimate.secondaryRate, 0.4);
+  assert.equal(estimate.secondaryMonthlyTax, 400_000);
+  assert.equal(estimate.totalMonthlyWithholding, 1_188_250);
+  assert.equal(estimate.combinedMonthlyTaxableIncome, 4_000_000);
+  assert.equal(estimate.estimatedMonthlyTaxOnCombinedIncome, 1_088_250);
+  assert.equal(estimate.monthlyWithholdingDifference, 100_000);
+});
+
+test("secondary PAYE calculation matches primary-only results when secondary income is zero", () => {
+  const primary = calculatePaye(4_000_000);
+  const combined = calculatePayeWithSecondaryEmployment(4_000_000);
+
+  assert.equal(combined.primaryMonthlyTax, primary.monthlyTax);
+  assert.equal(combined.totalMonthlyWithholding, primary.monthlyTax);
+  assert.equal(combined.monthlyEmployeeNssf, primary.monthlyEmployeeNssf);
+});
+
+test("rejects invalid secondary employment income", () => {
+  assert.throws(() => calculatePayeWithSecondaryEmployment(1_000_000, -1), RangeError);
+  assert.throws(() => calculatePayeWithSecondaryEmployment(1_000_000, Number.NaN), RangeError);
 });
 
 test("calculates standard company income tax and balance after payments", () => {
