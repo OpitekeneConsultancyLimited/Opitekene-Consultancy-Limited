@@ -2841,29 +2841,32 @@ td:first-child {
 
 .tax-chat-mode-switch {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   padding: 14px 16px 0;
   border-bottom: 1px solid var(--line);
 }
 
 .tax-chat-mode-switch button {
-  padding: 10px 13px;
+  min-height: 39px;
+  padding: 9px 13px;
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
   background: transparent;
   color: #64736a;
   cursor: pointer;
-  font: 650 11px var(--sans);
+  font: 650 10px var(--sans);
 }
 
 .tax-chat-mode-switch button[aria-selected="true"] {
   border-bottom-color: var(--green);
+  background: #edf5ee;
   color: var(--green-dark);
 }
 
 .tax-chat-mode-switch button:focus-visible,
 .tax-transaction-submit:focus-visible {
-  outline: 2px solid var(--green);
+  outline: 3px solid rgba(198, 147, 54, 0.65);
   outline-offset: 2px;
 }
 
@@ -2874,28 +2877,29 @@ td:first-child {
 .tax-transaction-privacy,
 .tax-transaction-disclaimer,
 .tax-transaction-review {
-  padding: 10px 12px;
+  padding: 11px 13px;
   border-left: 3px solid #c69336;
-  border-radius: 4px;
-  background: #f7f4e9;
+  border-radius: 5px;
+  background: #f3f1e8;
   color: #5e594d;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .tax-transaction-form,
 .tax-transaction-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 11px;
+  gap: 13px 11px;
 }
 
 .tax-transaction-field {
   display: grid;
-  gap: 5px;
-  color: #526158;
-  font-size: 10px;
-  font-weight: 650;
+  min-width: 0;
+  gap: 7px;
+  color: #293a30;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .tax-transaction-field input,
@@ -2903,16 +2907,27 @@ td:first-child {
 .tax-transaction-field textarea {
   width: 100%;
   min-width: 0;
-  padding: 9px 10px;
-  border: 1px solid #dfe7dd;
-  border-radius: 6px;
+  min-height: 45px;
+  padding: 0 12px;
+  border: 1px solid #dfe5de;
+  border-radius: 7px;
   background: #fff;
   color: var(--ink);
   font: 500 11px var(--sans);
 }
 
 .tax-transaction-field textarea {
+  min-height: 75px;
+  padding: 11px 12px;
+  font: 500 11px/1.5 var(--sans);
   resize: vertical;
+}
+
+.tax-transaction-field:focus-within input,
+.tax-transaction-field:focus-within select,
+.tax-transaction-field:focus-within textarea {
+  border-color: #5c9470;
+  outline: 3px solid rgba(34, 109, 72, 0.1);
 }
 
 .tax-transaction-form > label:nth-child(2),
@@ -2924,26 +2939,30 @@ td:first-child {
 .tax-transaction-confirm {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 9px;
   color: #526158;
   font-size: 10px;
   line-height: 1.5;
 }
 
 .tax-transaction-confirm input {
+  width: 15px;
+  height: 15px;
   flex: 0 0 auto;
-  margin-top: 1px;
+  margin: 1px 0 0;
+  accent-color: var(--green);
 }
 
 .tax-transaction-submit {
   justify-self: start;
-  padding: 9px 13px;
+  min-height: 42px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 7px;
   background: var(--green);
   color: #fff;
   cursor: pointer;
-  font: 650 10px var(--sans);
+  font: 700 11px var(--sans);
 }
 
 .tax-transaction-submit:hover {
@@ -2956,9 +2975,9 @@ td:first-child {
 
 .tax-transaction-head {
   margin: 10px 0;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   background: #fff;
 }
 
@@ -2974,7 +2993,7 @@ td:first-child {
 .tax-transaction-calculation li {
   color: #526158;
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
 .tax-transaction-status {
@@ -2985,11 +3004,11 @@ td:first-child {
 
 .tax-transaction-calculator-form {
   display: grid;
-  gap: 11px;
+  gap: 13px;
   margin-top: 17px;
-  padding: 14px;
+  padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   background: #f8faf6;
 }
 
@@ -3000,9 +3019,9 @@ td:first-child {
 }
 
 .tax-transaction-calculation {
-  padding: 13px;
+  padding: 14px;
   border: 1px solid #d8e5d7;
-  border-radius: 8px;
+  border-radius: 9px;
   background: #f5faf5;
 }
 
@@ -3020,16 +3039,22 @@ td:first-child {
 @media (max-width: 620px) {
   .tax-transaction-form,
   .tax-transaction-fields {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .tax-chat-mode-switch {
+    gap: 4px;
     padding-right: 10px;
     padding-left: 10px;
   }
 
   .tax-chat-mode-switch button {
-    padding-right: 8px;
-    padding-left: 8px;
+    flex: 1 1 0;
+    padding-right: 7px;
+    padding-left: 7px;
+  }
+
+  .tax-chat-transaction-mode {
+    padding: 13px;
   }
 }
