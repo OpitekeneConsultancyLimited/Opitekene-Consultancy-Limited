@@ -32,6 +32,13 @@ const formError = document.querySelector("#form-error");
 const customsDirection = document.querySelector("#customs-direction");
 const rentalTaxpayerType = document.querySelector("#rental-taxpayer-type");
 const rentalResidency = document.querySelector("#rental-residency");
+const payeEmploymentType = document.querySelector("#paye-employment-type");
+const payeSelectedIncomeLabel = document.querySelector("#paye-selected-income-label");
+const payeSelectedIncomeHelp = document.querySelector("#paye-selected-income-help");
+const payeOtherIncomeLabel = document.querySelector("#paye-other-income-label");
+const payeOtherIncomeHelp = document.querySelector("#paye-other-income-help");
+const payePrimaryItems = document.querySelector("#paye-primary-items");
+const payeNssfField = document.querySelector("#paye-nssf-field");
 const advisoryForm = document.querySelector("#tax-advisory-search");
 const advisoryQuery = document.querySelector("#advisory-query");
 const advisoryTopic = document.querySelector("#advisory-topic");
@@ -488,6 +495,7 @@ function setTaxHead(head, focusTab = false) {
   emptyResults.hidden = false;
   form.dataset.taxHead = head;
   updateWithholdingFields();
+  updatePayeEmploymentType();
   form.setAttribute("aria-labelledby", selectedTab.id);
   if (focusTab) selectedTab.focus();
 }
@@ -518,6 +526,7 @@ whtType.addEventListener("change", () => {
 customsDirection.addEventListener("change", updateCustomsMode);
 rentalTaxpayerType.addEventListener("change", updateRentalMode);
 rentalResidency.addEventListener("change", updateRentalMode);
+payeEmploymentType.addEventListener("change", updatePayeEmploymentType);
 
 for (const panel of taxFields) {
   const requiredControl = panel.querySelector("input, select");
@@ -536,6 +545,39 @@ function updateWithholdingFields() {
   whtGrossHelp.textContent = isBetting
     ? "Enter the payout before deducting the stake. Withholding is computed on payout less stake."
     : "For resident supply payments, withholding generally applies to designated agents on payments exceeding UGX 1,000,000.";
+}
+
+function updatePayeEmploymentType() {
+  const isSecondary = payeEmploymentType.value === "secondary";
+  const payeActive = form.dataset.taxHead === "paye";
+  const otherIncome = document.querySelector("#monthly-secondary-income");
+  const grossEarnings = document.querySelector("#monthly-gross-earnings");
+
+  payeSelectedIncomeLabel.textContent = isSecondary
+    ? "Monthly taxable pay from this secondary employer"
+    : "Monthly basic cash salary from primary employment";
+  payeSelectedIncomeHelp.textContent = isSecondary
+    ? "Enter this secondary employer's total monthly taxable pay, including assessed taxable benefits. Secondary withholding is estimated at 40%."
+    : "Enter basic salary only. Add assessed taxable pay and benefits in the primary employment schedule below.";
+  payeOtherIncomeLabel.childNodes[0].textContent = isSecondary
+    ? "Monthly taxable income from the primary employer "
+    : "Monthly taxable income from secondary employer(s) ";
+  payeOtherIncomeLabel.querySelector("span").textContent = isSecondary
+    ? "(required for combined two-employer estimate)"
+    : "(optional)";
+  payeOtherIncomeHelp.textContent = isSecondary
+    ? "Enter the primary employer's monthly taxable pay, including assessed taxable benefits. This is required to show total withholding across both employers and the indicative combined-income comparison."
+    : "Enter the combined monthly taxable pay, including assessed taxable benefits, from all other employers. Secondary-employment PAYE is estimated at 40%. Confirm current treatment with URA.";
+  payePrimaryItems.hidden = isSecondary;
+  for (const input of payePrimaryItems.querySelectorAll("input")) {
+    input.disabled = isSecondary || !payeActive;
+  }
+  payeNssfField.hidden = isSecondary;
+  grossEarnings.disabled = isSecondary || !payeActive;
+  otherIncome.required = isSecondary && payeActive;
+  otherIncome.placeholder = isSecondary
+    ? "Primary employer's monthly taxable pay"
+    : "Total from other employer(s)";
 }
 
 function renderResult({
@@ -615,17 +657,26 @@ function showIncomeTax() {
 
 function showPaye() {
   const salary = document.querySelector("#monthly-salary").valueAsNumber;
-  const taxableItems = readAdjustmentItems("data-paye-taxable-item");
+  const isSecondary = payeEmploymentType.value === "secondary";
+  const taxableItems = isSecondary
+    ? []
+    : readAdjustmentItems("data-paye-taxable-item");
   const taxableItemsTotal = taxableItems.reduce((total, item) => total + item.amount, 0);
-  const primaryMonthlyIncome = salary + taxableItemsTotal;
-  const secondaryIncomeInput = document.querySelector("#monthly-secondary-income");
-  const secondaryMonthlyIncome = secondaryIncomeInput.value === ""
+  const selectedMonthlyIncome = salary + taxableItemsTotal;
+  const otherIncomeInput = document.querySelector("#monthly-secondary-income");
+  const otherMonthlyIncome = otherIncomeInput.value === ""
     ? 0
-    : secondaryIncomeInput.valueAsNumber;
+    : otherIncomeInput.valueAsNumber;
+  const primaryMonthlyIncome = isSecondary
+    ? otherMonthlyIncome
+    : selectedMonthlyIncome;
+  const secondaryMonthlyIncome = isSecondary
+    ? selectedMonthlyIncome
+    : otherMonthlyIncome;
   const grossInput = document.querySelector("#monthly-gross-earnings");
-  const primaryMonthlyGross = grossInput.value === ""
-    ? primaryMonthlyIncome
-    : grossInput.valueAsNumber;
+  const primaryMonthlyGross = !isSecondary && grossInput.value !== ""
+    ? grossInput.valueAsNumber
+    : primaryMonthlyIncome;
   const isResident = document.querySelector("#paye-residency").value === "resident";
   const estimate = ugandaTax.calculatePayeWithSecondaryEmployment(
     primaryMonthlyIncome,
@@ -636,7 +687,7 @@ function showPaye() {
 
   renderResult({
     value: estimate.totalMonthlyWithholding,
-    label: "Estimated total PAYE withholding per month",
+    label: "Estimated total PAYE withholding across entered employers",
     context: `Primary PAYE: ${formatUgx(estimate.primaryMonthlyTax)} · Secondary withholding: ${formatUgx(estimate.secondaryMonthlyTax)} at 40% · Combined-income progressive estimate: ${formatUgx(estimate.estimatedMonthlyTaxOnCombinedIncome)}/month before credits or reliefs`,
     breakdown: estimate.primaryBreakdown.map((band) => ({
       label: `Primary employment — ${band.label}`,
@@ -644,7 +695,13 @@ function showPaye() {
       amount: band.tax,
     })),
     extraRows: [
-      { label: "Primary employment — monthly cash salary", rate: null, amount: salary },
+      {
+        label: isSecondary
+          ? "Selected secondary employer — monthly taxable pay"
+          : "Primary employment — monthly cash salary",
+        rate: null,
+        amount: salary,
+      },
       ...taxableItems.map((item) => ({
         label: `Primary employment — ${item.label}`,
         rate: null,
@@ -665,13 +722,17 @@ function showPaye() {
       { label: "Combined annual employment income (assuming 12 equal months)", rate: null, amount: estimate.combinedAnnualTaxableIncome },
       { label: "Indicative monthly tax on combined income using progressive bands", rate: null, amount: estimate.estimatedMonthlyTaxOnCombinedIncome },
       { label: "Withholding above/(below) combined-income band estimate", rate: null, amount: estimate.monthlyWithholdingDifference },
-      { label: "Employee NSSF at primary employer (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
-      { label: "Employer NSSF at primary employer (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
+      ...(!isSecondary
+        ? [
+          { label: "Employee NSSF at primary employer (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
+          { label: "Employer NSSF at primary employer (separate contribution)", rate: 0.1, amount: estimate.monthlyEmployerNssf },
+        ]
+        : []),
     ],
     breakdownHeading: "Monthly PAYE and payroll",
     breakdownCaption: "Primary progressive PAYE and secondary 40% withholding; NSSF is separate",
     taxRuleSet: estimate.taxRuleSet,
-    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly income for 12 months. The designated primary employer uses the progressive bands; secondary employment withholding is estimated at the standard 40% rate. The combined-income progressive estimate is a comparison before credits, reliefs or annual adjustments, not a final assessment or refund calculation. Confirm the employee's primary-employer designation and current treatment with URA. Enter secondary taxable income from all other employers once; assess taxable benefits separately and do not double count them. NSSF is shown only for the primary-employer gross earnings entered; assess each employer's obligations separately. The estimator does not value benefits, determine exemptions, or calculate special treatment for lump sums, share schemes or termination pay.`,
+    note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly income for 12 months. The employer selected above is treated as ${isSecondary ? "secondary" : "primary"}; primary employment uses progressive bands and secondary employment withholding is estimated at 40%, based on a reported URA clarification. This FY 2026/27 rate remains pending primary-source verification and must be confirmed with URA before payroll use. The combined-income progressive estimate is only an indicative comparison before credits, reliefs or annual adjustments, not a final assessment or refund calculation. Enter the primary and secondary taxable pay once each; assess benefits separately and do not double count them. NSSF is shown only when primary employment is selected; assess each employer's obligations separately. The estimator does not value benefits, determine exemptions, or calculate special treatment for lump sums, share schemes or termination pay.`,
   });
 }
 

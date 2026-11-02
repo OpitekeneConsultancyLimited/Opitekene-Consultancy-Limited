@@ -37,9 +37,11 @@ reusing current-year guidance.
   exemptions, or calculate the special treatment that may apply to lump sums,
   share schemes or termination payments. Examples of possible exclusions are
   shown as reminders only; verify their statutory conditions before excluding
-  anything. Where a person has more than one employer, the calculator applies
+  anything. Where a person has more than one employer, the PAYE calculator
+  lets the user select primary or secondary employment and enter the other
+  employer's taxable pay for a combined withholding estimate. It applies
   progressive bands to the designated primary employment and the reported
-  standard 40% withholding rate to combined secondary employment income. The
+  standard 40% withholding rate to secondary employment income. The
   40% rate is based on URA's clarification as reported by Uganda Radio Network;
   verify the current Income Tax Act, regulations and URA instructions before
   payroll use. The combined-income progressive comparison assumes 12 equal

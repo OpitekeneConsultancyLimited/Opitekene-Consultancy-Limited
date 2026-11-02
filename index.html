@@ -19,8 +19,8 @@
     <link rel="stylesheet" href="styles.css?v=tax-chat-calculator-links-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
-    <script src="tax-calculator.js?v=secondary-paye-1" defer></script>
-    <script src="app.js?v=secondary-paye-1" defer></script>
+    <script src="tax-calculator.js?v=paye-role-selector-1" defer></script>
+    <script src="app.js?v=paye-role-selector-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
@@ -173,11 +173,19 @@
                 </select>
               </div>
               <div class="field">
-                <label for="monthly-salary">Monthly basic cash salary before PAYE</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-salary" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
-                <p class="field-help">Enter basic salary only. Add other taxable pay and benefits in the itemized schedule below.</p>
+                <label for="paye-employment-type">This employer's role</label>
+                <select id="paye-employment-type" disabled>
+                  <option value="primary">Primary employment — progressive PAYE</option>
+                  <option value="secondary">Secondary employment — 40% withholding estimate</option>
+                </select>
+                <p class="field-help">Select the role of the employer whose pay you enter below. The reported Uganda treatment applies progressive PAYE to the designated primary employment and 40% withholding to secondary employment. This FY 2026/27 rate remains pending primary-source verification; confirm current treatment with URA.</p>
               </div>
-              <details class="adjustment-details">
+              <div class="field">
+                <label for="monthly-salary" id="paye-selected-income-label">Monthly basic cash salary from primary employment</label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-salary" type="number" min="0" step="1" inputmode="numeric" placeholder="e.g. 5000000" data-required="true" disabled></div>
+                <p class="field-help" id="paye-selected-income-help">Enter basic salary only. Add assessed taxable pay and benefits in the primary employment schedule below.</p>
+              </div>
+              <details class="adjustment-details" id="paye-primary-items">
                 <summary>Itemize taxable pay and benefits</summary>
                 <p class="field-help">
                   Enter the monthly taxable amount you have determined for each item. Benefit valuation,
@@ -194,11 +202,11 @@
                 </p>
               </details>
               <div class="field">
-                <label for="monthly-secondary-income">Monthly taxable income from secondary employment <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-secondary-income" type="number" min="0" step="1" inputmode="numeric" placeholder="Total from other employer(s)" disabled></div>
-                <p class="field-help">Enter the combined monthly taxable pay, including assessed taxable benefits, from all other employers. Secondary-employment PAYE withholding is estimated at the standard 40% rate. See <a href="https://ura.go.ug/en/domestic-taxes/paye-rates/" target="_blank" rel="noopener noreferrer">URA PAYE rates</a>. Confirm the primary employer designation and treatment with URA.</p>
+                <label for="monthly-secondary-income" id="paye-other-income-label">Monthly taxable income from secondary employer(s) <span>(optional)</span></label>
+                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-secondary-income" type="number" min="0" step="1" inputmode="numeric" placeholder="Total taxable pay from other employer(s)" disabled></div>
+                <p class="field-help" id="paye-other-income-help">Enter combined monthly taxable pay from all other employers. Secondary withholding is estimated at 40%; confirm current treatment with URA.</p>
               </div>
-              <div class="field">
+              <div class="field" id="paye-nssf-field">
                 <label for="monthly-gross-earnings">Monthly gross earnings for NSSF <span>(optional)</span></label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="monthly-gross-earnings" type="number" min="0" step="1" inputmode="numeric" placeholder="Defaults to taxable pay" disabled></div>
                 <p class="field-help">NSSF is calculated separately from PAYE. If omitted, taxable pay is used as a rough earnings proxy.</p>

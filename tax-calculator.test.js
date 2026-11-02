@@ -138,6 +138,16 @@ test("applies progressive primary PAYE and 40% secondary-employment withholding"
   assert.equal(estimate.monthlyWithholdingDifference, 100_000);
 });
 
+test("supports selecting either employer while calculating combined withholding once", () => {
+  const primarySelected = calculatePayeWithSecondaryEmployment(3_000_000, 1_000_000);
+  const secondarySelected = calculatePayeWithSecondaryEmployment(3_000_000, 1_000_000);
+
+  assert.equal(primarySelected.totalMonthlyWithholding, 1_188_250);
+  assert.equal(secondarySelected.totalMonthlyWithholding, 1_188_250);
+  assert.equal(secondarySelected.primaryMonthlyTax, 788_250);
+  assert.equal(secondarySelected.secondaryMonthlyTax, 400_000);
+});
+
 test("secondary PAYE calculation matches primary-only results when secondary income is zero", () => {
   const primary = calculatePaye(4_000_000);
   const combined = calculatePayeWithSecondaryEmployment(4_000_000);
