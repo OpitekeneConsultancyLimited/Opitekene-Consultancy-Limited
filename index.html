@@ -687,11 +687,12 @@
             <h2 id="advisory-title">Find a tax answer.</h2>
             <p>Search practical, source-linked guidance for the tax topics covered by TaxComp.</p>
           </div>
-          <span class="advisory-review-date">Reviewed 31 Oct 2026 · FY 2026/27</span>
+          <span class="advisory-review-date">Content reviewed 31 Oct 2026 ? FY 2026/27</span>
         </div>
 
         <div class="advisory-caveat" role="note">
           This is educational guidance, not a lawyer, accountant, URA ruling or personalized tax advice.
+          The content review date is not a legal verification date; chat notes without documented primary-source checks are marked Unverified.
           When connected, AI chat can search current public web sources alongside reviewed TaxComp notes,
           but it can still make mistakes and does not monitor laws continuously. Check official citations
           and effective dates before filing, paying or taking a legal position.
@@ -741,21 +742,25 @@
           <div>
             <p class="eyebrow section-eyebrow">TAXCOMP CHAT</p>
             <h2 id="tax-chat-title">Ask a tax question.</h2>
-            <p>Ask about Uganda taxes, reviewed guidance or case summaries. When the secure AI service is connected, it can search current web sources, show citations and open a related calculator.</p>
+            <p>Ask about Uganda taxes, reviewed guidance or case summaries. If Google Search grounding is available, the AI can cite current public web sources and open a related calculator; otherwise, answers use TaxComp local notes with clear verification labels.</p>
           </div>
           <button class="tax-chat-clear" id="tax-chat-clear" type="button">Clear chat</button>
         </div>
         <p class="tax-chat-privacy" role="note">
           Do not enter your TIN, passwords, mobile-money PINs, account numbers or confidential documents.
-          The chat does not save history; when AI is connected, your question and recent chat turns are sent
-          through Cloudflare to Google Gemini, which can use Google Search to find current public sources.
-          Always check the cited sources and effective dates.
+          Chat history is not saved. When AI is connected, your question and recent chat turns are sent
+          through Cloudflare to Google Gemini. Only grounded responses are labeled as live web research;
+          this chat does not accept uploaded client documents. Always check cited sources and effective dates.
         </p>
         <div class="tax-chat-panel">
           <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
           <form class="tax-chat-form" id="tax-chat-form">
             <label for="tax-chat-input">Your question</label>
             <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
+            <label class="tax-chat-record-consent" for="tax-chat-record-unanswered">
+              <input id="tax-chat-record-unanswered" type="checkbox">
+              If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
+            </label>
             <div class="tax-chat-form-footer">
               <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
               <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
