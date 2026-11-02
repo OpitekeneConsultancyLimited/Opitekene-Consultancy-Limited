@@ -43,6 +43,10 @@ Never enter confidential personal or business data.
    npx wrangler deploy
    ```
 
+   The Wrangler config enables Worker Observability at a 100% sampling rate.
+   The Worker logs only the upstream Gemini HTTP status on provider errors; it
+   does not log the API key or provider response body.
+
 6. In `index.html`, set the `taxcomp-chat-endpoint` meta tag's `content` to the
    deployed Worker URL followed by `/chat`, for example:
 
