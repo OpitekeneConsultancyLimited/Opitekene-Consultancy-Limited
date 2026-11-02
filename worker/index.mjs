@@ -260,6 +260,7 @@ async function callGemini(question, history, evidence, env) {
     });
 
     if (!response.ok) {
+      console.error("Gemini API request failed", { status: response.status });
       return {
         error: response.status === 429
           ? "The AI service is busy. Please try again shortly."
