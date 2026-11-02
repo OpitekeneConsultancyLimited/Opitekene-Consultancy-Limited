@@ -4,13 +4,22 @@ TaxComp is an installable Progressive Web App (PWA). It uses the same site
 code and calculators and does not require an app-store account or a separate
 native mobile codebase.
 
-## Install
+## Install or download TaxComp
 
-- **Android or desktop Chrome/Edge:** open the TaxComp site over HTTPS (or
-  `http://localhost` for local testing). Use the site's **Install app** button
-  when offered, or the browser's Install app menu.
-- **iPhone or iPad:** open the HTTPS site in Safari, tap **Share**, then choose
-  **Add to Home Screen**.
+- Open the official TaxComp site: <https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/>.
+- Select **Install TaxComp** on the home page to open the installation prompt or
+  device-specific instructions.
+- **Android:** open the site in Chrome, tap the three-dot menu, then choose
+  **Install app** or **Add to Home screen**. The **Install TaxComp** button
+  opens these steps if Chrome does not offer a direct install prompt.
+- **iPhone or iPad:** open the site in Safari, tap **Share**, scroll down, then
+  choose **Add to Home Screen**. Other iPhone browsers may need you to open the
+  page in Safari first.
+- **Windows or Mac:** open the site in Chrome or Edge, open the browser menu,
+  then choose **Install app**. Some browser versions also show an install icon
+  in the address bar.
+- **No APK download or app-store account is needed.** TaxComp is installed
+  directly from its official HTTPS website. Installation and use are free.
 - **Run the local copy:** from the project folder run `py run_taxcomp.py`, then
   use the browser's install menu at `http://127.0.0.1:8000/`. Keep the server
   running while using this local installation.

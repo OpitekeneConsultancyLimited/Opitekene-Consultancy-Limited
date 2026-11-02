@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Test tax rules, Worker and EFRIS
-        run: node --test tax-calculator.test.js tax-rules.test.js worker/index.test.mjs worker/efris.test.mjs
+      - name: Test tax rules, Worker, EFRIS and app installation
+        run: node --test tax-calculator.test.js tax-rules.test.js worker/index.test.mjs worker/efris.test.mjs app-install.test.js
 
   deploy:
     needs: test

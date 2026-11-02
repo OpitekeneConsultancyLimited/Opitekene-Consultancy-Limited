@@ -25,7 +25,7 @@
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
-    <script src="app-install.js?v=pwa-1" defer></script>
+    <script src="app-install.js?v=pwa-install-guide-2" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -44,7 +44,7 @@
         Book a consultation
         <span aria-hidden="true">↗</span>
       </a>
-      <button class="header-link install-app-button" id="install-app" type="button" hidden>Install app</button>
+      <button class="header-link install-app-button" id="install-app" data-install-app type="button" hidden>Install app</button>
     </header>
     <p class="install-app-help" id="install-help" role="status" hidden></p>
 
@@ -75,6 +75,10 @@
               <strong>Talk to a consultant</strong>
               <span>Book professional support</span>
             </a>
+            <button class="hero-product-action" id="install-app-hero" data-install-app type="button">
+              <strong>Install TaxComp</strong>
+              <span>Free app for your phone or computer</span>
+            </button>
           </div>
           <div class="trust-note">
             <svg viewBox="0 0 20 20" aria-hidden="true">
@@ -96,6 +100,31 @@
           <span class="art-spark spark-one">✳</span>
           <span class="art-spark spark-two">✳</span>
         </div>
+      </section>
+
+      <section class="info-section" id="install-guide" aria-labelledby="install-guide-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">FREE APP · OFFLINE ACCESS</p>
+            <h2 id="install-guide-title">Install TaxComp on your device.</h2>
+          </div>
+        </div>
+        <p>TaxComp is a free installable web app. Open this site once while online, then install it from your browser. The calculators and app shell can work offline after their first successful load; AI chat and external tax sources still need internet.</p>
+        <div class="install-guide-grid">
+          <article>
+            <h3>Android</h3>
+            <p>Open this page in Chrome, tap the three-dot menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+          </article>
+          <article>
+            <h3>iPhone or iPad</h3>
+            <p>Open this page in Safari, tap <strong>Share</strong>, scroll down, and choose <strong>Add to Home Screen</strong>.</p>
+          </article>
+          <article>
+            <h3>Windows or Mac</h3>
+            <p>Open this page in Chrome or Edge, open the browser menu, and choose <strong>Install app</strong>.</p>
+          </article>
+        </div>
+        <p class="install-download-note">No separate APK or app-store download is required. This app is installed securely from the official TaxComp website.</p>
       </section>
 
       <section class="estimator-section" id="estimator" aria-labelledby="estimator-title">

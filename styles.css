@@ -232,6 +232,9 @@ p {
   background: var(--white);
   color: var(--ink);
   text-decoration: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -264,6 +267,39 @@ p {
 
 .hero-product-action.primary span {
   color: #e2eee7;
+}
+
+.install-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.install-guide-grid article {
+  padding: 18px;
+  border: 1px solid #d5e1d7;
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.install-guide-grid h3 {
+  margin: 0 0 8px;
+  color: var(--green-dark);
+  font-size: 15px;
+}
+
+.install-guide-grid p,
+.install-download-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.install-download-note {
+  padding-top: 12px;
+  border-top: 1px solid #d5e1d7;
 }
 
 .trust-note {
@@ -2517,6 +2553,10 @@ td:first-child {
 
   .hero-product-action {
     padding: 10px;
+  }
+
+  .install-guide-grid {
+    grid-template-columns: 1fr;
   }
 
   .hero-art {
