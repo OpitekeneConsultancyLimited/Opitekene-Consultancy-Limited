@@ -1,34 +1,38 @@
 {
-  "id": "./",
-  "name": "TaxComp Uganda Tax Assistant",
-  "short_name": "TaxComp",
-  "description": "Uganda tax calculators, reviewed guidance and case summaries.",
-  "lang": "en-UG",
-  "start_url": "./",
-  "scope": "./",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#f6f7f2",
-  "theme_color": "#176345",
-  "categories": ["finance", "business", "productivity"],
-  "icons": [
-    {
-      "src": "./icons/taxcomp-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icons/taxcomp-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icons/taxcomp-180.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ]
+    "id":  "./",
+    "name":  "Opitekene TaxComp",
+    "short_name":  "TaxComp",
+    "description":  "Uganda tax estimates, source-linked guidance and professional support.",
+    "lang":  "en-UG",
+    "start_url":  "./",
+    "scope":  "./",
+    "display":  "standalone",
+    "orientation":  "portrait-primary",
+    "background_color":  "#f6f7f2",
+    "theme_color":  "#176345",
+    "categories":  [
+                       "finance",
+                       "business",
+                       "productivity"
+                   ],
+    "icons":  [
+                  {
+                      "src":  "./icons/taxcomp-192.png",
+                      "sizes":  "192x192",
+                      "type":  "image/png",
+                      "purpose":  "any"
+                  },
+                  {
+                      "src":  "./icons/taxcomp-512.png",
+                      "sizes":  "512x512",
+                      "type":  "image/png",
+                      "purpose":  "any maskable"
+                  },
+                  {
+                      "src":  "./icons/taxcomp-180.png",
+                      "sizes":  "180x180",
+                      "type":  "image/png",
+                      "purpose":  "any"
+                  }
+              ]
 }
