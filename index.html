@@ -19,7 +19,7 @@
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-calculator.js?v=20261102-smart-summary-export-1" defer></script>
     <script src="app.js?v=direct-worked-example-links-1" defer></script>
-    <script src="tax-chat.js?v=tax-chat-calculator-links-1" defer></script>
+    <script src="tax-chat.js?v=google-search-grounding-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-1" defer></script>
@@ -692,8 +692,9 @@
 
         <div class="advisory-caveat" role="note">
           This is educational guidance, not a lawyer, accountant, URA ruling or personalized tax advice.
-          The AI chat uses reviewed TaxComp notes and can make mistakes; it does not automatically track
-          new laws. Check cited sources and effective dates before filing, paying or taking a legal position.
+          When connected, AI chat can search current public web sources alongside reviewed TaxComp notes,
+          but it can still make mistakes and does not monitor laws continuously. Check official citations
+          and effective dates before filing, paying or taking a legal position.
         </div>
 
         <form class="advisory-search" id="tax-advisory-search" role="search">
@@ -740,14 +741,15 @@
           <div>
             <p class="eyebrow section-eyebrow">TAXCOMP CHAT</p>
             <h2 id="tax-chat-title">Ask a tax question.</h2>
-            <p>Ask in your own words about Uganda taxes, reviewed guidance or case summaries. When a note matches a supported tax head, open its calculator directly from the answer.</p>
+            <p>Ask about Uganda taxes, reviewed guidance or case summaries. When the secure AI service is connected, it can search current web sources, show citations and open a related calculator.</p>
           </div>
           <button class="tax-chat-clear" id="tax-chat-clear" type="button">Clear chat</button>
         </div>
         <p class="tax-chat-privacy" role="note">
           Do not enter your TIN, passwords, mobile-money PINs, account numbers or confidential documents.
           The chat does not save history; when AI is connected, your question and recent chat turns are sent
-          to Google Gemini through Cloudflare to generate a reply.
+          through Cloudflare to Google Gemini, which can use Google Search to find current public sources.
+          Always check the cited sources and effective dates.
         </p>
         <div class="tax-chat-panel">
           <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>

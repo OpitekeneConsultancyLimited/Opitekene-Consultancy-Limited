@@ -14,15 +14,6 @@
     "the", "this", "under", "what", "when", "where", "which", "with", "would",
     "you", "your", "tax", "taxes", "uganda",
   ]);
-  const approvedHosts = new Set([
-    "ura.go.ug",
-    "taxsummaries.pwc.com",
-    "ulii.org",
-    "www.eac.int",
-    "singlewindow.go.ug",
-    "oecd.org",
-    "www.oecd.org",
-  ]);
   const calculatorLabels = {
     individual: "Individual income",
     paye: "PAYE",
@@ -86,6 +77,7 @@
       .filter((entry) => entry.score > 0);
     const matches = [...guidance, ...cases]
       .sort((a, b) => b.score - a.score)
+      .filter((entry) => entry.score >= 2)
       .slice(0, 3);
 
     if (matches.length === 0) {
@@ -129,7 +121,8 @@
     }
     try {
       const url = new URL(source.url);
-      if (url.protocol !== "https:" || !approvedHosts.has(url.hostname)) return null;
+      if (url.protocol !== "https:" || !url.hostname ||
+          url.username || url.password || source.url.length > 2048) return null;
       return { label: source.label.slice(0, 180), url: url.href };
     } catch {
       return null;
@@ -210,7 +203,9 @@
     function addWelcome() {
       renderMessage(
         "assistant",
-        "Hello! Ask me about Uganda tax topics, cross-border tax issues, or TaxComp's published case summaries. I use reviewed TaxComp notes and will say when I can't verify an answer.",
+        endpoint
+          ? "Hello! Ask me about Uganda tax or related international-tax topics. I use reviewed TaxComp notes and search the web for current sources when needed; check the cited sources before relying on an answer."
+          : "Hello! Ask me about Uganda tax or related international-tax topics. This chat currently uses TaxComp's reviewed local notes only; live web search is not connected yet.",
       );
     }
 
@@ -220,7 +215,7 @@
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 25_000);
+      const timeout = setTimeout(() => controller.abort(), 30_000);
       try {
         const response = await fetch(endpoint, {
           method: "POST",
@@ -244,6 +239,7 @@
           answer: data.answer.trim(),
           sources: Array.isArray(data.sources) ? data.sources : [],
           calculators: Array.isArray(data.calculators) ? data.calculators : [],
+          webGrounded: data.webGrounded === true,
         };
       } finally {
         clearTimeout(timeout);
@@ -269,8 +265,8 @@
       input.disabled = true;
       submit.disabled = true;
       status.textContent = endpoint
-        ? "Checking the reviewed notes and preparing an answer…"
-        : "Searching the reviewed TaxComp notes…";
+        ? "Checking TaxComp notes and searching current web sources…"
+        : "Searching local TaxComp notes. Live web search is not connected yet.";
 
       try {
         const result = await getAnswer(question);
@@ -280,9 +276,11 @@
           { role: "model", text: result.answer },
         );
         if (endpoint) {
-          status.textContent = "AI reply generated from the supplied TaxComp notes. Verify important positions against the cited source.";
+          status.textContent = result.webGrounded
+            ? "AI reply includes Google Search sources. Verify important tax positions against the cited primary source and effective date."
+            : "No web sources were returned for this answer. Treat it as unverified and check current official guidance.";
         } else {
-          status.textContent = "AI setup is pending; this reply came only from the reviewed local notes.";
+          status.textContent = "Live web search is not connected; this reply came only from reviewed local notes and may not reflect current law.";
         }
       } catch (error) {
         const fallback = findLocalAnswer(question, root.ugandaTaxAdvisory);
@@ -291,11 +289,11 @@
           : error.message;
         renderMessage(
           "assistant",
-          `${serviceMessage} ${fallback.answer}`,
+          `Web-enabled AI is unavailable, so I cannot verify current information. ${serviceMessage}\n\n${fallback.answer}`,
           fallback.sources,
           fallback.calculators,
         );
-        status.textContent = "The AI service did not answer; this response uses only matching local TaxComp notes.";
+        status.textContent = "The AI service did not answer. This fallback uses only reviewed local notes, not a live web search.";
       } finally {
         busy = false;
         input.disabled = false;
@@ -341,7 +339,7 @@
       conversation.length = 0;
       status.textContent = endpoint
         ? "Chat history cleared from this browser session."
-        : "Chat history cleared from this browser session. AI setup is still pending.";
+        : "Chat history cleared. Live web search is not connected; answers use local notes only.";
       addWelcome();
       input.focus();
     });

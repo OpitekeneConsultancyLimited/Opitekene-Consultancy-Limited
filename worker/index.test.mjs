@@ -49,7 +49,7 @@ test("handles preflight only for the configured TaxComp origin", async () => {
   assert.equal(rejected.status, 403);
 });
 
-test("rejects malformed, oversized and unsupported requests before calling Gemini", async () => {
+test("rejects malformed requests and keeps unrelated questions in scope", async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async () => {
     throw new Error("Gemini must not be called for invalid requests");
@@ -64,9 +64,9 @@ test("rejects malformed, oversized and unsupported requests before calling Gemin
     );
     assert.equal(wrongType.status, 415);
 
-    const unknown = await handleRequest(request({ message: "weather tomorrow" }), env);
-    assert.equal(unknown.status, 200);
-    assert.match((await unknown.json()).answer, /cannot verify|could not find/i);
+    const unrelated = await handleRequest(request({ message: "weather tomorrow" }), env);
+    assert.equal(unrelated.status, 200);
+    assert.match((await unrelated.json()).answer, /Uganda tax/i);
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -110,14 +110,101 @@ test("uses Gemini with a server-side key and returns curated source links", asyn
     assert.doesNotMatch(body.answer, /\[99\]/);
     assert.ok(body.calculators.includes("vat"));
     assert.ok(body.sources.some((source) => source.url === "https://www.ura.go.ug/"));
+    assert.equal(body.webGrounded, false);
     assert.equal(upstreamRequest.options.headers["x-goog-api-key"], env.GEMINI_API_KEY);
     assert.equal(new URL(upstreamRequest.url).search, "");
     const sentBody = JSON.parse(upstreamRequest.options.body);
     const systemPrompt = sentBody.systemInstruction.parts[0].text;
-    assert.match(systemPrompt, /Answer only from the evidence notes/);
+    assert.match(systemPrompt, /use Google Search to check current information/i);
+    assert.match(systemPrompt, /Prefer current primary sources/);
     assert.match(systemPrompt, /Guidance note \[1, 2\]: VAT registration thresholds/);
     assert.match(systemPrompt, /\[1\] PwC Uganda VAT and other taxes/);
     assert.match(systemPrompt, /\[2\] Uganda Revenue Authority/);
+    assert.deepEqual(sentBody.tools, [{ google_search: {} }]);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("returns only cited HTTPS Google Search sources with inline grounded citations", async () => {
+  const previousFetch = globalThis.fetch;
+  const answer = "URA published current VAT guidance.";
+  globalThis.fetch = async (_url, options) => {
+    const sentBody = JSON.parse(options.body);
+    assert.deepEqual(sentBody.tools, [{ google_search: {} }]);
+    return new Response(JSON.stringify({
+      candidates: [{
+        content: { parts: [{ text: answer }] },
+        groundingMetadata: {
+          groundingChunks: [
+            { web: { uri: "https://www.ura.go.ug/en/domestic-taxes/vat/", title: "URA VAT" } },
+            { web: { uri: "http://insecure.example/rates", title: "Insecure result" } },
+            { web: { uri: "https://www.ura.go.ug/en/domestic-taxes/vat/", title: "Duplicate URA result" } },
+            { web: { uri: "https://example.com/uncited", title: "Uncited result" } },
+          ],
+          groundingSupports: [{
+            segment: { startIndex: 0, endIndex: answer.length, text: answer },
+            groundingChunkIndices: [0, 1, 2],
+          }],
+        },
+      }],
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  try {
+    const response = await handleRequest(request({
+      message: "What is the current VAT registration threshold?",
+    }), env);
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.webGrounded, true);
+    const sourceIndex = body.sources.findIndex(
+      (source) => source.url === "https://www.ura.go.ug/en/domestic-taxes/vat/",
+    ) + 1;
+    assert.ok(sourceIndex > 0);
+    assert.match(body.answer, new RegExp(`\\[${sourceIndex}\\]`));
+    for (const [, citation] of body.answer.matchAll(/\[(\d+)\]/g)) {
+      assert.ok(Number(citation) <= body.sources.length);
+    }
+    assert.equal(
+      body.sources.filter((source) => source.url === "https://www.ura.go.ug/en/domestic-taxes/vat/").length,
+      1,
+    );
+    assert.ok(body.sources.every((source) => source.url.startsWith("https://")));
+    assert.ok(body.sources.every((source) => !source.url.includes("/uncited")));
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("uses Google Search for tax questions without a matching curated note", async () => {
+  const previousFetch = globalThis.fetch;
+  let upstreamCalled = false;
+  globalThis.fetch = async (_url, options) => {
+    upstreamCalled = true;
+    assert.deepEqual(JSON.parse(options.body).tools, [{ google_search: {} }]);
+    return new Response(JSON.stringify({
+      candidates: [{
+        content: { parts: [{ text: "I could not verify a current official source." }] },
+      }],
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  try {
+    const response = await handleRequest(request({
+      message: "What recent tax circular changed the new levy?",
+    }), env);
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(upstreamCalled, true);
+    assert.equal(body.webGrounded, false);
   } finally {
     globalThis.fetch = previousFetch;
   }

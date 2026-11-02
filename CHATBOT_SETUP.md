@@ -1,24 +1,29 @@
 # TaxComp chat setup
 
-The chat UI currently answers from TaxComp's reviewed guidance and case notes in
-the browser and can open the corresponding tax calculator when a guidance note
-matches. Open-ended Gemini replies remain disabled until a Cloudflare Worker
-and Gemini API key are configured. The API key must never be added to the site
-or committed to this repository.
+When the secure endpoint is connected, the chat sends the question to a
+Cloudflare Worker. Gemini can use Google Search grounding to find current public
+web sources, alongside the relevant reviewed TaxComp notes and cases. The
+answer includes links to sources returned by Google Search. Without the
+endpoint, the browser can only search its bundled TaxComp notes and cannot
+browse the web. The Gemini API key must never be added to the site or committed
+to this repository.
 
-The chat is not a substitute for a tax professional and cannot safely resolve
-every fact-specific tax question. It only uses TaxComp's reviewed knowledge
-notes; it is not connected to a live legislation feed. Use the calculators for
-arithmetic, verify eligibility and assumptions, and confirm complex positions
-with URA or a qualified Ugandan tax adviser.
+Web search can improve currency and provide citations, but it does not
+guarantee accuracy or completeness, and the assistant does not monitor laws
+continuously. Prefer cited primary authorities, check effective dates, and
+confirm important positions with URA or a qualified Ugandan tax adviser.
+Never enter confidential personal or business data.
 
 ## Deploy the secure Gemini endpoint
 
 1. Create a Cloudflare account and enable Workers, then install Node.js if it is
    not already installed.
-2. Create a Gemini API key in Google AI Studio. Do not send the key in chat,
-   email, or a source file.
-3. In PowerShell, change to the `tax-estimator` directory and authenticate:
+2. Create a Gemini API key in Google AI Studio. Google Search grounding is
+   enabled in the Worker using Gemini's built-in `google_search` tool; no
+   separate search API key is needed. Check current Gemini pricing and
+   grounding terms. Do not send the key in chat, email, or a source file.
+3. In PowerShell, change to the repository root (the directory containing
+   `wrangler.toml`) and authenticate:
 
    ```powershell
    npx wrangler login
@@ -50,9 +55,12 @@ with URA or a qualified Ugandan tax adviser.
 
 The Worker restricts browser calls to the TaxComp GitHub Pages origin, limits
 each IP address to eight requests per minute, limits questions and response
-size, retrieves only relevant curated TaxComp notes, and does not store chat
-history. Its Gemini key is sent in a request header and is never returned to
-the browser. The browser also validates source links before displaying them.
+size, retrieves relevant curated TaxComp notes for Uganda tax questions, and
+does not store chat history. It asks Gemini to use Google Search for current
+tax information and prioritise official sources. The Worker validates
+grounding links as HTTPS and returns only source metadata; it never exposes
+the Gemini key to the browser. Search results and AI-generated answers can
+still be wrong or out of date, so verify primary sources and effective dates.
 
 ## Before enabling public AI replies
 
