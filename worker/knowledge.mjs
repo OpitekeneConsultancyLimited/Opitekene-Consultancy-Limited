@@ -2,42 +2,52 @@ export const sources = {
   ura: {
     label: "Uganda Revenue Authority",
     url: "https://www.ura.go.ug/",
+    sourceType: "ura_publication",
   },
   individual: {
     label: "PwC Uganda individual income tax (secondary summary)",
     url: "https://taxsummaries.pwc.com/uganda/individual/taxes-on-personal-income",
+    sourceType: "secondary_publication",
   },
   corporate: {
     label: "PwC Uganda corporate income tax (secondary summary)",
     url: "https://taxsummaries.pwc.com/uganda/corporate/taxes-on-corporate-income",
+    sourceType: "secondary_publication",
   },
   capitalAllowances: {
     label: "PwC Uganda capital allowances (secondary summary)",
     url: "https://taxsummaries.pwc.com/uganda/corporate/deductions",
+    sourceType: "secondary_publication",
   },
   vat: {
     label: "PwC Uganda VAT and other taxes (secondary summary)",
     url: "https://taxsummaries.pwc.com/uganda/corporate/other-taxes",
+    sourceType: "secondary_publication",
   },
   withholding: {
     label: "PwC Uganda withholding taxes (secondary summary)",
     url: "https://taxsummaries.pwc.com/uganda/corporate/withholding-taxes",
+    sourceType: "secondary_publication",
   },
   transferPricing: {
     label: "OECD Transfer Pricing Guidelines",
     url: "https://www.oecd.org/tax/transfer-pricing/oecd-transfer-pricing-guidelines-for-multinational-enterprises-and-tax-administrations-20769717.htm",
+    sourceType: "international_publication",
   },
   beps: {
     label: "OECD Base Erosion and Profit Shifting (BEPS)",
     url: "https://www.oecd.org/tax/beps/",
+    sourceType: "international_publication",
   },
   customs: {
     label: "East African Community Common External Tariff resources",
     url: "https://www.eac.int/documents/category/eac-common-external-tariff",
+    sourceType: "regional_publication",
   },
   ulIi: {
     label: "Uganda Legal Information Institute judgments",
     url: "https://ulii.org/en/judgments/",
+    sourceType: "case_law",
   },
 };
 
@@ -217,7 +227,13 @@ export function queryTerms(text) {
 export function retrieveKnowledge(question) {
   const terms = queryTerms(question);
   if (terms.length === 0) {
-    return { guidance: [], cases: [], sources: [], calculators: [] };
+    return {
+      guidance: [],
+      cases: [],
+      sources: [],
+      calculators: [],
+      sufficient: false,
+    };
   }
 
   const rank = (item) => {
@@ -238,8 +254,10 @@ export function retrieveKnowledge(question) {
     .slice(0, limit)
     .map(({ item }) => item);
 
-  const selectedGuidance = top(guidance, 4);
-  const selectedCases = top(taxCases, 3);
+  const rankedGuidance = top(guidance, 4);
+  const rankedCases = top(taxCases, 3);
+  const selectedGuidance = rankedGuidance.filter((item) => rank(item) >= 3);
+  const selectedCases = rankedCases.filter((item) => rank(item) >= 3);
   const sourceKeys = new Set(
     selectedGuidance.flatMap((item) => item.sourceKeys),
   );
@@ -254,5 +272,6 @@ export function retrieveKnowledge(question) {
     cases: selectedCases,
     sources: selectedSources,
     calculators,
+    sufficient: selectedGuidance.length > 0 || selectedCases.length > 0,
   };
 }

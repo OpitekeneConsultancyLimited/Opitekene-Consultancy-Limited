@@ -3,10 +3,15 @@
 When the secure endpoint is connected, the chat sends the question to a
 Cloudflare Worker. The Worker uses Gemini with Google Search grounding only
 when the configured key, model and API tier support it. If live grounded
-research is unavailable, the Worker returns matching, reviewed local TaxComp
-notes and clearly says that no Google Search was performed. Without the
-endpoint, the browser can only search its bundled TaxComp notes. The Gemini
-API key must never be added to the site or committed to this repository.
+research is unavailable, the Worker returns matching TaxComp local notes and
+clearly says that no live research was performed. Source labels distinguish
+local notes, listed URA references, live web research, client documents and
+AI-generated interpretation. Uploaded documents are not supported. Legal
+metadata absent from a note is displayed as not recorded; notes without a
+verification date are marked Unverified and require further verification.
+Without the endpoint, the browser can only search its bundled TaxComp notes.
+The Gemini API key must never be added to the site or committed to this
+repository.
 
 Web search can improve currency and provide citations, but it does not
 guarantee accuracy or completeness, and the assistant does not monitor laws
@@ -67,10 +72,37 @@ each IP address to eight requests per minute, validates request size and
 content, and does not store chat history. It retries only transient upstream
 failures, then falls back to relevant curated TaxComp notes rather than
 returning an ungrounded Gemini answer. The fallback says that no live search
-was performed and links its local sources. The Worker validates web-grounding
-links as HTTPS and never exposes the Gemini key to the browser. Search results,
-local notes and AI-generated answers can still be wrong or out of date; verify
-primary sources and effective dates.
+was performed, identifies missing legal metadata, and links its local sources.
+Freshness is Recently reviewed (0–90 days), Review due (91–180 days), Outdated
+(over 180 days), or Unverified when no valid verification date is recorded.
+Notes should only receive a verification date after a human checks the
+underlying legislation or publication.
+
+### Opt-in unanswered-question research queue
+
+The Cloudflare D1 database `taxcomp-unanswered-questions` stores only a
+question explicitly submitted with the unchecked research-consent box, and
+only when the fallback cannot verify the answer. Stored questions expire
+after 90 days; a daily Worker schedule removes expired rows. Do not enter
+confidential information. Administrators can inspect and delete questions at
+`https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin`.
+
+Before enabling storage or dashboard access, set a strong, private Worker
+secret from the project directory:
+
+```powershell
+npx wrangler secret put ADMIN_DASHBOARD_TOKEN
+```
+
+Enter the token only in Wrangler's secure prompt and keep it in a password
+manager. The dashboard API requires this token and does not store it in the
+browser. Without the secret, question logging stays disabled and the chat
+reports that a requested save failed.
+
+The consultation link opens an email draft to Opitekene; it never sends
+automatically. Users should remove confidential details before sending.
+Questions, local notes and AI-generated interpretations can still be wrong or
+out of date; verify primary sources, provisions and effective dates.
 
 ## Before enabling public AI replies
 

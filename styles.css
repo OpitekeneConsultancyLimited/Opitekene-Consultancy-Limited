@@ -86,7 +86,7 @@ a {
 
 .main-nav a,
 .header-link {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
 }
@@ -112,19 +112,16 @@ a {
 }
 
 .install-app-button {
-  padding: 8px 14px;
-  border: 1px solid #1d5e42;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #1f6b49 0%, #154f3a 100%);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(23, 99, 69, 0.18);
+  padding: 8px 11px;
+  border: 1px solid #cbdccc;
+  border-radius: 7px;
+  background: #fff;
   cursor: pointer;
   font-family: var(--sans);
 }
 
 .install-app-button:hover {
-  border-color: #0f3d2d;
-  filter: brightness(1.03);
+  border-color: #83aa89;
 }
 
 .install-app-button:disabled {
@@ -277,41 +274,6 @@ p {
   font-size: 11px;
 }
 
-.hero-cta-stack {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
-
-.hero-contact-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  color: var(--white);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hero-contact-button:hover {
-  transform: translateY(-1px);
-}
-
-.hero-contact-button.primary {
-  background: var(--green);
-  box-shadow: 0 12px 24px rgba(23, 99, 69, 0.2);
-}
-
-.hero-contact-button.whatsapp {
-  background: #1bbf5f;
-  box-shadow: 0 12px 24px rgba(27, 191, 95, 0.2);
-}
-
 .trust-note svg {
   width: 16px;
   height: 16px;
@@ -421,6 +383,7 @@ p {
 
 .estimator-section,
 .international-tax-section,
+.worked-examples-section,
 .audit-health-section,
 .advisory-section,
 .tax-chat-section,
@@ -447,6 +410,82 @@ p {
   padding: 38px 0 42px;
   border-top: 1px solid #e1e6df;
   scroll-margin-top: 24px;
+}
+
+.worked-examples-section {
+  padding: 38px 0 42px;
+  border-top: 1px solid #e1e6df;
+  scroll-margin-top: 24px;
+}
+
+.worked-examples-caveat {
+  margin: 14px 0;
+  padding: 13px 15px;
+  border: 1px solid #eadbb9;
+  border-radius: 8px;
+  background: #fbf8ef;
+  color: #66583d;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-metadata,
+.worked-examples-sources {
+  color: #66746a;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-card {
+  margin: 14px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.worked-example-card h3 {
+  margin: 0 0 8px;
+  color: #293a30;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.worked-example-card h4 {
+  margin: 19px 0 7px;
+  color: #38493e;
+  font-size: 12px;
+}
+
+.worked-example-lead,
+.worked-example-check {
+  color: #66746a;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.worked-example-check {
+  margin: 8px 0;
+  color: #176345;
+  font-weight: 650;
+}
+
+.worked-example-check.is-warning {
+  color: #9c3d25;
+}
+
+.worked-example-table-wrap {
+  overflow-x: auto;
+}
+
+.worked-example-table {
+  min-width: 580px;
+}
+
+.worked-examples-sources a {
+  color: var(--green);
+  font-weight: 650;
 }
 
 .audit-health-caveat,
@@ -957,6 +996,75 @@ p {
   line-height: 1.5;
 }
 
+.tax-chat-provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin: 10px 0 0;
+  padding: 9px 0 0;
+  border-top: 1px solid #edf0ec;
+  list-style: none;
+}
+
+.tax-chat-provenance li {
+  color: #647269;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.tax-chat-provenance li[data-used="true"] {
+  color: #285d3c;
+  font-weight: 700;
+}
+
+.tax-chat-legal-reference {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e1e8e0;
+  border-radius: 6px;
+  background: #fbfcfa;
+  font-size: 10px;
+}
+
+.tax-chat-legal-reference summary {
+  color: #35493d;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.tax-chat-legal-reference dl {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.4fr) 1fr;
+  gap: 5px 10px;
+  margin: 10px 0 0;
+}
+
+.tax-chat-legal-reference dt {
+  color: #526459;
+  font-weight: 700;
+}
+
+.tax-chat-legal-reference dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tax-chat-consultation {
+  margin-top: 10px !important;
+}
+
+.tax-chat-consultation a {
+  color: #285d3c;
+  font-weight: 700;
+}
+
+.tax-chat-consultation span {
+  display: block;
+  margin-top: 4px;
+  color: #647269;
+  font-size: 9px;
+}
+
 .tax-chat-calculator-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1007,6 +1115,21 @@ p {
 .tax-chat-form textarea:focus {
   border-color: #5c9470;
   outline: 3px solid rgba(34, 109, 72, 0.1);
+}
+
+.tax-chat-record-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  color: #526158;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.tax-chat-record-consent input {
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 .tax-chat-form-footer {
@@ -1328,42 +1451,24 @@ p {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
-  color: #758178;
-  font-size: 9px;
-  opacity: 0;
-  transform: translateY(-3px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  pointer-events: none;
-}
-
-.advisory-search:focus-within .advisory-quick-questions,
-.advisory-search:hover .advisory-quick-questions {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.advisory-quick-questions span {
-  color: #6d7b72;
-  font-weight: 600;
+  gap: 7px;
+  margin-top: 11px;
+  color: #78857c;
+  font-size: 10px;
 }
 
 .advisory-quick-questions button {
-  padding: 4px 8px;
-  border: 1px solid #e4eae2;
-  border-radius: 999px;
-  background: #f7faf5;
-  color: #456253;
+  padding: 5px 8px;
+  border: 1px solid #e1e8e0;
+  border-radius: 99px;
+  background: #f8faf6;
+  color: #42644e;
   cursor: pointer;
   font: 600 9px var(--sans);
-  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .advisory-quick-questions button:hover {
-  border-color: #a3b9a5;
-  background: #edf5ee;
+  border-color: #9ab59d;
 }
 
 .advisory-result-count {
@@ -2366,6 +2471,7 @@ td:first-child {
   .site-footer,
   .estimator-section,
   .international-tax-section,
+  .worked-examples-section,
   .audit-health-section,
   .advisory-section,
   .tax-chat-section,
@@ -2401,6 +2507,16 @@ td:first-child {
   .hero-description {
     max-width: 350px;
     font-size: 13px;
+  }
+
+  .hero-product-actions {
+    max-width: 100%;
+    gap: 8px;
+    margin: 18px 0;
+  }
+
+  .hero-product-action {
+    padding: 10px;
   }
 
   .hero-art {

@@ -29,6 +29,26 @@
   const isKnownCalculator = (calculator) => (
     Object.prototype.hasOwnProperty.call(calculatorLabels, calculator)
   );
+  const freshnessLabels = {
+    recently_reviewed: "Recently reviewed",
+    review_due: "Review due",
+    outdated: "Outdated",
+    unverified: "Unverified",
+  };
+
+  function getFreshness(lastVerifiedAt, now = Date.now()) {
+    if (typeof lastVerifiedAt !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(lastVerifiedAt)) return "unverified";
+    const verifiedDate = new Date(`${lastVerifiedAt}T00:00:00Z`);
+    const verifiedAt = verifiedDate.getTime();
+    if (!Number.isFinite(verifiedAt) ||
+        verifiedDate.toISOString().slice(0, 10) !== lastVerifiedAt ||
+        verifiedAt > now) return "unverified";
+    const ageDays = Math.floor((now - verifiedAt) / 86_400_000);
+    if (ageDays <= 90) return "recently_reviewed";
+    if (ageDays <= 180) return "review_due";
+    return "outdated";
+  }
 
   function getTerms(query) {
     return String(query || "")
@@ -56,6 +76,75 @@
     ), 0);
   }
 
+  function localMetadata(matches, advisory) {
+    const legalReferences = matches.map(({ item, type }) => {
+      const sourceDocuments = type === "case"
+        ? [{ label: `${item.name} (${item.citation})`, url: item.sourceUrl, sourceType: "case_law" }]
+        : (advisory.getSources(item.sourceKeys) || []).map((source) => ({
+          ...source,
+          sourceType: new URL(source.url).hostname.endsWith("ura.go.ug")
+            ? "ura_publication"
+            : "secondary_publication",
+        }));
+      const year = item.financialYear ||
+        item.summary?.match(/\bFY \d{4}\/\d{2}\b/)?.[0] || null;
+      return {
+        title: item.title || item.name,
+        legislation: item.legislation || null,
+        provision: item.provision || null,
+        caseCitation: type === "case" ? item.citation : null,
+        financialYear: year,
+        effectiveDate: item.effectiveDate || null,
+        sourceDocuments,
+        lastVerifiedAt: item.lastVerifiedAt || null,
+        freshness: getFreshness(item.lastVerifiedAt),
+      };
+    });
+    const verificationRequired = legalReferences.length === 0 ||
+      legalReferences.some((reference) => (
+        reference.freshness !== "recently_reviewed" ||
+        !reference.legislation || !reference.provision
+      ));
+    const uraListed = legalReferences.some((reference) => (
+      reference.sourceDocuments.some((source) => source.sourceType === "ura_publication")
+    ));
+    const reviewedLegislation = legalReferences.some((reference) => (
+      reference.legislation && reference.provision &&
+      reference.freshness === "recently_reviewed" &&
+      reference.sourceDocuments.some((source) => source.sourceType === "legislation")
+    ));
+    return {
+      legalReferences,
+      sourceIndicators: [
+        {
+          kind: "local_legislation",
+          label: "Reviewed local legislation",
+          used: reviewedLegislation,
+          detail: reviewedLegislation
+            ? null
+            : "No individually verified legislation records are currently available.",
+        },
+        {
+          kind: "ura_publication",
+          label: "URA publications",
+          used: uraListed,
+          detail: uraListed ? "Listed local reference; not live-checked" : null,
+        },
+        { kind: "live_web", label: "Live web research", used: false },
+        {
+          kind: "client_documents",
+          label: "Uploaded client documents",
+          used: false,
+          detail: "Document uploads are not supported in this chat.",
+        },
+        { kind: "ai_interpretation", label: "AI-generated interpretation", used: false },
+        { kind: "taxcomp_notes", label: "TaxComp local notes", used: legalReferences.length > 0 },
+      ],
+      verificationRequired,
+      unansweredQuestionEligible: verificationRequired,
+    };
+  }
+
   function findLocalAnswer(query, advisory) {
     const terms = getTerms(query);
     const isGreeting = /^(?:hi|hello|hey|good morning|good afternoon|good evening|greetings)[.!?,\s]*$/i
@@ -67,6 +156,7 @@
         matches: [],
         calculators: [],
         answerSource: "local",
+        ...localMetadata([], advisory),
       };
     }
 
@@ -83,11 +173,12 @@
 
     if (matches.length === 0) {
       return {
-        answer: "I couldn't find a reviewed TaxComp note that answers that question. Try asking about a specific tax topic, search the Tax Appeals Tribunal case notes, or contact Opitekene Consultancy Limited at opitekenecons@gmail.com. Please don't send TINs or confidential documents in chat.",
+        answer: "I couldn't find a reviewed TaxComp note that answers that question. Further verification is required; I will not guess a tax rule or legal citation. Check the original legislation and current URA publications or ask a qualified Ugandan tax adviser. Please don't send TINs or confidential documents in chat.",
         sources: [],
         matches: [],
         calculators: [],
         answerSource: "local",
+        ...localMetadata([], advisory),
       };
     }
 
@@ -107,14 +198,17 @@
       return `${item.title}: ${item.summary} What to check: ${item.nextStep}`;
     });
 
+    const matchedItems = matches.map(({ item, type }) => ({ item, type }));
+    const metadata = localMetadata(matchedItems, advisory);
     return {
-      answer: `I found these reviewed TaxComp notes. They are general information, not a decision on your specific tax position:\n\n${parts.join("\n\n")}`,
+      answer: `I found these reviewed TaxComp notes. They are general information, not a decision on your specific tax position:\n\n${parts.join("\n\n")}\n\nFurther verification is required: the note does not record enough verified legislation, provision, effective-date and review-date details to establish the current legal position.`,
       sources: [...sourceMap.values()],
       matches: matches.map(({ item }) => item),
       calculators: [...new Set(matches
         .map(({ item, type }) => type === "guidance" ? item.calculator : null)
         .filter(isKnownCalculator))],
       answerSource: "local",
+      ...metadata,
     };
   }
 
@@ -141,6 +235,7 @@
     const input = document.querySelector("#tax-chat-input");
     const submit = document.querySelector("#tax-chat-submit");
     const status = document.querySelector("#tax-chat-status");
+    const recordCheckbox = document.querySelector("#tax-chat-record-unanswered");
     const clearButton = document.querySelector("#tax-chat-clear");
     const shortcuts = document.querySelector(".tax-chat-shortcuts");
     const conversation = [];
@@ -150,7 +245,7 @@
       ? "Chat is connected. Replies identify whether they use live web sources or local TaxComp notes; avoid sharing confidential information."
       : "AI setup is pending. You can chat with the reviewed TaxComp notes while the secure Gemini connection is being set up.";
 
-    function renderMessage(role, text, sources = [], calculators = []) {
+    function renderMessage(role, text, sources = [], calculators = [], metadata = {}) {
       const article = document.createElement("article");
       article.className = `tax-chat-message tax-chat-message-${role}`;
       article.setAttribute("aria-label", role === "assistant" ? "TaxComp assistant" : "Your message");
@@ -164,6 +259,80 @@
         const paragraph = document.createElement("p");
         paragraph.textContent = paragraphText;
         article.append(paragraph);
+      }
+
+      if (role === "assistant") {
+        const indicators = Array.isArray(metadata.sourceIndicators)
+          ? metadata.sourceIndicators
+          : [];
+        if (indicators.length > 0) {
+          const provenance = document.createElement("ul");
+          provenance.className = "tax-chat-provenance";
+          provenance.setAttribute("aria-label", "Answer source indicators");
+          for (const indicator of indicators) {
+            const item = document.createElement("li");
+            item.dataset.used = indicator.used ? "true" : "false";
+            item.textContent = `${indicator.label}: ${indicator.used ? "Used" : "Not used"}${indicator.detail ? ` — ${indicator.detail}` : ""}`;
+            provenance.append(item);
+          }
+          article.append(provenance);
+        }
+
+        const legalReferences = Array.isArray(metadata.legalReferences)
+          ? metadata.legalReferences
+          : [];
+        for (const reference of legalReferences) {
+          const details = document.createElement("details");
+          details.className = "tax-chat-legal-reference";
+          const summary = document.createElement("summary");
+          summary.textContent = `${reference.title} — ${freshnessLabels[reference.freshness] || "Unverified"}`;
+          details.append(summary);
+          const fields = [
+            ["Legislation", reference.legislation],
+            ["Section or regulation", reference.provision],
+            ["Case citation", reference.caseCitation],
+            ["Financial year", reference.financialYear],
+            ["Effective date", reference.effectiveDate],
+            ["Last verification date", reference.lastVerifiedAt],
+          ];
+          const list = document.createElement("dl");
+          for (const [label, value] of fields) {
+            const term = document.createElement("dt");
+            term.textContent = label;
+            const description = document.createElement("dd");
+            description.textContent = value || "Not recorded in this note";
+            list.append(term, description);
+          }
+          const documentTerm = document.createElement("dt");
+          documentTerm.textContent = "Source document";
+          const documentDescription = document.createElement("dd");
+          const sourceDocuments = Array.isArray(reference.sourceDocuments)
+            ? reference.sourceDocuments
+            : [];
+          documentDescription.textContent = sourceDocuments.length
+            ? sourceDocuments.map((source) => source.label).join("; ")
+            : "Not recorded in this note";
+          list.append(documentTerm, documentDescription);
+          details.append(list);
+          article.append(details);
+        }
+
+        if (metadata.verificationRequired) {
+          const consultation = document.createElement("p");
+          consultation.className = "tax-chat-consultation";
+          const link = document.createElement("a");
+          const subject = encodeURIComponent("TaxComp consultant question");
+          const body = encodeURIComponent(
+            `Please review this tax question. Remove confidential information before sending:\n\n${metadata.consultationQuestion || ""}`,
+          );
+          link.href = `mailto:opitekenecons@gmail.com?subject=${subject}&body=${body}`;
+          link.textContent = "Ask an Opitekene tax consultant";
+          consultation.append(link);
+          const note = document.createElement("span");
+          note.textContent = " Opens an email draft; it is not sent automatically. Remove confidential details before sending.";
+          consultation.append(note);
+          article.append(consultation);
+        }
       }
 
       const validSources = sources.map(allowedSource).filter(Boolean);
@@ -212,7 +381,7 @@
       );
     }
 
-    async function getAnswer(question) {
+    async function getAnswer(question, recordUnanswered) {
       if (!endpoint) {
         return findLocalAnswer(question, root.ugandaTaxAdvisory);
       }
@@ -226,6 +395,7 @@
           body: JSON.stringify({
             message: question,
             history: conversation.slice(-8),
+            recordUnanswered,
           }),
           signal: controller.signal,
         });
@@ -246,6 +416,11 @@
           answerSource: data.answerSource === "local"
             ? "local"
             : data.webGrounded === true ? "web" : "unverified",
+          sourceIndicators: Array.isArray(data.sourceIndicators) ? data.sourceIndicators : [],
+          legalReferences: Array.isArray(data.legalReferences) ? data.legalReferences : [],
+          verificationRequired: data.verificationRequired === true,
+          unansweredQuestionEligible: data.unansweredQuestionEligible === true,
+          questionRecordStatus: data.questionRecordStatus || "not_requested",
         };
       } finally {
         clearTimeout(timeout);
@@ -266,6 +441,8 @@
       }
 
       input.value = "";
+      const recordRequested = recordCheckbox.checked;
+      recordCheckbox.checked = false;
       renderMessage("user", question);
       busy = true;
       input.disabled = true;
@@ -275,20 +452,34 @@
         : "Searching local TaxComp notes. Live web search is not connected yet.";
 
       try {
-        const result = await getAnswer(question);
-        renderMessage("assistant", result.answer, result.sources, result.calculators);
+        const result = await getAnswer(question, recordRequested);
+        renderMessage("assistant", result.answer, result.sources, result.calculators, {
+          ...result,
+          consultationQuestion: question,
+        });
         conversation.push(
           { role: "user", text: question },
           { role: "model", text: result.answer },
         );
         if (endpoint) {
           status.textContent = result.answerSource === "local"
-            ? "This reply uses reviewed local TaxComp notes only; no live web search was performed. Confirm current law and effective dates."
+            ? "This reply uses TaxComp local notes; no live web research was performed. Legal details missing from the notes are marked Unverified."
             : result.webGrounded
               ? "AI reply includes Google Search sources. Verify important tax positions against the cited primary source and effective date."
               : "No web sources were returned for this answer. Treat it as unverified and check current official guidance.";
         } else {
           status.textContent = "Live web search is not connected; this reply came only from reviewed local notes and may not reflect current law.";
+        }
+        if (recordRequested) {
+          status.textContent += result.questionRecordStatus === "saved"
+            ? " The unanswered question was saved for TaxComp research; it will be deleted after 90 days."
+            : result.questionRecordStatus === "failed"
+              ? " The question could not be saved; no record was confirmed."
+              : result.questionRecordStatus === "not_needed"
+                ? " The local notes matched this question, so it was not added to the unanswered queue."
+                : result.questionRecordStatus === "answered"
+                  ? " Live grounded research answered the question, so it was not added to the unanswered queue."
+                : " The question was not submitted to the research queue.";
         }
       } catch (error) {
         const fallback = findLocalAnswer(question, root.ugandaTaxAdvisory);
@@ -300,8 +491,9 @@
           `Web-enabled AI is unavailable, so I cannot verify current information. ${serviceMessage}\n\n${fallback.answer}`,
           fallback.sources,
           fallback.calculators,
+          { ...fallback, consultationQuestion: question },
         );
-        status.textContent = "The AI service did not answer. This fallback uses only reviewed local notes, not a live web search.";
+        status.textContent = `The AI service did not answer. This fallback uses only reviewed local notes, not a live web search.${recordRequested ? " The question was not confirmed as saved." : ""}`;
       } finally {
         busy = false;
         input.disabled = false;

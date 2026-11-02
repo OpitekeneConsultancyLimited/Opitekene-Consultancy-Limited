@@ -6,9 +6,18 @@ compatibility_date = "2026-10-31"
 enabled = true
 head_sampling_rate = 1
 
+[triggers]
+crons = ["15 2 * * *"]
+
 [vars]
 ALLOWED_ORIGIN = "https://opitekeneconsultancylimited.github.io"
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+[[d1_databases]]
+binding = "UNANSWERED_QUESTIONS"
+database_name = "taxcomp-unanswered-questions"
+database_id = "a89c9234-d515-4427-9373-f9d7f565398f"
+migrations_dir = "worker/migrations"
 
 [[unsafe.bindings]]
 name = "CHAT_LIMITER"

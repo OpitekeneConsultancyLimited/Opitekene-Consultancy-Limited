@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { handleRequest } from "./index.mjs";
+import { freshnessStatus, handleRequest, limits } from "./index.mjs";
 import { retrieveKnowledge } from "./knowledge.mjs";
 
 const origin = "https://opitekeneconsultancylimited.github.io";
@@ -461,6 +461,12 @@ test("retries a transient Google service error once and accepts a grounded answe
     assert.equal(calls, 2);
     assert.equal(body.answerSource, "web");
     assert.equal(body.webGrounded, true);
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "live_web").used, true);
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "ai_interpretation").used, true);
+    assert.match(
+      body.sourceIndicators.find((item) => item.kind === "ura_publication").detail,
+      /Cited by live research/,
+    );
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -597,7 +603,186 @@ test("returns local guidance when the key is missing", async () => {
     assert.equal(called, false);
     assert.equal(body.answerSource, "local");
     assert.match(body.answer, /UGX 300 million/);
+    assert.equal(body.verificationRequired, true);
+    assert.match(body.legalReferences[0].freshness, /unverified/);
+    assert.match(body.answer, /Further verification is required/);
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "live_web").used, false);
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "client_documents").used, false);
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "ura_publication").used, true);
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+test("marks legislation outdated after 180 days without verification", () => {
+  const now = Date.parse("2026-11-02T00:00:00Z");
+  assert.equal(freshnessStatus("2026-08-04", now), "recently_reviewed");
+  assert.equal(freshnessStatus("2026-05-06", now), "review_due");
+  assert.equal(freshnessStatus("2025-01-01", now), "outdated");
+  assert.equal(freshnessStatus(null, now), "unverified");
+  assert.equal(freshnessStatus("2026-02-31", now), "unverified");
+  assert.equal(freshnessStatus("2027-01-01", now), "unverified");
+  assert.equal(limits.unansweredRetentionDays, 90);
+});
+
+test("marks missing local legal citations and verification dates as unverified", async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("No Gemini request expected when key is absent");
+  };
+  try {
+    const response = await handleRequest(
+      request({ message: "What are the VAT registration thresholds?" }),
+      { ...env, GEMINI_API_KEY: "" },
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.ok(body.legalReferences.length > 0);
+    assert.ok(body.legalReferences.some((reference) => (
+      reference.title === "VAT registration thresholds" &&
+      reference.legislation === null &&
+      reference.provision === null &&
+      reference.effectiveDate === null &&
+      reference.lastVerifiedAt === null &&
+      reference.freshness === "unverified"
+    )));
+    assert.equal(body.verificationRequired, true);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("records an unanswered question only after explicit user consent", async () => {
+  const previousFetch = globalThis.fetch;
+  const inserts = [];
+  const database = {
+    prepare(statement) {
+      return {
+        bind(...values) {
+          return {
+            run: async () => { inserts.push({ statement, values }); },
+          };
+        },
+      };
+    },
+  };
+  globalThis.fetch = async () => {
+    throw new Error("No Gemini key should be used in this test");
+  };
+  try {
+    const question = "Tax treatment of an unusual widget transaction";
+    const withoutConsent = await handleRequest(
+      request({ message: question }),
+      {
+        ...env,
+        GEMINI_API_KEY: "",
+        ADMIN_DASHBOARD_TOKEN: "test-admin-token",
+        UNANSWERED_QUESTIONS: database,
+      },
+    );
+    assert.equal((await withoutConsent.json()).questionRecordStatus, "not_requested");
+    assert.equal(inserts.length, 0);
+
+    const response = await handleRequest(
+      request({ message: question, recordUnanswered: true }),
+      {
+        ...env,
+        GEMINI_API_KEY: "",
+        ADMIN_DASHBOARD_TOKEN: "test-admin-token",
+        UNANSWERED_QUESTIONS: database,
+      },
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.questionRecordStatus, "saved");
+    assert.equal(inserts.length, 2);
+    const insert = inserts.find((item) => /INSERT INTO unanswered_questions/.test(item.statement));
+    assert.ok(insert);
+    assert.equal(insert.values[1], question);
+    const created = Date.parse(insert.values[2]);
+    const expires = Date.parse(insert.values[3]);
+    assert.equal(expires - created, 90 * 86_400_000);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("does not store opted-in questions until the admin credential is configured", async () => {
+  const previousFetch = globalThis.fetch;
+  let inserted = false;
+  const database = {
+    prepare(statement) {
+      return {
+        bind() {
+          return {
+            run: async () => {
+              if (/INSERT INTO/.test(statement)) inserted = true;
+            },
+          };
+        },
+      };
+    },
+  };
+  globalThis.fetch = async () => {
+    throw new Error("No Gemini key should be used in this test");
+  };
+  try {
+    const response = await handleRequest(
+      request({
+        message: "Tax treatment of an unusual widget transaction",
+        recordUnanswered: true,
+      }),
+      { ...env, GEMINI_API_KEY: "", UNANSWERED_QUESTIONS: database },
+    );
+    const body = await response.json();
+    assert.equal(body.questionRecordStatus, "failed");
+    assert.equal(inserted, false);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("protects the unanswered-question dashboard and lists records after authentication", async () => {
+  const token = "test-admin-token";
+  const database = {
+    prepare(statement) {
+      const statementResult = {
+        bind() {
+          return statementResult;
+        },
+        run: async () => ({ success: true }),
+        all: async () => ({
+          results: [{ id: "01234567-89ab-cdef-0123-456789abcdef", question: "Test", createdAt: "2026-11-02T00:00:00.000Z" }],
+        }),
+      };
+      return statementResult;
+    },
+  };
+  const adminEnv = {
+    ...env,
+    ADMIN_DASHBOARD_TOKEN: token,
+    UNANSWERED_QUESTIONS: database,
+  };
+  const unauthorized = await handleRequest(
+    new Request("https://worker.example/admin/questions"),
+    adminEnv,
+  );
+  assert.equal(unauthorized.status, 401);
+
+  const dashboard = await handleRequest(
+    new Request("https://worker.example/admin"),
+    adminEnv,
+  );
+  assert.equal(dashboard.status, 200);
+  assert.match(dashboard.headers.get("Content-Security-Policy"), /frame-ancestors 'none'/);
+  assert.match(await dashboard.text(), /Unanswered TaxComp questions/);
+
+  const authorized = await handleRequest(
+    new Request("https://worker.example/admin/questions", {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    adminEnv,
+  );
+  assert.equal(authorized.status, 200);
+  assert.equal((await authorized.json()).questions[0].question, "Test");
 });

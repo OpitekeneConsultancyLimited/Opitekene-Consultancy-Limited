@@ -10,6 +10,7 @@ const RATE_PERIOD_SECONDS = 60;
 const MAX_WEB_SOURCES = 8;
 const UPSTREAM_TIMEOUT_MS = 25_000;
 const MAX_UPSTREAM_RETRIES = 1;
+const UNANSWERED_RETENTION_DAYS = 90;
 const DEFAULT_MODEL = "gemini-3.5-flash-lite";
 const MODEL_PREFERENCE = [
   "gemini-3.5-flash-lite",
@@ -130,6 +131,7 @@ function buildEvidence(knowledge) {
     const index = addSource({
       label: `${item.title} (${item.citation})`,
       url: item.url,
+      sourceType: "case_law",
     });
     lines.push(`Case note [${index}]: ${item.title} (${item.citation}): ${item.summary}`);
   }
@@ -141,6 +143,128 @@ function buildEvidence(knowledge) {
   return {
     text: `Evidence notes:\n${lines.join("\n")}\n\nApproved sources:\n${sourceLines.join("\n")}`,
     sources: evidenceSources,
+  };
+}
+
+function getFreshness(lastVerifiedAt, now = Date.now()) {
+  if (typeof lastVerifiedAt !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(lastVerifiedAt)) {
+    return "unverified";
+  }
+  const verifiedDate = new Date(`${lastVerifiedAt}T00:00:00Z`);
+  const verifiedAt = verifiedDate.getTime();
+  if (!Number.isFinite(verifiedAt) ||
+      verifiedDate.toISOString().slice(0, 10) !== lastVerifiedAt ||
+      verifiedAt > now) return "unverified";
+  const ageDays = Math.floor((now - verifiedAt) / 86_400_000);
+  if (ageDays <= 90) return "recently_reviewed";
+  if (ageDays <= 180) return "review_due";
+  return "outdated";
+}
+
+function createLegalReferences(knowledge) {
+  return [
+    ...knowledge.guidance.map((item) => ({
+      title: item.title,
+      legislation: item.legislation || null,
+      provision: item.provision || null,
+      financialYear: item.financialYear ||
+        item.summary.match(/\bFY \d{4}\/\d{2}\b/)?.[0] || null,
+      effectiveDate: item.effectiveDate || null,
+      sourceDocuments: item.sourceKeys
+        .map((key) => knowledgeSources[key])
+        .filter(Boolean)
+        .map(({ label, url, sourceType }) => ({ label, url, sourceType })),
+      lastVerifiedAt: item.lastVerifiedAt || null,
+      freshness: getFreshness(item.lastVerifiedAt),
+    })),
+    ...knowledge.cases.map((item) => ({
+      title: item.title,
+      legislation: null,
+      provision: null,
+      caseCitation: item.citation || null,
+      financialYear: null,
+      effectiveDate: null,
+      sourceDocuments: [{
+        label: `${item.title} (${item.citation})`,
+        url: item.url,
+        sourceType: "case_law",
+      }],
+      lastVerifiedAt: item.lastVerifiedAt || null,
+      freshness: getFreshness(item.lastVerifiedAt),
+    })),
+  ];
+}
+
+function createSourceIndicators(answerSource, legalReferences, answerSources) {
+  const liveUraSource = answerSources.some((source) => (
+    source.sourceType === "live_web" && /\.ura\.go\.ug$/i.test(new URL(source.url).hostname)
+  ));
+  const uraReferenceListed = liveUraSource || legalReferences.some((item) => (
+    item.sourceDocuments.some((source) => source.sourceType === "ura_publication")
+  ));
+  const reviewedLocalLegislationUsed = legalReferences.some((item) => (
+    item.legislation && item.provision &&
+    item.freshness === "recently_reviewed" &&
+    item.sourceDocuments.some((source) => source.sourceType === "legislation")
+  ));
+  const webGrounded = answerSource === "web";
+  return [
+    {
+      kind: "local_legislation",
+      label: "Reviewed local legislation",
+      used: reviewedLocalLegislationUsed,
+      detail: reviewedLocalLegislationUsed
+        ? null
+        : "No individually verified legislation records are currently available.",
+    },
+    {
+      kind: "ura_publication",
+      label: "URA publications",
+      used: uraReferenceListed,
+      detail: liveUraSource
+        ? "Cited by live research"
+        : uraReferenceListed ? "Listed local reference; not live-checked" : null,
+    },
+    {
+      kind: "live_web",
+      label: "Live web research",
+      used: webGrounded,
+    },
+    {
+      kind: "client_documents",
+      label: "Uploaded client documents",
+      used: false,
+      detail: "Document uploads are not supported in this chat.",
+    },
+    {
+      kind: "ai_interpretation",
+      label: "AI-generated interpretation",
+      used: webGrounded,
+    },
+    {
+      kind: "taxcomp_notes",
+      label: "TaxComp local notes",
+      used: legalReferences.length > 0,
+    },
+  ];
+}
+
+function createAnswerMetadata(knowledge, answerSource, answerSources) {
+  const legalReferences = createLegalReferences(knowledge);
+  const sourceIndicators = createSourceIndicators(
+    answerSource,
+    legalReferences,
+    answerSources,
+  );
+  const verificationRequired = !knowledge.sufficient ||
+    legalReferences.some((item) => item.freshness !== "recently_reviewed" ||
+      !item.legislation || !item.provision);
+  return {
+    legalReferences,
+    sourceIndicators,
+    verificationRequired,
+    unansweredQuestionEligible: verificationRequired,
   };
 }
 
@@ -163,6 +287,7 @@ function getPublicWebSource(value) {
         ? value.title.trim().slice(0, 180)
         : url.hostname,
       url: url.href,
+      sourceType: "live_web",
     };
   } catch {
     return null;
@@ -561,20 +686,169 @@ function createLocalFallback(knowledge) {
     )),
   ];
   const answer = notes.length
-    ? `Live web research is unavailable. This reply uses reviewed TaxComp local notes only; no Google Search was performed.\n\n${notes.join("\n\n")}\n\nThese notes may not reflect the latest law. Confirm the effective date and your circumstances with URA or a qualified Ugandan tax adviser.`
+    ? `Live web research is unavailable. This reply uses reviewed TaxComp local notes only; no Google Search was performed.\n\n${notes.join("\n\n")}\n\nFurther verification is required: the local note does not record enough verified legislation, provision, effective-date and review-date details to establish the current legal position. Check the original legislation and current URA publications or consult a qualified Ugandan tax adviser.`
     : "Live web research is unavailable and no Google Search was performed. I could not find a reviewed TaxComp local note for this question, so I will not guess. Check current guidance with URA or a qualified Ugandan tax adviser.";
 
   return {
     answer,
-    sources: knowledge.sources,
+    sources: knowledge.sources.map((source) => ({
+      ...source,
+      sourceType: source.sourceType || "secondary_publication",
+    })),
     calculators: knowledge.calculators,
     webGrounded: false,
     answerSource: "local",
   };
 }
 
+function equalSecret(expected, supplied) {
+  if (typeof expected !== "string" || !expected ||
+      typeof supplied !== "string" || expected.length !== supplied.length) {
+    return false;
+  }
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= expected.charCodeAt(index) ^ supplied.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
+function adminDashboardResponse() {
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaxComp unanswered questions</title>
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;color:#17233b}
+h1{font-size:1.8rem}form{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.5rem 0}
+input,button{font:inherit;padding:.6rem}input{min-width:16rem;flex:1}
+button{cursor:pointer}li{margin:1rem 0;padding:1rem;border:1px solid #ccd4df;border-radius:.5rem}
+time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
+</style>
+</head>
+<body>
+<main>
+<h1>Unanswered TaxComp questions</h1>
+<p>Only questions submitted with explicit user consent appear here. Records expire after 90 days. Treat them as confidential.</p>
+<form id="login"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button>Load questions</button></form>
+<p id="status" role="status" aria-live="polite"></p>
+<ul id="questions"></ul>
+</main>
+<script>
+const form=document.querySelector("#login"),tokenInput=document.querySelector("#token"),status=document.querySelector("#status"),list=document.querySelector("#questions");
+let token="";
+async function loadQuestions(){status.textContent="Loading…";list.replaceChildren();const response=await fetch("/admin/questions",{headers:{Authorization:"Bearer "+token}});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not load questions.");for(const row of data.questions){const item=document.createElement("li"),question=document.createElement("p"),time=document.createElement("time"),button=document.createElement("button");question.textContent=row.question;time.textContent=new Date(row.createdAt).toLocaleString();time.dateTime=row.createdAt;button.type="button";button.textContent="Delete";button.addEventListener("click",async()=>{const result=await fetch("/admin/questions/"+encodeURIComponent(row.id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});if(!result.ok){status.textContent="Could not delete the question.";return}item.remove()});item.append(question,time,button);list.append(item)}status.textContent=data.questions.length?data.questions.length+" question(s).":"No unanswered questions recorded."}
+form.addEventListener("submit",async event=>{event.preventDefault();token=tokenInput.value;try{await loadQuestions()}catch(error){status.textContent=error.message;status.className="error";token=""}});
+</script>
+</body>
+</html>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
+
+async function cleanupExpiredQuestions(env) {
+  if (!env.UNANSWERED_QUESTIONS) return;
+  await env.UNANSWERED_QUESTIONS.prepare(
+    "DELETE FROM unanswered_questions WHERE expires_at <= ?",
+  ).bind(new Date().toISOString()).run();
+}
+
+async function handleAdminRequest(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname === "/admin" && request.method === "GET") {
+    return adminDashboardResponse();
+  }
+  if (url.pathname !== "/admin/questions" &&
+      !/^\/admin\/questions\/[a-f0-9-]{36}$/i.test(url.pathname)) {
+    return jsonResponse({ error: "The requested admin endpoint was not found." }, 404);
+  }
+  if (request.method !== "GET" && request.method !== "DELETE") {
+    return jsonResponse({ error: "Use GET or DELETE for this admin endpoint." }, 405);
+  }
+  const authorization = request.headers.get("Authorization") || "";
+  const supplied = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : "";
+  if (!equalSecret(env.ADMIN_DASHBOARD_TOKEN, supplied)) {
+    return jsonResponse({ error: "Admin authentication is required." }, 401);
+  }
+  if (!env.UNANSWERED_QUESTIONS) {
+    console.error("Unanswered-question database binding is missing");
+    return jsonResponse({ error: "The admin question store is not configured." }, 503);
+  }
+
+  const id = url.pathname.match(/^\/admin\/questions\/([a-f0-9-]{36})$/i)?.[1];
+  if (request.method === "DELETE" && id) {
+    const result = await env.UNANSWERED_QUESTIONS.prepare(
+      "DELETE FROM unanswered_questions WHERE id = ?",
+    ).bind(id).run();
+    if (result.meta?.changes === 0) {
+      return jsonResponse({ error: "The question was not found or was already deleted." }, 404);
+    }
+    return jsonResponse({ deleted: true }, 200);
+  }
+  if (request.method !== "GET" || id) {
+    return jsonResponse({ error: "The requested admin endpoint was not found." }, 404);
+  }
+
+  await cleanupExpiredQuestions(env);
+  const { results } = await env.UNANSWERED_QUESTIONS.prepare(
+    "SELECT id, question, created_at AS createdAt FROM unanswered_questions ORDER BY created_at DESC LIMIT 200",
+  ).all();
+  return jsonResponse({ questions: results || [] }, 200);
+}
+
+async function recordUnansweredQuestion(env, question) {
+  if (!env.UNANSWERED_QUESTIONS || !env.ADMIN_DASHBOARD_TOKEN) {
+    console.error("Unanswered-question storage is missing its database or admin credential");
+    return false;
+  }
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() +
+    UNANSWERED_RETENTION_DAYS * 86_400_000);
+  try {
+    await cleanupExpiredQuestions(env);
+    await env.UNANSWERED_QUESTIONS.prepare(
+      "INSERT INTO unanswered_questions (id, question, created_at, expires_at) VALUES (?, ?, ?, ?)",
+    ).bind(
+      crypto.randomUUID(),
+      question.slice(0, MAX_QUESTION_LENGTH),
+      now.toISOString(),
+      expiresAt.toISOString(),
+    ).run();
+    return true;
+  } catch (error) {
+    console.error("Could not save an opted-in unanswered question", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return false;
+  }
+}
+
 export async function handleRequest(request, env) {
   const requestUrl = new URL(request.url);
+  if (requestUrl.pathname === "/admin" ||
+      requestUrl.pathname.startsWith("/admin/")) {
+    try {
+      return await handleAdminRequest(request, env);
+    } catch (error) {
+      console.error("Admin question request failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+      return jsonResponse({ error: "The admin question request failed." }, 500);
+    }
+  }
   if (requestUrl.pathname !== "/chat") {
     return jsonResponse({ error: "The requested chat endpoint was not found." }, 404);
   }
@@ -640,9 +914,14 @@ export async function handleRequest(request, env) {
       sources: [],
       calculators: [],
       webGrounded: false,
+      sourceIndicators: [],
+      legalReferences: [],
+      verificationRequired: true,
+      unansweredQuestionEligible: false,
     }, 200, corsHeaders);
   }
 
+  const recordRequested = body.recordUnanswered === true;
   const evidence = buildEvidence(knowledge);
   const result = await callGemini(
     question,
@@ -659,7 +938,25 @@ export async function handleRequest(request, env) {
       webGrounded: result.webGrounded,
       answerSource: result.answerSource,
     };
-  const response = jsonResponse(answer, 200, corsHeaders);
+  const metadata = createAnswerMetadata(
+    knowledge,
+    answer.answerSource,
+    answer.sources,
+  );
+  const unansweredQuestion = recordRequested && result.fallback &&
+      metadata.unansweredQuestionEligible
+    ? await recordUnansweredQuestion(env, question)
+    : null;
+  const responseBody = {
+    ...answer,
+    ...metadata,
+    questionRecordStatus: recordRequested
+      ? unansweredQuestion === true ? "saved"
+        : unansweredQuestion === false ? "failed"
+          : result.fallback ? "not_needed" : "answered"
+      : "not_requested",
+  };
+  const response = jsonResponse(responseBody, 200, corsHeaders);
   response.headers.set("X-TaxComp-Answer-Source", answer.answerSource);
   if (typeof result.upstreamStatus === "number") {
     response.headers.set("X-Gemini-Upstream-Status", String(result.upstreamStatus));
@@ -667,7 +964,12 @@ export async function handleRequest(request, env) {
   return response;
 }
 
-export default { fetch: handleRequest };
+export default {
+  fetch: handleRequest,
+  scheduled(_event, env, context) {
+    context.waitUntil(cleanupExpiredQuestions(env));
+  },
+};
 
 export const limits = {
   maxBodyBytes: MAX_BODY_BYTES,
@@ -676,4 +978,7 @@ export const limits = {
   maxHistoryLength: MAX_HISTORY_LENGTH,
   rateLimit: RATE_LIMIT,
   ratePeriodSeconds: RATE_PERIOD_SECONDS,
+  unansweredRetentionDays: UNANSWERED_RETENTION_DAYS,
 };
+
+export const freshnessStatus = getFreshness;
