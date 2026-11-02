@@ -1,4 +1,4 @@
-const CACHE_NAME = "taxcomp-app-v12";
+const CACHE_NAME = "taxcomp-app-v13";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -47,15 +47,19 @@ self.addEventListener("fetch", (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const cachedResponse = await cache.match(request, { ignoreSearch: true });
-    if (cachedResponse) return cachedResponse;
+    const refreshFromNetwork = request.mode === "navigate" ||
+      request.destination === "script";
+    if (cachedResponse && !refreshFromNetwork) return cachedResponse;
 
     try {
       const response = await fetch(request);
       if (response.ok && response.type === "basic") {
         await cache.put(request, response.clone());
       }
+      if (!response.ok && cachedResponse) return cachedResponse;
       return response;
     } catch (error) {
+      if (cachedResponse) return cachedResponse;
       if (request.mode === "navigate") {
         const offlinePage = await cache.match("./index.html");
         if (offlinePage) return offlinePage;
