@@ -906,6 +906,7 @@ test("protects the unanswered-question dashboard and lists records after authent
   assert.match(dashboard.headers.get("Content-Security-Policy"), /frame-ancestors 'none'/);
   const dashboardHtml = await dashboard.text();
   assert.match(dashboardHtml, /Unanswered TaxComp questions/);
+  assert.match(dashboardHtml, /\/admin\/efris/);
   assert.match(dashboardHtml, /Consent timestamps are recorded/);
 
   const authorized = await handleRequest(
@@ -919,4 +920,66 @@ test("protects the unanswered-question dashboard and lists records after authent
   const authorizedBody = await authorized.json();
   assert.equal(authorizedBody.questions[0].question, "Test");
   assert.equal(authorizedBody.questions[0].consentedAt, "2026-11-02T00:00:00.000Z");
+});
+
+test("serves the EFRIS sign-in page without exposing records and protects its API", async () => {
+  const dashboard = await handleRequest(
+    new Request("https://worker.example/admin/efris"),
+    env,
+  );
+  assert.equal(dashboard.status, 200);
+  assert.equal(dashboard.headers.get("Cache-Control"), "no-store");
+  assert.match(dashboard.headers.get("Content-Security-Policy"), /connect-src 'self'/);
+  const html = await dashboard.text();
+  assert.match(html, /not connected to URA EFRIS/i);
+  assert.match(html, /never submitted or fiscalised/i);
+  assert.match(html, /Admin token/);
+  assert.doesNotMatch(html, /localStorage/);
+
+  const unauthorized = await handleRequest(
+    new Request("https://worker.example/admin/efris/api"),
+    { ...env, ADMIN_DASHBOARD_TOKEN: testAdminToken },
+  );
+  assert.equal(unauthorized.status, 401);
+  assert.match((await unauthorized.json()).error, /authentication is required/i);
+});
+
+test("loads the EFRIS workspace after authentication and requires JSON for writes", async () => {
+  const database = {
+    prepare() {
+      return {
+        bind() {
+          return {
+            all: async () => ({ results: [] }),
+          };
+        },
+      };
+    },
+  };
+  const adminEnv = {
+    ...env,
+    ADMIN_DASHBOARD_TOKEN: testAdminToken,
+    UNANSWERED_QUESTIONS: database,
+  };
+  const authorized = await handleRequest(
+    new Request("https://worker.example/admin/efris/api", {
+      headers: { Authorization: `Bearer ${testAdminToken}` },
+    }),
+    adminEnv,
+  );
+  assert.equal(authorized.status, 200);
+  assert.deepEqual(await authorized.json(), {
+    clients: [],
+    selectedClientId: null,
+  });
+
+  const wrongContentType = await handleRequest(
+    new Request("https://worker.example/admin/efris/api", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${testAdminToken}` },
+      body: JSON.stringify({ action: "createClient", name: "Test" }),
+    }),
+    adminEnv,
+  );
+  assert.equal(wrongContentType.status, 415);
 });

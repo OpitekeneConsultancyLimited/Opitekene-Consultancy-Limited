@@ -105,6 +105,38 @@ dashboard access after rotation. Without a token meeting the minimum length,
 question logging stays disabled and the chat reports that a requested save
 failed.
 
+### EFRIS manual workspace
+
+The staff-only workspace is served by the Cloudflare Worker at
+`https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin/efris`. The code
+and D1 migration are not deployed yet. After reviewing the change, apply the
+additive migration and deploy the Worker from the project directory:
+
+```powershell
+npx wrangler d1 migrations apply taxcomp-unanswered-questions --remote
+npx wrangler deploy
+```
+
+The route reuses `ADMIN_DASHBOARD_TOKEN`, stores records in the existing D1
+database, and applies the current admin limit of eight requests per minute per
+IP. It does not configure or use an EFRIS API credential. The only supported
+invoice lifecycle in this release is draft and internal validation; neither
+state means submitted or fiscalised. CSV status fields are imported claims,
+not checked with URA.
+
+The [URA EFRIS system-integration page](https://ura.go.ug/en/efris/system-integration/)
+and [accredited-integrator list](https://ura.go.ug/en/download/list-of-accredited-efris-software-integrators-as-at-25-june-2024/)
+were located, but could not be retrieved to verify API details. The CSV
+templates define TaxComp's normalized columns; URA's current export schema and
+official API documentation could not be verified.
+VAT rates are entered by staff and used for arithmetic only. This release has
+CSV (not XLSX or PDF) imports/exports, up to 400 import rows per file, and
+displays up to 500 records per client. The shared admin token is not
+role-based access control: every administrator using it can access every
+client. Establish individual staff permissions, a reviewed data-retention and
+backup policy, and client authorization controls before treating this as a
+production client-record system.
+
 The consultation link opens an email draft to Opitekene; it never sends
 automatically. Users should remove confidential details before sending.
 Questions, local notes and AI-generated interpretations can still be wrong or
@@ -131,5 +163,5 @@ out of date; verify primary sources, provisions and effective dates.
 From the `tax-estimator` directory:
 
 ```powershell
-node --test .\tax-calculator.test.js .\tax-advisory.test.js .\tax-chat.test.js .\worker\index.test.mjs
+node --test .\tax-calculator.test.js .\tax-rules.test.js .\worker\index.test.mjs .\worker\efris.test.mjs
 ```

@@ -1,4 +1,5 @@
 import { retrieveKnowledge, sources as knowledgeSources } from "./knowledge.mjs";
+import { efrisDashboardResponse, handleEfrisApi } from "./efris.mjs";
 
 const MAX_BODY_BYTES = 12_000;
 const MAX_QUESTION_LENGTH = 1_600;
@@ -735,6 +736,7 @@ time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
 <main>
 <h1>Unanswered TaxComp questions</h1>
 <p>Only questions submitted with explicit user consent appear here. Consent timestamps are recorded; records expire after 90 days. Treat them as confidential.</p>
+<p><a href="/admin/efris">Open the EFRIS management workspace</a></p>
 <form id="login"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button>Load questions</button></form>
 <p id="status" role="status" aria-live="polite"></p>
 <ul id="questions"></ul>
@@ -772,11 +774,18 @@ async function handleAdminRequest(request, env) {
   if (url.pathname === "/admin" && request.method === "GET") {
     return adminDashboardResponse();
   }
-  if (url.pathname !== "/admin/questions" &&
-      !/^\/admin\/questions\/[a-f0-9-]{36}$/i.test(url.pathname)) {
+  const efrisDashboard = url.pathname === "/admin/efris" && request.method === "GET";
+  if (efrisDashboard) return efrisDashboardResponse();
+  const efrisApi = url.pathname === "/admin/efris/api";
+  const questionsApi = url.pathname === "/admin/questions" ||
+      /^\/admin\/questions\/[a-f0-9-]{36}$/i.test(url.pathname);
+  if (!efrisApi && !questionsApi) {
     return jsonResponse({ error: "The requested admin endpoint was not found." }, 404);
   }
-  if (request.method !== "GET" && request.method !== "DELETE") {
+  if (efrisApi && request.method !== "GET" && request.method !== "POST") {
+    return jsonResponse({ error: "Use GET or POST for the EFRIS workspace." }, 405);
+  }
+  if (questionsApi && request.method !== "GET" && request.method !== "DELETE") {
     return jsonResponse({ error: "Use GET or DELETE for this admin endpoint." }, 405);
   }
   if (typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
@@ -808,9 +817,11 @@ async function handleAdminRequest(request, env) {
     return jsonResponse({ error: "Admin authentication is required." }, 401);
   }
   if (!env.UNANSWERED_QUESTIONS) {
-    console.error("Unanswered-question database binding is missing");
-    return jsonResponse({ error: "The admin question store is not configured." }, 503);
+    console.error("Admin data database binding is missing");
+    return jsonResponse({ error: "The admin data store is not configured." }, 503);
   }
+
+  if (efrisApi) return handleEfrisApi(request, env);
 
   const id = url.pathname.match(/^\/admin\/questions\/([a-f0-9-]{36})$/i)?.[1];
   if (request.method === "DELETE" && id) {
@@ -872,7 +883,7 @@ export async function handleRequest(request, env) {
     try {
       return await handleAdminRequest(request, env);
     } catch (error) {
-      console.error("Admin question request failed", {
+      console.error("Admin request failed", {
         errorName: error instanceof Error ? error.name : "UnknownError",
       });
       return jsonResponse({ error: "The admin question request failed." }, 500);
