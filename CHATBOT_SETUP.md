@@ -45,7 +45,9 @@ Never enter confidential personal or business data.
 
    The Wrangler config enables Worker Observability at a 100% sampling rate.
    The Worker logs only the upstream Gemini HTTP status on provider errors; it
-   does not log the API key or provider response body.
+   does not log the API key or provider response body. Failed responses also
+   include the numeric upstream status in the `X-Gemini-Upstream-Status`
+   header, without exposing Google's error body.
 
 6. In `index.html`, set the `taxcomp-chat-endpoint` meta tag's `content` to the
    deployed Worker URL followed by `/chat`, for example:
