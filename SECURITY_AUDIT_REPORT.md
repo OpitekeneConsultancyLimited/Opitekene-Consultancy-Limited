@@ -1,0 +1,42 @@
+# Security audit report
+
+Date: 2026-11-07  
+Scope: `TaxComp-Prototype/` source, Phase 6 Worker/authentication, deployment configuration and current production gate.  
+Status: **PARTIAL REVIEW — independent audit and automated scans pending**
+
+## Controls observed
+
+- Password credentials use salted PBKDF2-HMAC-SHA-256 (310,000 iterations) via Web Crypto; stored session/reset tokens are hashed.
+- Sessions use expiring/revocable cookies with HttpOnly, Secure and SameSite attributes; mutations validate CSRF.
+- Five-failure account lockout and role/permission checks exist.
+- Phase 6 API validates exact CORS origin, request body size/content type, rate-limit binding, D1 binding and four fail-closed security flags.
+- Database reads and mutations use parameterized SQL and organization-qualified records; composite foreign keys and audit immutability are present in schema.
+- Worker responses include content-security policy, nosniff, frame denial and referrer policy in reviewed paths. Live Pages HEAD response included HSTS.
+- Gemini/Admin keys are configured as Worker secrets; they are not stored in `wrangler.toml`.
+- Phase 6 production API currently returns 503 because approval flags are unset.
+- Added a CodeQL workflow for JavaScript/TypeScript and Python; it has not yet run on the production branch.
+
+## Findings and blockers
+
+| # | Severity | Finding | Status |
+|---|---|---|---|
+| 1 | HIGH | At-rest encryption strategy, application/key ownership, key rotation and evidence are not established for sensitive client records. | BLOCKED before client data |
+| 2 | HIGH | Production D1 backup schedule, retention, integrity verification and real restore exercise are absent. | BLOCKED before client data |
+| 3 | HIGH | Independent security assessment and current CodeQL/dependency-scan findings are unavailable. Dependabot is disabled and no code-scanning analysis was available. | BLOCKED for security sign-off |
+| 4 | MEDIUM | Phase 6 has no configured production bootstrap/email/R2/scanner service bindings and its API is disabled. | Intentionally fail-closed |
+| 5 | MEDIUM | Phase 10 telemetry ingestion/retention/access flow is incomplete and analytics remains disabled. | Not active |
+| 6 | MEDIUM | Billing endpoints/provider verification/replay protection and entitlement enforcement are not implemented. | Not active |
+
+These are readiness findings, not a claim that the listed conditions are remotely exploitable. No complete penetration test or exhaustive vulnerability review was conducted; no “zero critical/high” assertion is made.
+
+## Tests and scans
+
+- Auth/API/migration-related tests included in complete suite: JS/Worker 299 passed, Python 16 passed.
+- CodeQL: workflow added locally; no result.
+- Dependabot: API reports alerts disabled for the repository.
+- Code scanning: no analysis result available at time of review.
+- At-rest encryption and production restore: not verified.
+
+## Required actions
+
+Keep all operations and analytics gates closed. Configure staging, run CodeQL and provider-appropriate dependency scanning, obtain independent penetration/security and privacy review, implement/verify encryption and key rotation, and demonstrate backup/restore before any client data or production operations are enabled.

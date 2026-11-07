@@ -1,4 +1,6 @@
-# Phases 8-11 implementation report
+# Historical Phases 8-11 implementation report
+
+> **Superseded taxonomy:** This report describes an earlier phase numbering scheme. The current production-readiness scope defines Phase 8 as security/reliability, Phase 9 as database/production operations, Phase 10 as analytics/monitoring, Phase 11 as commercialization/launch, and Phase 12 as legal verification/tax accuracy. See `PRODUCTION_READINESS_REPORT.md` and `PHASE8_IMPLEMENTATION_REPORT.md` through `PHASE12_LEGAL_VERIFICATION_REPORT.md` for current status. Historical test counts and phase labels below are not current.
 
 Date: 2026-11-07  
 Scope: `TaxComp-Prototype/`  

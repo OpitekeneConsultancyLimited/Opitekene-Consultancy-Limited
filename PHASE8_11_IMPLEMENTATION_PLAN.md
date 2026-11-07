@@ -1,4 +1,6 @@
-# Phase 8-11 implementation plan
+# Historical Phase 8-11 implementation plan
+
+> **Superseded taxonomy:** This plan reflects an earlier numbering scheme. The current production-readiness scope defines Phase 8 as security/reliability, Phase 9 as database/production operations, Phase 10 as analytics/monitoring, Phase 11 as commercialization/launch, and Phase 12 as legal verification/tax accuracy. Use the current phase reports and `PRODUCTION_READINESS_REPORT.md` for authoritative status.
 
 This is the additive implementation record for Phases 8-11. The local code foundations are implemented, but external and review-dependent acceptance items remain blocked; this document does not declare the product production-ready.
 

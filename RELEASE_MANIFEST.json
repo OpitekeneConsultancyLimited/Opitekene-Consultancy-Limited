@@ -1,0 +1,43 @@
+{
+  "product": "Opitekene TaxComp 2.0",
+  "releaseCandidate": true,
+  "releaseStatus": "review candidate; not approved for production",
+  "productionBaseline": {
+    "repository": "OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited",
+    "commit": "6572ba8dbc693dc827bf3cb561f5656bbc41bc86",
+    "tree": "b84f7ae87890464b0747c474e4ef6409baabf3aa"
+  },
+  "candidate": {
+    "branch": "release-candidate/2026-11-07-production-gate",
+    "tag": "taxcomp-2.0.0-rc.1",
+    "deploymentAuthorized": false
+  },
+  "verification": {
+    "javascriptAndWorker": "299 passed, 0 failed",
+    "python": "16 passed, 0 failed",
+    "focusedSecurityApiAnalyticsSubscription": "26 passed, 0 failed",
+    "migrationAndRestore": "9 passed, 0 failed",
+    "workerDryRun": "passed"
+  },
+  "releaseGates": {
+    "sourceIntegrity": "awaiting candidate ref and tag verification",
+    "atRestEncryptionAndKeyRotation": "blocked",
+    "independentSecurityScans": "blocked",
+    "stagingD1MigrationAndRollback": "blocked",
+    "providerBackupAndFullRestore": "blocked",
+    "paymentSandbox": "blocked",
+    "qualifiedLegalReview": "blocked",
+    "productionApproval": "not granted"
+  },
+  "safety": {
+    "productionDeploymentPerformed": false,
+    "remoteProductionMigrationsApplied": false,
+    "analyticsEnabled": false,
+    "liveBillingEnabled": false
+  },
+  "checksums": {
+    "file": "RELEASE_CHECKSUMS.txt",
+    "algorithm": "SHA-256",
+    "checksumFileExcludedFromItsOwnDigestList": true
+  }
+}
