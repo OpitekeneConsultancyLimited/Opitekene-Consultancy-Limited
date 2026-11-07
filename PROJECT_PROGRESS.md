@@ -62,7 +62,7 @@ The current production-readiness command supersedes the earlier Phase 8-11 taxon
 - Added `PROJECT_AUDIT.md` with the selected project boundary, architecture, feature inventory, gaps, test baseline, and limitations.
 - Added `TAX_RULES_REGISTER.md`; existing registered rules remain pending primary-source verification and not approved for filing.
 - Added `CHANGELOG.md`.
-- Created and verified `../TaxComp-Prototype-phase1-backup.tar.gz` before adding audit documents. No Git branch could be created because Git metadata and the Git executable are unavailable in this environment.
+- Created and verified `../TaxComp-Prototype-phase1-backup.tar.gz` before adding audit documents. At that checkpoint no local Git branch could be created because Git metadata and the Git executable were unavailable; the review candidate was later committed through GitHub's Git Data API.
 - No application code, tax logic, database schema, or existing workflow was modified.
 
 ## Phase 2 Deliverables

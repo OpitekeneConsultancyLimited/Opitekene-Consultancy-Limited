@@ -9,7 +9,8 @@
   },
   "candidate": {
     "branch": "release-candidate/2026-11-07-production-gate",
-    "tag": "taxcomp-2.0.0-rc.1",
+    "tag": "taxcomp-2.0.0-rc.2",
+    "supersedesTag": "taxcomp-2.0.0-rc.1",
     "deploymentAuthorized": false,
     "sourceCommit": "fe27d7231d7774da7448a252aa1599b83395ff2e",
     "sourceTree": "05cfbc828ab7194e8d3454ee9301a9871ab93f12",

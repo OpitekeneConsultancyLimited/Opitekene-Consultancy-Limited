@@ -5,7 +5,7 @@ Status: **BLOCKED — no scan result exists for this candidate**
 
 - A CodeQL workflow exists in the local candidate at `.github/workflows/codeql.yml`, but the CodeQL CLI is unavailable locally.
 - The candidate is now on a non-production review branch. Its workflow only runs on pushes/pull requests targeting `main` (or scheduled/default-branch dispatch); the candidate push did not trigger it, and the workflow is not present on the default branch for manual dispatch. The CodeQL CLI is unavailable locally, so no analysis result exists for this exact candidate.
-- The baseline CodeQL workflow, if any, is not evidence for the current uncommitted candidate.
+- Any CodeQL result on the production baseline would not be evidence for this candidate.
 - No CodeQL alerts or clean-scan result are claimed.
 
 ## Closure

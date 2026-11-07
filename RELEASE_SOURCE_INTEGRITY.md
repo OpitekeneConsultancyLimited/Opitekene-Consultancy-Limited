@@ -25,7 +25,7 @@ The full Node suite was rerun with these files included: 299 passed, 0 failed. N
 
 ## Candidate provenance
 
-The release-candidate branch points to commit `fe27d7231d7774da7448a252aa1599b83395ff2e` (tree `05cfbc828ab7194e8d3454ee9301a9871ab93f12`), whose sole parent is the confirmed production commit above. The commit overlays 52 source and evidence files and performs no deletions. The final annotated tag `taxcomp-2.0.0-rc.1` points to the metadata-complete candidate revision; the tag is unsigned and no protected-tag policy was configured. The commit content is content-addressed, but the tag is not a cryptographic signature or proof of protected-ref immutability.
+The release-candidate branch's source commit `fe27d7231d7774da7448a252aa1599b83395ff2e` (tree `05cfbc828ab7194e8d3454ee9301a9871ab93f12`) is a direct child of the confirmed production commit above. The final annotated tag `taxcomp-2.0.0-rc.2` points to the metadata-complete candidate revision; it supersedes the earlier evidence-only tag `taxcomp-2.0.0-rc.1`, which is retained and must not be used for review. The tag is unsigned and no protected-tag policy was configured. The commit content is content-addressed, but the tag is not a cryptographic signature or proof of protected-ref immutability.
 
 The Pages deployment workflow is restricted to `main`; this candidate branch does not trigger it. The CodeQL workflow in this candidate is not on the default branch and the candidate branch does not match its `push` trigger, so no CodeQL run is claimed.
 

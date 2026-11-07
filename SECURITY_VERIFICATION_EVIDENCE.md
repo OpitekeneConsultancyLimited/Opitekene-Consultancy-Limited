@@ -9,7 +9,7 @@ Scope: local `TaxComp-Prototype/` source and synthetic tests. This is not an ind
 |---|---|---|
 | At-rest encryption | **BLOCKED** | No encryption of sensitive D1 columns or application-level envelope encryption was demonstrated. A readiness flag is not cryptographic evidence. Cloud-provider encryption and account configuration were not independently verified. |
 | Key ownership, storage and rotation | **BLOCKED** | No key-management binding, key inventory, rotation procedure, or rotation test is configured. |
-| CodeQL | **BLOCKED** | CodeQL workflow exists locally, but the CodeQL CLI is unavailable and these local changes are not pushed, so the workflow has no analysis result for this candidate. |
+| CodeQL | **BLOCKED** | The workflow is on the non-production candidate branch, but the branch does not match its `main` push trigger and the workflow is not on the default branch for manual dispatch. The CodeQL CLI is unavailable; no candidate scan result exists. |
 | Independent dependency/vulnerability scans | **BLOCKED** | `codeql`, `pip-audit`, `trivy`, `osv-scanner`, `snyk`, and `grype` are unavailable. No npm/Python dependency manifest or lockfile was found for the project. No independent scan was represented as passed. |
 | Authentication/session/CSRF/lockout | **PASSED** | Local `worker/phase6-auth.test.mjs`: salted PBKDF2 hash verification, expiring hashed sessions, CSRF, password reset/revocation, lockout and role checks. Uses synthetic D1 fake; no penetration test. |
 | Server-side RBAC and privilege boundaries | **PASSED** | Local `worker/phase6-api.test.mjs`: unauthenticated and bad-origin denial, CSRF-required mutation, admin-scoped governance, invitations/role assignment and synthetic workflow tests. |
@@ -29,4 +29,4 @@ Result: **26 passed, 0 failed** at final execution. This focused run does not in
 
 ## Required before any client-data operation
 
-Obtain provider/account evidence for encryption at rest; decide and verify key-management/rotation controls; run CodeQL and dependency/SAST scans against the exact release commit; independently test authentication, privilege escalation and tenant isolation; resolve every critical/high finding; and record security/privacy approvals. Keep the existing Phase 6 gate closed until then.
+Candidate source is pinned by the release tag `taxcomp-2.0.0-rc.2`; obtain provider/account evidence for encryption at rest; decide and verify key-management/rotation controls; run CodeQL and dependency/SAST scans against the exact release commit; independently test authentication, privilege escalation and tenant isolation; resolve every critical/high finding; and record security/privacy approvals. Keep the existing Phase 6 gate closed until then.

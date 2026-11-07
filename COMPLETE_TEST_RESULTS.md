@@ -22,5 +22,5 @@ Test coverage included tax calculators, rules, international-tax and multi-tax a
 - No production database migrations were run.
 - The initial Worker dry run reported duplicate object keys (one in `tax-advisory.js`, one in `worker/phase6-api.mjs`); both duplicates were removed without changing behavior. The final dry run passed with those warnings cleared; Wrangler still reports its existing experimental `unsafe` configuration warning.
 - No payment sandbox tests were possible; no provider is configured.
-- CodeQL workflow was added locally but has not run. CodeQL and independent scanner CLIs are unavailable, and no dependency manifest/lockfile was found.
-- The previous production Pages workflow for commit `6572ba8dbc693dc827bf3cb561f5656bbc41bc86` passed, but the latest local work in this report is not that deployed commit.
+- The CodeQL workflow is present on the non-production candidate branch but has not run: it is not on the default branch and its push trigger is restricted to `main`. CodeQL and independent scanner CLIs are unavailable, and no project dependency manifest/lockfile was found.
+- The candidate is not deployed. Production `main` remains at `6572ba8dbc693dc827bf3cb561f5656bbc41bc86`; no production deployment occurred.
