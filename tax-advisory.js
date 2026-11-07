@@ -254,7 +254,7 @@
       id: "business-tax-audit",
       topic: "business",
       title: "How can a business prepare for a URA tax audit?",
-      keywords: ["business tax audit URA prepare notice request records evidence deadline assessment inspection review"],
+      keywords: ["business tax audit URA prepare notice request records evidence deadline assessment objection objections inspection review"],
       summary: "Start from the actual notice: verify its source, tax types, periods, scope, requested records and response dates. Preserve the relevant accounting, invoice, payroll, customs and filing records; reconcile material figures to returns; index each response and keep proof of delivery. The facts and applicable procedure determine what must be provided.",
       nextStep: "Use TaxComp's audit-readiness checklist to organize requests and supporting evidence. Confirm deadlines and response requirements with URA or a qualified Ugandan tax adviser; this checklist does not act for you.",
       sourceKeys: ["ura"],

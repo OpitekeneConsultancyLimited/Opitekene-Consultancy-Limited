@@ -15,7 +15,26 @@ const {
   calculateRentalIncomeTax,
   calculateVat,
   calculateWithholdingTax,
+  standardVatRatePercent,
 } = require("./tax-calculator.js");
+
+test("keeps registry-backed estimates explicitly pending until legal approval", () => {
+  const estimates = [
+    calculateVat({ standardRatedSales: 100 }),
+    calculateRentalIncomeTax({ grossRentalIncome: 3_000_000 }),
+    calculateWithholdingTax(2_000_000, "resident-supply", true),
+    calculatePresumptiveTax(10_000_000, 1),
+    calculateCustomsEstimate({ direction: "import", customsValue: 100 }),
+  ];
+
+  assert.equal(standardVatRatePercent, 18);
+  for (const estimate of estimates) {
+    assert.equal(estimate.taxRuleSet.status, "pending-review");
+    assert.equal(estimate.taxRuleSet.approvedForFiling, false);
+    assert.equal(estimate.taxRuleSet.legacyEstimate, true);
+    assert.ok(estimate.taxRuleSet.ruleIds.length > 0);
+  }
+});
 
 test("income at or below the tax-free threshold has no tax", () => {
   assert.equal(calculateIndividualIncomeTax(0).totalTax, 0);
@@ -201,6 +220,24 @@ test("calculates wear-and-tear allowances at the statutory reducing-balance clas
   assert.equal(class3.rate, 0.2);
   assert.equal(class3.allowance, 2_000_000);
   assert.equal(class1.breakdown.length, 6);
+});
+
+test("applies an explicit registry-selected wear-and-tear rate without changing the default", () => {
+  const estimate = calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 1_000_000,
+    businessUsePercent: 100,
+    rateOverride: 0.25,
+  });
+
+  assert.equal(estimate.rate, 0.25);
+  assert.equal(estimate.allowance, 250_000);
+  assert.throws(() => calculateWearAndTear({
+    assetClass: "class-1",
+    openingTaxWrittenDownValue: 1_000_000,
+    businessUsePercent: 100,
+    rateOverride: 1.01,
+  }), RangeError);
 });
 
 test("apportions additions and disposals for business use and flags excess proceeds", () => {

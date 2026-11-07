@@ -30,6 +30,9 @@ const nationalLotteryField = document.querySelector("#national-lottery-field");
 const nationalLotteryWinnings = document.querySelector("#national-lottery-winnings");
 const formError = document.querySelector("#form-error");
 const customsDirection = document.querySelector("#customs-direction");
+const capitalAssetRows = document.querySelector("#capital-asset-rows");
+const capitalAssetTemplate = document.querySelector("#capital-asset-row-template");
+const addCapitalAssetButton = document.querySelector("#add-capital-asset");
 const rentalTaxpayerType = document.querySelector("#rental-taxpayer-type");
 const rentalResidency = document.querySelector("#rental-residency");
 const payeEmploymentType = document.querySelector("#paye-employment-type");
@@ -225,6 +228,16 @@ const headContent = {
     description: "Calculate the reducing-balance allowance using Uganda’s statutory asset classes.",
     button: "Calculate wear-and-tear",
   },
+  "industrial-building": {
+    title: "Industrial building review",
+    description: "Capture building facts and review eligibility before any provisional deduction scenario.",
+    button: "Review industrial building",
+  },
+  "capital-gains": {
+    title: "Asset disposal review",
+    description: "Reconcile disposal proceeds and cost base by asset category before any provisional tax scenario.",
+    button: "Review asset disposal",
+  },
 };
 
 function formatUgx(value) {
@@ -242,7 +255,7 @@ function updateCustomsMode() {
   for (const panel of document.querySelectorAll(".customs-mode-fields")) {
     const selected = panel.dataset.customsMode === customsDirection.value;
     panel.hidden = !selected;
-    for (const control of panel.querySelectorAll("input, select")) {
+    for (const control of panel.querySelectorAll("input, select, textarea")) {
       control.disabled = !active || !selected;
       control.required = active && selected && control.dataset.required === "true";
     }
@@ -451,7 +464,9 @@ function renderBreakdown(rows) {
     rate.textContent = item.rate === null || item.rate === undefined
       ? "—"
       : formatPercent(item.rate);
-    amount.textContent = formatUgx(item.amount);
+    amount.textContent = item.amount === null || item.amount === undefined
+      ? "—"
+      : formatUgx(item.amount);
     row.append(label, rate, amount);
     resultBreakdown.append(row);
   }
@@ -471,7 +486,7 @@ function setTaxHead(head, focusTab = false) {
   for (const panel of taxFields) {
     const selected = panel.dataset.fields === head;
     panel.hidden = !selected;
-    for (const control of panel.querySelectorAll("input, select")) {
+    for (const control of panel.querySelectorAll("input, select, textarea")) {
       const requiredFor = control.dataset.requiredFor;
       const conditionMatches = !requiredFor || requiredFor === whtType.value;
       control.disabled = !selected || !conditionMatches;
@@ -594,7 +609,9 @@ function renderResult({
   extraRows = [],
 }) {
   resultLabel.textContent = label;
-  estimatedTax.textContent = formatUgx(value);
+  estimatedTax.textContent = value === null || value === undefined
+    ? "Unavailable"
+    : formatUgx(value);
   effectiveRate.textContent = context;
   balanceRow.hidden = balance === undefined || balance === null;
   if (!balanceRow.hidden) {
@@ -610,9 +627,14 @@ function renderResult({
   columnTax.textContent = "Amount";
   renderBreakdown([...breakdown, ...extraRows]);
   const ruleSetNote = taxRuleSet
-    ? `Ruleset ${taxRuleSet.id} (${taxRuleSet.financialYear}); primary-source verification is pending and it is not approved for filing.`
+    ? `Ruleset ${taxRuleSet.id}${taxRuleSet.financialYear ? ` (${taxRuleSet.financialYear})` : ""}; status ${taxRuleSet.status || "pending-review"}; not approved for filing.`
     : "";
-  calculationNote.textContent = [note, ruleSetNote].filter(Boolean).join(" ");
+  const ruleProvenanceNote = taxRuleSet?.ruleIds?.length
+    ? `Rule records: ${taxRuleSet.ruleIds.map((ruleId, index) =>
+      `${ruleId}${taxRuleSet.versions?.[index] ? ` (${taxRuleSet.versions[index]})` : ""}`,
+    ).join(", ")}.`
+    : "";
+  calculationNote.textContent = [note, ruleSetNote, ruleProvenanceNote].filter(Boolean).join(" ");
   emptyResults.hidden = true;
   calculatedResults.hidden = false;
 }
@@ -758,12 +780,6 @@ function showCompanyTax() {
     0,
   );
   const deductions = exemptIncome + capitalAllowances + itemizedDeductionTotal + otherDeductions;
-  const taxBase = ugandaTax.calculateCompanyTaxBase(
-    accountingProfit,
-    addbacks,
-    deductions,
-    taxLosses,
-  );
   const paid = document.querySelector("#company-paid").value === ""
     ? 0
     : document.querySelector("#company-paid").valueAsNumber;
@@ -771,68 +787,54 @@ function showCompanyTax() {
   const withholdingCredits = withholdingCreditsInput.value === ""
     ? 0
     : withholdingCreditsInput.valueAsNumber;
-  const estimate = ugandaTax.calculateCompanyIncomeTax(
-    taxBase.chargeableIncome,
-    paid,
-    withholdingCredits,
-  );
-
-  const adjustmentRows = [
-    { label: "Accounting profit or (loss) before tax", rate: null, amount: accountingProfit },
-    ...itemizedAddbacks.map((item) => ({ label: `Add: ${item.label}`, rate: null, amount: item.amount })),
-    ...(otherAddbacks > 0
-      ? [{ label: "Add: other disallowable expenses/taxable adjustments", rate: null, amount: otherAddbacks }]
-      : []),
-    { label: "Profit/(loss) after additions", rate: null, amount: taxBase.incomeAfterAdditions },
-    ...(exemptIncome > 0
-      ? [{ label: "Less: exempt income included in accounts", rate: null, amount: -exemptIncome }]
-      : []),
-    ...(capitalAllowances > 0
-      ? [{ label: "Less: capital allowances entered", rate: null, amount: -capitalAllowances }]
-      : []),
-    ...itemizedDeductions.map((item) => ({
-      label: `Less: ${item.label}`,
-      rate: null,
-      amount: -item.amount,
-    })),
-    ...(otherDeductions > 0
-      ? [{ label: "Less: other allowable deductions", rate: null, amount: -otherDeductions }]
-      : []),
-    {
-      label: taxBase.currentYearLoss > 0
-        ? "Tax loss for the year before loss relief"
-        : "Adjusted profit before carried-forward losses",
-      rate: null,
-      amount: taxBase.adjustedProfitBeforeLosses,
-    },
-    ...(taxLosses > 0
-      ? [{ label: "Less: eligible carried-forward tax losses used", rate: null, amount: -taxLosses }]
-      : []),
-    { label: "Estimated chargeable income", rate: null, amount: taxBase.chargeableIncome },
-    ...(taxBase.currentYearLoss > 0
-      ? [{
-        label: "Current-year tax loss (not automatically carried forward)",
-        rate: null,
-        amount: taxBase.currentYearLoss,
-      }]
-      : []),
-    { label: "Company income tax", rate: estimate.taxRate, amount: estimate.tax },
-    { label: "Less: provisional tax instalments paid", rate: null, amount: -paid },
-    { label: "Less: creditable withholding tax entered", rate: null, amount: -withholdingCredits },
-    { label: "Estimated balance after entered credits", rate: null, amount: estimate.balance },
-  ];
+  const result = ugandaCorporateTax.calculateCorporateIncomeTax({
+    calculationMode: document.querySelector("#company-calculation-mode").value,
+    taxpayerCategory: document.querySelector("#company-taxpayer-category").value,
+    periodStart: document.querySelector("#company-period-start").value,
+    periodEnd: document.querySelector("#company-period-end").value,
+    reviewer: document.querySelector("#company-computation-reviewer").value,
+    reviewDate: document.querySelector("#company-computation-review-date").value,
+    accountingProfit,
+    addBacks: [
+      ...itemizedAddbacks.map((item) => ({ description: item.label, amount: item.amount })),
+      ...(otherAddbacks > 0
+        ? [{ description: "Other disallowable expenses or taxable adjustments", amount: otherAddbacks }]
+        : []),
+    ],
+    exemptIncome: exemptIncome > 0
+      ? [{ description: "Exempt income included in accounting profit", amount: exemptIncome }]
+      : [],
+    allowableDeductions: [
+      ...itemizedDeductions.map((item) => ({ description: item.label, amount: item.amount })),
+      ...(otherDeductions > 0
+        ? [{ description: "Other allowable tax deductions", amount: otherDeductions }]
+        : []),
+    ],
+    capitalAllowances: capitalAllowances > 0
+      ? [{ description: "User-entered capital allowances schedule", amount: capitalAllowances }]
+      : [],
+    carriedForwardLosses: taxLosses,
+    provisionalTaxPaid: paid,
+    withholdingTaxCredits: withholdingCredits,
+  });
 
   renderResult({
-    value: estimate.tax,
-    label: "Estimated annual company income tax",
-    context: taxBase.currentYearLoss > 0
-      ? `Current-year tax loss entered: ${formatUgx(taxBase.currentYearLoss)} · confirm availability and carry-forward treatment`
-      : `Estimated chargeable income: ${formatUgx(taxBase.chargeableIncome)} · Standard resident company rate: ${formatPercent(estimate.taxRate)}`,
-    balance: estimate.balance,
-    breakdown: adjustmentRows,
+    value: result.grossTaxLiability,
+    label: result.grossTaxLiability === null
+      ? "Corporate tax liability unavailable"
+      : result.calculationStatus === "provisional"
+        ? "Provisional corporate tax estimate"
+        : "Corporate income tax liability",
+    context: `Taxable income: ${formatUgx(result.taxableIncome)} · Period ${result.period.start} to ${result.period.end} · ${result.calculationStatus}`,
+    balance: result.finalTaxPayable,
+    breakdown: result.schedule,
     breakdownCaption: "Itemized tax reconciliation from accounting profit or loss",
-    taxRuleSet: estimate.taxRuleSet,
-    note: `Uses the standard ${formatPercent(estimate.taxRate)} company rate only when taxable chargeable income exists. Every adjustment must be confirmed for this taxpayer, year and tax treatment; enter each item once. This tool does not determine deductibility, asset classes/rates, loss restrictions, withholding creditability, exemptions, or special regimes. A displayed current-year tax loss is not a determination that it can be carried forward; confirm the assessment and statutory treatment before filing.`,
+    taxRuleSet: result.taxRuleSet,
+    note: [
+      result.provisionalNotice,
+      ...result.assumptions,
+      ...result.missingInformation,
+    ].filter(Boolean).join(" "),
   });
 }
 
@@ -974,7 +976,7 @@ function showCustomsEstimate() {
     importOtherCharges: optionalNumber("#import-other-charges"),
     importVatTreatment: document.querySelector("#import-vat-treatment").value,
     exportVatTreatment: document.querySelector("#export-vat-treatment").value,
-    exportVatRate: 18,
+    exportVatRate: ugandaTax.standardVatRatePercent,
     exportLevyRate: optionalNumber("#export-levy-rate"),
     exportExciseDuty: optionalNumber("#export-excise-duty"),
     exportOtherCharges: optionalNumber("#export-other-charges"),
@@ -989,6 +991,7 @@ function showCustomsEstimate() {
       ? `Estimated landed cost: ${formatUgx(estimate.landedCost)} · ${tradeDetails}`
       : `Estimated proceeds after entered charges: ${formatUgx(estimate.netProceeds)} · ${tradeDetails}`,
     breakdown: estimate.breakdown,
+    taxRuleSet: estimate.taxRuleSet,
     breakdownCaption: direction === "import"
       ? "Customs value to landed cost"
       : "Export value to net proceeds",
@@ -1000,28 +1003,187 @@ function showCustomsEstimate() {
 }
 
 function showCapitalAllowance() {
-  const optionalNumber = (selector) => {
-    const input = document.querySelector(selector);
-    return input.value === "" ? 0 : input.valueAsNumber;
-  };
-  const estimate = ugandaTax.calculateWearAndTear({
-    assetClass: document.querySelector("#allowance-class").value,
-    openingTaxWrittenDownValue: document.querySelector("#allowance-opening-value").valueAsNumber,
-    additions: optionalNumber("#allowance-additions"),
-    disposalProceeds: optionalNumber("#allowance-disposals"),
-    businessUsePercent: document.querySelector("#allowance-business-use").valueAsNumber,
+  const assets = [...capitalAssetRows.querySelectorAll("[data-asset-row]")].map((row) => {
+    const field = (name) => row.querySelector(`[data-asset-field="${name}"]`);
+    const number = (name) => field(name).value === "" ? 0 : field(name).valueAsNumber;
+    return {
+      assetId: field("assetId").value.trim(),
+      description: field("description").value.trim(),
+      assetClass: field("assetClass").value,
+      acquisitionDate: field("acquisitionDate").value,
+      dateBroughtIntoUse: field("dateBroughtIntoUse").value,
+      openingTaxWrittenDownValue: number("openingTaxWrittenDownValue"),
+      qualifyingExpenditure: number("qualifyingExpenditure"),
+      accountingDepreciation: number("accountingDepreciation"),
+      disposalDate: field("disposalDate").value || null,
+      disposalProceeds: number("disposalProceeds"),
+      businessUsePercent: field("businessUsePercent").valueAsNumber,
+      classificationConfirmed: field("classificationConfirmed").checked,
+    };
   });
+  const result = ugandaCapitalAllowances.calculateCapitalAllowanceSchedule({
+    calculationMode: document.querySelector("#allowance-calculation-mode").value,
+    taxpayerType: document.querySelector("#allowance-taxpayer-type").value,
+    periodStart: document.querySelector("#allowance-period-start").value,
+    periodEnd: document.querySelector("#allowance-period-end").value,
+    reviewer: document.querySelector("#allowance-computation-reviewer").value,
+    reviewDate: document.querySelector("#allowance-computation-review-date").value,
+    initialAllowanceRequested: document.querySelector("#initial-allowance-requested").checked,
+    assets,
+  });
+  const breakdown = result.classSchedules.flatMap((schedule) => [
+    { label: `${schedule.assetClass} opening tax written-down value`, amount: schedule.openingTaxWrittenDownValue },
+    { label: `${schedule.assetClass} qualifying additions`, amount: schedule.qualifyingAdditions },
+    { label: `${schedule.assetClass} additions after business-use apportionment`, amount: schedule.businessUseAdditions },
+    { label: `${schedule.assetClass} disposal proceeds after business-use apportionment`, amount: -schedule.businessUseDisposalProceeds },
+    { label: `${schedule.assetClass} accounting depreciation (not a tax deduction here)`, amount: schedule.accountingDepreciation },
+    ...(schedule.allowance === null ? [] : [
+      { label: `${schedule.assetClass} wear-and-tear allowance at ${formatPercent(schedule.rate)}`, amount: schedule.allowance, rate: schedule.rate },
+      { label: `${schedule.assetClass} closing tax written-down value`, amount: schedule.closingTaxWrittenDownValue },
+      ...(schedule.excessDisposalProceeds > 0
+        ? [{ label: `${schedule.assetClass} excess disposal proceeds for balancing review`, amount: schedule.excessDisposalProceeds }]
+        : []),
+    ]),
+  ]);
 
   renderResult({
-    value: estimate.allowance,
-    label: "Estimated wear-and-tear allowance",
-    context: `${estimate.assetClass.label} · Reducing balance at ${formatPercent(estimate.rate)} · Closing pool: ${formatUgx(estimate.closingTaxWrittenDownValue)}`,
-    breakdown: estimate.breakdown,
-    breakdownCaption: "Class-based tax pool reconciliation",
-    taxRuleSet: estimate.taxRuleSet,
-    note: estimate.excessDisposalProceeds > 0
-      ? "The excess disposal proceeds are flagged but no balancing charge or allowance is calculated. Confirm asset eligibility, tax basis, business-use apportionment and disposal treatment under the current Income Tax Act before using this result. Transfer only the supported allowance into the company tax reconciliation."
-      : "This estimate applies the selected class rate on a reducing-balance pool after entered additions and disposals. It does not determine asset eligibility, minor-asset expensing, balancing adjustments, initial allowances, or industrial-building allowance. Confirm the current law and records; transfer only a supported allowance into the company tax reconciliation.",
+    value: result.totalAllowance,
+    label: result.totalAllowance === null
+      ? "Capital allowance unavailable"
+      : result.calculationStatus === "provisional"
+        ? "Provisional wear-and-tear allowance"
+        : "Wear-and-tear allowance",
+    context: `Period ${result.period.start} to ${result.period.end} · ${result.calculationStatus} · Accounting depreciation shown separately`,
+    breakdown,
+    breakdownCaption: "Asset register and class-pool reconciliation",
+    taxRuleSet: result.taxRuleSet,
+    note: [result.provisionalNotice, ...result.assumptions, ...result.missingInformation]
+      .filter(Boolean)
+      .join(" "),
+  });
+}
+
+function showIndustrialBuilding() {
+  const optionalNumber = (selector) => {
+    const field = document.querySelector(selector);
+    return field.value === "" ? undefined : field.valueAsNumber;
+  };
+  const result = ugandaIndustrialBuilding.calculateIndustrialBuildingDeduction({
+    calculationMode: document.querySelector("#industrial-building-calculation-mode").value,
+    taxpayerType: document.querySelector("#industrial-building-taxpayer").value,
+    periodStart: document.querySelector("#industrial-building-period-start").value,
+    periodEnd: document.querySelector("#industrial-building-period-end").value,
+    buildingDescription: document.querySelector("#industrial-building-description").value.trim(),
+    owner: document.querySelector("#industrial-building-owner").value.trim(),
+    constructionExpenditure: document.querySelector("#industrial-building-construction-cost").valueAsNumber,
+    qualifyingConstructionCosts: document.querySelector("#industrial-building-qualifying-cost").valueAsNumber,
+    constructionStarted: document.querySelector("#industrial-building-construction-start").value,
+    constructionCompleted: document.querySelector("#industrial-building-construction-complete").value,
+    firstUsed: document.querySelector("#industrial-building-first-used").value,
+    buildingUse: document.querySelector("#industrial-building-use").value.trim(),
+    previousDeductions: document.querySelector("#industrial-building-prior-deductions").valueAsNumber,
+    disposalDate: document.querySelector("#industrial-building-disposal-date").value || null,
+    changeOfUseDate: document.querySelector("#industrial-building-change-use-date").value || null,
+    qualificationConfirmed: document.querySelector("#industrial-building-qualification-confirmed").checked,
+    reviewer: document.querySelector("#industrial-building-computation-reviewer").value,
+    reviewDate: document.querySelector("#industrial-building-computation-review-date").value,
+    simulationRatePercent: optionalNumber("#industrial-building-rate"),
+    simulationMethod: document.querySelector("#industrial-building-method").value || undefined,
+    periodUsePercent: optionalNumber("#industrial-building-use-percent"),
+  });
+  const candidateRuleId = result.candidateRuleId;
+  const taxRuleSet = {
+    id: candidateRuleId || "UG-INDUSTRIAL-BUILDING",
+    status: result.ruleStatus,
+    approvedForFiling: result.filingReady,
+    legacyEstimate: !result.filingReady,
+    ruleIds: result.ruleIdsUsed.length ? result.ruleIdsUsed : candidateRuleId ? [candidateRuleId] : [],
+    versions: result.ruleVersionsUsed.length
+      ? result.ruleVersionsUsed
+      : result.candidateRuleVersion ? [result.candidateRuleVersion] : [],
+  };
+
+  renderResult({
+    value: result.estimatedDeduction,
+    label: result.estimatedDeduction === null
+      ? "Deduction unavailable"
+      : result.calculationStatus === "provisional"
+        ? "Provisional deduction scenario"
+        : "Industrial-building deduction",
+    context: `${result.qualificationStatus} · ${result.deductionMethod || "No verified method"} · ${result.deductionRatePercent === null ? "No verified rate" : `${result.deductionRatePercent}%`}`,
+    breakdown: result.schedule,
+    breakdownCaption: "Construction-cost and prior-deduction reconciliation",
+    taxRuleSet,
+    note: [
+      result.provisionalNotice,
+      result.qualificationReason,
+      ...result.assumptions,
+      ...result.missingInformation,
+      result.legislation ? `Legislation: ${result.legislation}.` : "No verified legislation or statutory provision is recorded.",
+      result.provision ? `Provision: ${result.provision}.` : "Statutory provision unavailable; review required.",
+    ].filter(Boolean).join(" "),
+  });
+}
+
+function showCapitalGains() {
+  const optionalNumber = (selector) => {
+    const field = document.querySelector(selector);
+    return field.value === "" ? 0 : field.valueAsNumber;
+  };
+  const exemption = optionalNumber("#capital-gains-exemption");
+  const relief = optionalNumber("#capital-gains-relief");
+  const result = ugandaCapitalGains.calculateCapitalGains({
+    calculationMode: document.querySelector("#capital-gains-calculation-mode").value,
+    taxpayerType: document.querySelector("#capital-gains-taxpayer").value,
+    assetDescription: document.querySelector("#capital-gains-asset-description").value.trim(),
+    assetCategory: document.querySelector("#capital-gains-asset-category").value,
+    acquisitionDate: document.querySelector("#capital-gains-acquisition-date").value,
+    disposalDate: document.querySelector("#capital-gains-disposal-date").value,
+    periodStart: document.querySelector("#capital-gains-period-start").value,
+    periodEnd: document.querySelector("#capital-gains-period-end").value,
+    acquisitionCost: document.querySelector("#capital-gains-acquisition-cost").valueAsNumber,
+    acquisitionIncidentalCosts: optionalNumber("#capital-gains-acquisition-costs"),
+    improvementExpenditure: optionalNumber("#capital-gains-improvements"),
+    disposalProceeds: document.querySelector("#capital-gains-proceeds").valueAsNumber,
+    disposalIncidentalCosts: optionalNumber("#capital-gains-disposal-costs"),
+    exemptions: exemption > 0 ? [{ description: "User-entered exemption", amount: exemption }] : [],
+    reliefs: relief > 0 ? [{ description: "User-entered relief", amount: relief }] : [],
+    withholdingCredits: optionalNumber("#capital-gains-wht-credits"),
+    simulationRatePercent: optionalNumber("#capital-gains-rate") || null,
+    classificationConfirmed: document.querySelector("#capital-gains-classification-confirmed").checked,
+    reviewer: document.querySelector("#capital-gains-computation-reviewer").value,
+    reviewDate: document.querySelector("#capital-gains-computation-review-date").value,
+  });
+  const candidateRuleId = result.candidateRuleId;
+  const taxRuleSet = {
+    id: candidateRuleId || "UG-CAPITAL-GAINS",
+    status: result.ruleStatus,
+    approvedForFiling: result.filingReady,
+    legacyEstimate: !result.filingReady,
+    ruleIds: result.ruleIdsUsed.length ? result.ruleIdsUsed : candidateRuleId ? [candidateRuleId] : [],
+    versions: result.ruleVersionsUsed.length
+      ? result.ruleVersionsUsed
+      : result.candidateRuleVersion ? [result.candidateRuleVersion] : [],
+  };
+  renderResult({
+    value: result.taxLiability,
+    label: result.taxLiability === null
+      ? "Capital-gains liability unavailable"
+      : result.calculationStatus === "provisional"
+        ? "Provisional capital-gains scenario"
+        : "Capital-gains tax",
+    context: `${result.assetCategory} · Chargeable gain ${formatUgx(result.chargeableGain)} · ${result.calculationStatus}`,
+    balance: result.finalTaxPayable,
+    breakdown: result.schedule,
+    breakdownCaption: "Disposal proceeds and adjusted cost-base reconciliation",
+    taxRuleSet,
+    note: [
+      result.provisionalNotice,
+      ...result.assumptions,
+      ...result.missingInformation,
+      result.legislation ? `Legislation: ${result.legislation}.` : "No verified legislation or statutory provision is recorded.",
+      result.provision ? `Provision: ${result.provision}.` : "Statutory provision unavailable; review required.",
+    ].filter(Boolean).join(" "),
   });
 }
 
@@ -1035,6 +1197,8 @@ const calculations = {
   presumptive: showPresumptiveTax,
   customs: showCustomsEstimate,
   "capital-allowances": showCapitalAllowance,
+  "industrial-building": showIndustrialBuilding,
+  "capital-gains": showCapitalGains,
 };
 
 createAdjustmentFields(
@@ -1056,13 +1220,28 @@ createAdjustmentFields(
   "company-deduction-item",
 );
 
-const wearAndTearClassSelect = document.querySelector("#allowance-class");
-for (const assetClass of ugandaTax.wearAndTearClasses) {
-  const option = document.createElement("option");
-  option.value = assetClass.id;
-  option.textContent = `${assetClass.label} (${formatPercent(assetClass.rate)})`;
-  wearAndTearClassSelect.append(option);
+function addCapitalAssetRow() {
+  const row = capitalAssetTemplate.content.firstElementChild.cloneNode(true);
+  const rowIndex = capitalAssetRows.querySelectorAll("[data-asset-row]").length + 1;
+  row.querySelector("[data-asset-title]").textContent = `Asset ${rowIndex}`;
+  for (const control of row.querySelectorAll("[data-asset-field]")) {
+    const fieldName = control.dataset.assetField;
+    control.id = `capital-asset-${rowIndex}-${fieldName}`;
+    const label = row.querySelector(`label[data-label-for="${fieldName}"]`);
+    if (label) label.htmlFor = control.id;
+  }
+  row.querySelector("[data-remove-asset]").addEventListener("click", () => {
+    row.remove();
+    for (const [index, remainingRow] of
+      [...capitalAssetRows.querySelectorAll("[data-asset-row]")].entries()) {
+      remainingRow.querySelector("[data-asset-title]").textContent = `Asset ${index + 1}`;
+    }
+  });
+  capitalAssetRows.append(row);
 }
+
+addCapitalAssetButton.addEventListener("click", addCapitalAssetRow);
+addCapitalAssetRow();
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();

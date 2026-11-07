@@ -14,7 +14,9 @@
     throw new Error("Uganda tax rules must be loaded before the tax calculator.");
   }
 
-  const activeTaxRules = taxRules.getRulesForFinancialYear(taxRules.currentFinancialYear);
+  const getLegacyRules = taxRules.getLegacyEstimateRulesForFinancialYear ||
+    taxRules.getRulesForFinancialYear;
+  const activeTaxRules = getLegacyRules(taxRules.currentFinancialYear);
   const residentIndividualBands = activeTaxRules.individualIncomeTax.residentBands;
   const nonResidentIndividualBands = activeTaxRules.individualIncomeTax.nonResidentBands;
   const wearAndTearClasses = activeTaxRules.capitalAllowances.wearAndTearClasses;
@@ -23,45 +25,58 @@
     financialYear: activeTaxRules.financialYear,
     approvalStatus: activeTaxRules.approvalStatus,
     approvedForFiling: activeTaxRules.approvedForFiling,
+    status: activeTaxRules.ruleStatus || "pending-review",
+    legacyEstimate: true,
   };
+  const createTaxRuleSet = (ruleIds, sourceReferences = []) => Object.freeze({
+    ...taxRuleSetMetadata,
+    ruleIds: Object.freeze(ruleIds),
+    sourceReferences: Object.freeze([...sourceReferences]),
+  });
   const individualTaxRuleSet = Object.freeze({
     ...taxRuleSetMetadata,
+    ruleIds: Object.freeze([
+      "ug-income-tax-individual-resident-fy2026-27",
+      "ug-income-tax-individual-nonresident-fy2026-27",
+      "ug-nssf-employee-contribution-fy2026-27",
+      "ug-nssf-employer-contribution-fy2026-27",
+    ]),
     sourceReferences: activeTaxRules.individualIncomeTax.sources,
   });
   const companyTaxRuleSet = Object.freeze({
-    ...taxRuleSetMetadata,
-    sourceReferences: activeTaxRules.companyIncomeTax.sources,
+    ...createTaxRuleSet(
+      ["ug-income-tax-company-resident-fy2026-27"],
+      activeTaxRules.companyIncomeTax.sources,
+    ),
   });
   const capitalAllowanceRuleSet = Object.freeze({
-    ...taxRuleSetMetadata,
-    sourceReferences: activeTaxRules.capitalAllowances.wearAndTearSources,
+    ...createTaxRuleSet(
+      wearAndTearClasses.map((assetClass) => `ug-capital-allowance-${assetClass.id}-fy2026-27`),
+      activeTaxRules.capitalAllowances.wearAndTearSources,
+    ),
   });
-
-  const withholdingRates = {
-    "resident-supply": { label: "Resident supply / contract payment", rate: 0.06 },
-    "resident-dividend": { label: "Resident dividend", rate: 0.15 },
-    "listed-dividend": { label: "Listed company dividend to individual", rate: 0.1 },
-    "resident-interest": { label: "Resident interest", rate: 0.15 },
-    "government-interest": { label: "Government securities interest, under 10 years", rate: 0.2 },
-    "long-government-interest": { label: "Government securities interest, 10 years or more", rate: 0.1 },
-    "related-company-dividend": { label: "Dividend to resident company holding at least 25% voting power", rate: 0 },
-    "nonresident-payment": { label: "Non-resident dividend, interest, royalty, rent or management fee", rate: 0.15 },
-    "nonresident-government-interest": { label: "Non-resident government securities interest, under 10 years", rate: 0.2 },
-    "nonresident-long-government-interest": { label: "Non-resident government securities interest, 10 years or more", rate: 0.1 },
-    "imported-goods": { label: "Import of goods withholding tax", rate: 0.06 },
-    "nonresident-reinsurance": { label: "Non-resident reinsurance premium", rate: 0.1 },
-    "nonresident-transport": { label: "Non-resident air, sea or road transport operator", rate: 0.02 },
-    "nonresident-telecom": { label: "Non-resident telecommunications or direct-to-home TV income", rate: 0.05 },
-    "resident-entertainer": { label: "Resident public entertainer payment", rate: 0.06 },
-    "betting-winnings": { label: "Betting or gaming winnings", rate: 0.15 },
-    "resident-telecom-commission": { label: "Telecommunications, mobile-network or mobile-money commission", rate: 0.1 },
-    "payment-service-commission": { label: "Payment service provider commission", rate: 0.1 },
-    "insurance-agent-commission": { label: "Insurance agent commission", rate: 0.1 },
-    "advertising-agent-commission": { label: "Advertising agent commission", rate: 0.1 },
-    "mobile-money-commission": { label: "Airtime distribution commission", rate: 0.1 },
-    "vat-withholding": { label: "VAT withholding on taxable supply without e-invoice", rate: 0.06 },
-    "nonresident-debenture-interest": { label: "Qualifying non-resident debenture interest", rate: 0.05 },
-  };
+  const valueAddedTaxRules = activeTaxRules.valueAddedTax;
+  const rentalIncomeRules = activeTaxRules.rentalIncomeTax;
+  const withholdingRules = activeTaxRules.withholdingTax;
+  const withholdingRates = withholdingRules.categories;
+  const valueAddedTaxRuleSet = createTaxRuleSet([
+    "ug-vat-standard-rate-fy2026-27",
+    "ug-vat-registration-thresholds-fy2026-27",
+    "ug-vat-input-recovery-apportionment-fy2026-27",
+  ]);
+  const rentalIncomeRuleSet = createTaxRuleSet([
+    "ug-rental-income-individual-fy2026-27",
+    "ug-rental-income-nonresident-fy2026-27",
+  ]);
+  const withholdingTaxRuleSetFor = (paymentType) => createTaxRuleSet([
+    `ug-withholding-${paymentType}-fy2026-27`,
+    ...(paymentType === "resident-supply"
+      ? ["ug-withholding-resident-supply-threshold-fy2026-27"]
+      : []),
+  ]);
+  const presumptiveTaxRuleSet = createTaxRuleSet([
+    "ug-presumptive-tax-turnover-limit-fy2026-27",
+  ]);
 
   function requireNonNegative(value, name) {
     if (!Number.isFinite(value) || value < 0) {
@@ -221,8 +236,10 @@
       monthlyTax: annualEstimate.totalTax / 12,
       effectiveRate: annualEstimate.effectiveRate,
       marginalRate: annualEstimate.marginalRate,
-      monthlyEmployeeNssf: monthlyGrossEarnings * 0.05,
-      monthlyEmployerNssf: monthlyGrossEarnings * 0.1,
+      monthlyEmployeeNssf:
+        monthlyGrossEarnings * activeTaxRules.payrollContributions.employeeNssfRate,
+      monthlyEmployerNssf:
+        monthlyGrossEarnings * activeTaxRules.payrollContributions.employerNssfRate,
       breakdown: annualEstimate.breakdown.map((band) => ({
         label: band.label,
         rate: band.rate,
@@ -230,7 +247,8 @@
       })),
       smartEstimate: calculateSmartTaxSummary({
         taxableIncome: monthlyTaxableIncome * 12,
-        employeeNssf: monthlyGrossEarnings * 0.05 * 12,
+        employeeNssf:
+          monthlyGrossEarnings * activeTaxRules.payrollContributions.employeeNssfRate * 12,
         isResident,
       }),
     };
@@ -312,6 +330,7 @@
     additions = 0,
     disposalProceeds = 0,
     businessUsePercent,
+    rateOverride,
   }) {
     const selectedClass = wearAndTearClasses.find((item) => item.id === assetClass);
     if (!selectedClass) {
@@ -326,6 +345,10 @@
         businessUsePercent > 100) {
       throw new RangeError("Business use must be between 0 and 100 percent.");
     }
+    const rate = rateOverride === undefined ? selectedClass.rate : rateOverride;
+    if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
+      throw new RangeError("The selected wear-and-tear rate must be between 0 and 1.");
+    }
 
     const businessUse = businessUsePercent / 100;
     const businessUseAdditions = additions * businessUse;
@@ -339,13 +362,13 @@
       0,
       poolBeforeDisposals - businessUseDisposalProceeds,
     );
-    const allowance = poolAvailableForAllowance * selectedClass.rate;
+    const allowance = poolAvailableForAllowance * rate;
     const closingTaxWrittenDownValue = poolAvailableForAllowance - allowance;
 
     return {
       taxRuleSet: capitalAllowanceRuleSet,
       assetClass: selectedClass,
-      rate: selectedClass.rate,
+      rate,
       openingTaxWrittenDownValue,
       additions,
       businessUsePercent,
@@ -362,7 +385,7 @@
         { label: `Additions included at ${businessUsePercent}% business use`, rate: null, amount: businessUseAdditions },
         { label: `Less: disposal proceeds at ${businessUsePercent}% business use`, rate: null, amount: -businessUseDisposalProceeds },
         { label: "Pool balance before wear-and-tear allowance", rate: null, amount: poolAvailableForAllowance },
-        { label: `Wear-and-tear allowance — ${selectedClass.id.replace("-", " ")} at ${selectedClass.rate * 100}%`, rate: selectedClass.rate, amount: allowance },
+        { label: `Wear-and-tear allowance — ${selectedClass.id.replace("-", " ")} at ${rate * 100}%`, rate, amount: allowance },
         { label: "Closing tax written-down value to carry forward", rate: null, amount: closingTaxWrittenDownValue },
         ...(excessDisposalProceeds > 0
           ? [{ label: "Excess disposal proceeds — review for a balancing adjustment", rate: null, amount: excessDisposalProceeds }]
@@ -428,6 +451,7 @@
         totalCharges,
         landedCost: customsValue + totalCharges,
         importVat,
+        taxRuleSet: valueAddedTaxRuleSet,
         breakdown: rows,
       };
     }
@@ -472,7 +496,7 @@
   }
 
   function importVatTreatmentRate(treatment) {
-    if (treatment === "standard") return 0.18;
+    if (treatment === "standard") return valueAddedTaxRules.standardRate;
     if (treatment === "zero-rated" || treatment === "exempt") return 0;
     throw new RangeError("Choose a valid import VAT treatment.");
   }
@@ -498,26 +522,30 @@
       requireNonNegative(threeMonthTaxableTurnover, "Three-month taxable turnover");
     }
 
+    const standardRate = valueAddedTaxRules.standardRate;
     const taxableValue = salesIncludeVat
-      ? standardRatedSales / 1.18
+      ? standardRatedSales / (1 + standardRate)
       : standardRatedSales;
     const outputVat = salesIncludeVat
       ? standardRatedSales - taxableValue
-      : taxableValue * 0.18;
+      : taxableValue * standardRate;
     const taxableSupplyValue = taxableValue + zeroRatedSales;
     const totalSupplyValue = taxableSupplyValue + exemptSales;
     const exemptShare = totalSupplyValue === 0 ? 0 : exemptSales / totalSupplyValue;
-    const recoverableInputFraction = exemptShare <= 0.05
+    const recoverableInputFraction = exemptShare <=
+      valueAddedTaxRules.fullInputVatRecoveryExemptShareThreshold
       ? 1
-      : exemptShare > 0.95
+      : exemptShare > valueAddedTaxRules.noInputVatRecoveryExemptShareThreshold
         ? 0
         : taxableSupplyValue / totalSupplyValue;
     const recoverableInputVat = claimableInputVat * recoverableInputFraction;
     const netVat = outputVat - recoverableInputVat;
     const registrationRequired = Boolean(
       remoteServices ||
-      (annualTaxableTurnover !== undefined && annualTaxableTurnover > 300_000_000) ||
-      (threeMonthTaxableTurnover !== undefined && threeMonthTaxableTurnover > 75_000_000),
+      (annualTaxableTurnover !== undefined &&
+        annualTaxableTurnover > valueAddedTaxRules.annualRegistrationThreshold) ||
+      (threeMonthTaxableTurnover !== undefined &&
+        threeMonthTaxableTurnover > valueAddedTaxRules.threeMonthRegistrationThreshold),
     );
 
     return {
@@ -535,8 +563,9 @@
       registrationAssessed: remoteServices ||
         annualTaxableTurnover !== undefined ||
         threeMonthTaxableTurnover !== undefined,
+      taxRuleSet: valueAddedTaxRuleSet,
       breakdown: [
-        { label: "Output VAT on standard-rated sales", rate: 0.18, amount: outputVat },
+        { label: "Output VAT on standard-rated sales", rate: standardRate, amount: outputVat },
         { label: "Zero-rated sales (VAT at 0%)", rate: 0, amount: zeroRatedSales },
         { label: "Exempt sales (no output VAT)", rate: null, amount: exemptSales },
         { label: "Entered input VAT", rate: null, amount: claimableInputVat },
@@ -578,9 +607,12 @@
     let currentYearLoss = 0;
     let totalCredits;
     let note;
+    const individualRate = rentalIncomeRules.individualRate;
+    const individualThreshold = rentalIncomeRules.individualThreshold;
+    const nonresidentGrossRate = rentalIncomeRules.nonresidentGrossRate;
 
     if (residency === "nonresident") {
-      taxRate = 0.15;
+      taxRate = nonresidentGrossRate;
       tax = grossRentalIncome * taxRate;
       totalCredits = taxPaid;
       balance = tax - totalCredits;
@@ -590,22 +622,22 @@
         { label: "Withholding/tax already paid entered", rate: null, amount: -taxPaid },
         { label: "Estimated withholding still due", rate: null, amount: balance },
       );
-      note = "For Uganda-source rent paid to a non-resident, the standard domestic withholding rate is 15% of gross rent. A double-tax agreement or specific circumstances may change the rate, final-tax treatment or filing obligations. This estimate does not calculate treaty relief or determine the withholding agent; confirm with URA or a qualified tax professional. Rental expenses are not deducted from this gross-basis estimate.";
+      note = `For Uganda-source rent paid to a non-resident, the configured domestic withholding estimate is ${nonresidentGrossRate * 100}% of gross rent. A double-tax agreement or specific circumstances may change the rate, final-tax treatment or filing obligations. This estimate does not calculate treaty relief or determine the withholding agent; confirm with URA or a qualified tax professional. Rental expenses are not deducted from this gross-basis estimate.`;
     } else if (taxpayerType === "individual") {
-      taxRate = 0.12;
-      taxBase = Math.max(0, grossRentalIncome - 2_820_000);
+      taxRate = individualRate;
+      taxBase = Math.max(0, grossRentalIncome - individualThreshold);
       tax = taxBase * taxRate;
       totalCredits = taxPaid;
       balance = tax - totalCredits;
       taxLabel = "Estimated individual rental income tax";
       breakdown.push(
-        { label: "Annual individual rental threshold", rate: null, amount: -Math.min(grossRentalIncome, 2_820_000) },
+        { label: "Annual individual rental threshold", rate: null, amount: -Math.min(grossRentalIncome, individualThreshold) },
         { label: "Taxable rental income", rate: null, amount: taxBase },
         { label: "Individual rental income tax", rate: taxRate, amount: tax },
         { label: "Rental tax already paid entered", rate: null, amount: -taxPaid },
         { label: "Estimated balance after entered payments", rate: null, amount: balance },
       );
-      note = "Applies the individual rental-tax rule: 12% of annual gross rental income above UGX 2,820,000, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Secondary commentary describes monthly provisional returns as an option, not a general mandatory monthly filing rule; confirm the available filing route and any payment obligation with URA.";
+      note = `Applies the configured individual rental estimate rate of ${individualRate * 100}% to annual gross rental income above UGX ${individualThreshold.toLocaleString("en-US")}, without expense deductions. The annual threshold is shown for an individual landlord; non-resident persons are handled under the separate non-resident gross-rent withholding estimate. Secondary commentary describes monthly provisional returns as an option, not a general mandatory monthly filing rule; confirm the available filing route and any payment obligation with URA.`;
     } else {
       taxRate = activeTaxRules.companyIncomeTax.standardResidentRate;
       const companyTaxBase = calculateCompanyTaxBase(
@@ -635,7 +667,7 @@
         { label: "Creditable withholding tax entered", rate: null, amount: -withholdingCredits },
         { label: "Estimated balance after entered credits", rate: null, amount: balance },
       );
-      note = "Uses the standard 30% resident-company rate on estimated chargeable rental income after user-entered allowable expenses and eligible carried-forward losses. The estimator does not determine deductibility, loss availability, ring-fencing, incentives or whether rental income is part of a broader company tax computation. Avoid double counting this income, expenses, losses or credits in the separate company calculator.";
+      note = `Uses the configured ${taxRate * 100}% resident-company estimate rate on chargeable rental income after user-entered allowable expenses and eligible carried-forward losses. The estimator does not determine deductibility, loss availability, ring-fencing, incentives or whether rental income is part of a broader company tax computation. Avoid double counting this income, expenses, losses or credits in the separate company calculator.`;
     }
 
     return {
@@ -646,9 +678,9 @@
       taxLabel,
       totalCredits,
       currentYearLoss,
-      ...(taxpayerType === "company" && residency !== "nonresident"
-        ? { taxRuleSet: companyTaxRuleSet }
-        : {}),
+      taxRuleSet: taxpayerType === "company" && residency !== "nonresident"
+        ? companyTaxRuleSet
+        : rentalIncomeRuleSet,
       breakdown,
       note,
     };
@@ -684,7 +716,7 @@
       (!isDesignatedPayer || supplierIssuedInvoice);
     const lotteryExemption = paymentType === "betting-winnings" && isNationalLotteryWinnings;
     const exemptPayment = thresholdApplies &&
-      (!isDesignatedPayer || grossPayment <= 1_000_000) ||
+      (!isDesignatedPayer || grossPayment <= withholdingRules.residentSupplyThreshold) ||
       vatInvoiceExemption ||
       lotteryExemption;
     const rate = exemptPayment ? 0 : category.rate;
@@ -695,6 +727,7 @@
       rate,
       taxBase,
       paymentLabel: category.label,
+      taxRuleSet: withholdingTaxRuleSetFor(paymentType),
       breakdown: paymentType === "betting-winnings"
         ? [
             { label: "Payout amount", rate: null, amount: grossPayment },
@@ -709,17 +742,17 @@
       note: lotteryExemption
         ? "No withholding is estimated for winnings paid by a person licensed to conduct a national lottery. Verify the licence, payment and statutory conditions."
         : paymentType === "betting-winnings"
-          ? "The 15% withholding estimate is based on winnings (payout less stake), not the full payout. The statutory exclusion for winnings paid by a person licensed to conduct a national lottery applies only when its conditions are met."
+          ? `The ${category.rate * 100}% withholding estimate is based on winnings (payout less stake), not the full payout. The statutory exclusion for winnings paid by a person licensed to conduct a national lottery applies only when its conditions are met.`
           : paymentType === "resident-telecom-commission"
-            ? "The 10% category concerns commissions paid by telecommunications service providers for telecommunications retail, mobile network or mobile-money services. Confirm the payer, commission and statutory conditions."
+            ? `The ${category.rate * 100}% category concerns commissions paid by telecommunications service providers for telecommunications retail, mobile network or mobile-money services. Confirm the payer, commission and statutory conditions.`
             : paymentType === "nonresident-debenture-interest"
-        ? "The 5% rate applies only if all statutory conditions for qualifying offshore debentures are met. Otherwise the general non-resident interest rate may apply; verify the instrument and recipient before withholding."
+        ? `The ${category.rate * 100}% rate applies only if all statutory conditions for qualifying offshore debentures are met. Otherwise the general non-resident interest rate may apply; verify the instrument and recipient before withholding.`
         : paymentType === "insurance-agent-commission"
-          ? "The 10% withholding on an insurance-agent commission is a final tax from 1 July 2026."
+          ? `The ${category.rate * 100}% withholding on an insurance-agent commission is a final tax from 1 July 2026.`
           : exemptPayment
             ? paymentType === "vat-withholding"
               ? "No VAT withholding is estimated: it applies only to a designated withholding agent where the supplier has not issued an EFRIS e-invoice or e-receipt."
-              : "This estimate applies no withholding because resident supply withholding generally requires a designated agent and a payment exceeding UGX 1,000,000."
+              : `This estimate applies no withholding because resident supply withholding generally requires a designated agent and a payment exceeding UGX ${withholdingRules.residentSupplyThreshold.toLocaleString("en-US")}.`
             : "Treaty relief, exemptions, final-tax treatment and special payer rules are not included. Verify the applicable rate before withholding.",
     };
   }
@@ -733,8 +766,8 @@
       throw new RangeError("The applicable presumptive rate must be between 0 and 100 percent.");
     }
 
-    if (annualTurnover > 150_000_000) {
-      throw new RangeError("The standard presumptive regime generally applies to eligible resident taxpayers with turnover not exceeding UGX 150,000,000. Use another income tax calculator or confirm your treatment.");
+    if (annualTurnover > activeTaxRules.presumptiveTax.maximumTurnover) {
+      throw new RangeError(`The standard presumptive estimate is limited to turnover not exceeding UGX ${activeTaxRules.presumptiveTax.maximumTurnover.toLocaleString("en-US")}. Use another income tax calculator or confirm your treatment.`);
     }
 
     const rate = applicableRatePercent / 100;
@@ -743,6 +776,7 @@
     return {
       tax,
       rate,
+      taxRuleSet: presumptiveTaxRuleSet,
       breakdown: [
         { label: "Annual business turnover", rate: null, amount: annualTurnover },
         { label: "Presumptive tax (user-entered rate)", rate, amount: tax },
@@ -765,5 +799,6 @@
     calculateRentalIncomeTax,
     calculateWithholdingTax,
     calculatePresumptiveTax,
+    standardVatRatePercent: valueAddedTaxRules.standardRate * 100,
   };
 });

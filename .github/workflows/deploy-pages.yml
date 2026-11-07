@@ -26,8 +26,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Test tax rules, Worker, EFRIS and app installation
-        run: node --test tax-calculator.test.js tax-rules.test.js worker/index.test.mjs worker/efris.test.mjs app-install.test.js tax-transaction.test.js
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test all application and Worker suites
+        run: node --test *.test.js worker/*.test.mjs
+
+      - name: Test Python suites
+        run: python -m unittest discover -s . -q
 
   deploy:
     needs: test

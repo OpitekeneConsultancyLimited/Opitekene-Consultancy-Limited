@@ -1,5 +1,17 @@
 import { retrieveKnowledge, sources as knowledgeSources } from "./knowledge.mjs";
 import { efrisDashboardResponse, handleEfrisApi } from "./efris.mjs";
+import advisorModule from "../ai-tax-advisor.js";
+import legalSourceModule from "../legal-source-registry.js";
+import caseLawModule from "../case-law-registry.js";
+import reportModule from "../tax-research-report.js";
+import legalWorkflowModule from "../legal-source-workflow.js";
+import { handlePhase6Request } from "./phase6-api.mjs";
+
+const { createTaxAdvisor } = advisorModule;
+const { createLegalSourceRegistry } = legalSourceModule;
+const { createCaseLawRegistry } = caseLawModule;
+const { toPrintableHtml, toCitationCsv } = reportModule;
+const { createDraftSource, updateDraftSource, reviewLegalSource } = legalWorkflowModule;
 
 const MAX_BODY_BYTES = 12_000;
 const MAX_QUESTION_LENGTH = 1_600;
@@ -524,6 +536,157 @@ async function callGemini(question, history, evidence, env) {
   }
 }
 
+async function loadLegalSourceRecords(env) {
+  if (!env.UNANSWERED_QUESTIONS) return [];
+  const { results } = await env.UNANSWERED_QUESTIONS.prepare(
+    "SELECT record_json AS recordJson FROM legal_sources ORDER BY updated_at DESC LIMIT 1000",
+  ).all();
+  return (results || []).map((row) => JSON.parse(row.recordJson));
+}
+
+function legalReferencesFromAnswer(answer) {
+  const sourceReferences = answer.citations.map((citation) => ({
+    title: citation.title,
+    legislation: citation.legislation,
+    provision: citation.provision,
+    caseCitation: citation.caseReference || null,
+    financialYear: citation.applicableTaxPeriods?.join(", ") || null,
+    effectiveDate: citation.effectiveFrom,
+    sourceDocuments: [{
+      label: citation.documentReference,
+      url: citation.url,
+      sourceType: citation.authorityType,
+    }],
+    lastVerifiedAt: citation.lastVerificationDate,
+    freshness: citation.verificationStatus === "verified" ? getFreshness(citation.lastVerificationDate) : "unverified",
+  }));
+  const caseReferences = answer.caseLaw.map((item) => ({
+    title: item.caseName,
+    legislation: null,
+    provision: null,
+    caseCitation: item.citation,
+    financialYear: null,
+    effectiveDate: item.judgmentDate,
+    sourceDocuments: item.sourceDocument ? [{
+      label: item.sourceDocument.documentReference || item.caseName,
+      url: item.sourceDocument.url,
+      sourceType: "case_law",
+    }] : [],
+    lastVerifiedAt: item.reviewDate || null,
+    freshness: item.verificationStatus === "verified" ? getFreshness(item.reviewDate) : "unverified",
+  }));
+  return [...sourceReferences, ...caseReferences];
+}
+
+function advisorModeFor(result) {
+  if (result.providerStatus === "unavailable") return "fallback-provider-unavailable";
+  if (result.providerStatus === "not-configured") return "fallback-provider-not-configured";
+  if (result.providerStatus === "consent-required") return "fallback-provider-consent-required";
+  if (!result.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority) {
+    return "fallback-no-verified-authority";
+  }
+  return "registry-review-required";
+}
+
+async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders) {
+  if (body.providerConsent !== undefined && typeof body.providerConsent !== "boolean") {
+    return jsonResponse({ error: "Provider consent must be true or false." }, 400, corsHeaders);
+  }
+
+  try {
+    const records = await loadLegalSourceRecords(env);
+    const legalSourceRegistry = createLegalSourceRegistry(records);
+    const caseLawRegistry = createCaseLawRegistry();
+    const aiProvider = env.GEMINI_API_KEY
+      ? {
+        async generate(context) {
+          const scopedQuestion = context.taxPeriod
+            ? `${context.question}\n\nUser-selected tax period: FY ${context.taxPeriod}.`
+            : context.question;
+          const knowledge = retrieveKnowledge(scopedQuestion);
+          const result = await callGemini(scopedQuestion, [], buildEvidence(knowledge), env);
+          if (result.fallback || !result.answer) {
+            throw new Error("Grounded AI research is unavailable.");
+          }
+          return result.answer;
+        },
+      }
+      : null;
+    const advisor = createTaxAdvisor({
+      legalSourceRegistry,
+      caseLawRegistry,
+      aiProvider,
+      providerTimeoutMs: UPSTREAM_TIMEOUT_MS,
+    });
+    const result = await advisor.advise({
+      question,
+      taxPeriod: taxPeriod || undefined,
+      providerConsent: body.providerConsent === true,
+    });
+    const researchReport = advisor.createResearchReport({
+      advisorResult: result,
+      question,
+      reportDate: new Date().toISOString().slice(0, 10),
+    });
+    const citations = result.structuredAnswer.citations;
+    const sources = citations.filter((citation) => citation.url).map((citation) => ({
+      label: `${citation.title} (${citation.verificationStatus})`,
+      url: citation.url,
+      sourceType: citation.authorityType,
+    }));
+    const responseBody = {
+      answer: result.answer,
+      answerSource: "advisor",
+      webGrounded: false,
+      advisorMode: advisorModeFor(result),
+      providerStatus: result.providerStatus,
+      classification: result.classification,
+      clarification: result.clarification,
+      legalResearch: result.legalResearch,
+      caseLaw: result.caseLaw,
+      citations,
+      structuredAnswer: result.structuredAnswer,
+      sources,
+      legalReferences: legalReferencesFromAnswer(result.structuredAnswer),
+      calculators: result.supplementalGuidance.map((item) => item.calculator).filter(Boolean),
+      sourceIndicators: [
+        {
+          kind: "advisor_mode",
+          label: "Advisor mode",
+          used: true,
+          detail: advisorModeFor(result),
+        },
+        {
+          kind: "verified_primary_authority",
+          label: "Verified primary legal authority",
+          used: result.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority,
+          detail: result.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority
+            ? "Registered authority requires human application review."
+            : "No adequate verified authority is registered for this question and period.",
+        },
+        {
+          kind: "ai_provider_draft",
+          label: "AI provider draft",
+          used: result.providerStatus === "draft-created-not-approved-for-display",
+          detail: result.providerStatus === "draft-created-not-approved-for-display"
+            ? "A provider draft was withheld because it has not passed citation review."
+            : "No provider draft is being shown.",
+        },
+      ],
+      verificationRequired: !result.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority,
+      reportHtml: toPrintableHtml(researchReport),
+      citationCsv: toCitationCsv(researchReport),
+      auditRecord: result.auditRecord,
+    };
+    return jsonResponse(responseBody, 200, corsHeaders);
+  } catch (error) {
+    console.error("Advisor request failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return jsonResponse({ error: "The evidence-first advisor is temporarily unavailable." }, 503, corsHeaders);
+  }
+}
+
 async function requestGemini(model, requestBody, apiKey, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   for (let attempt = 0; attempt <= MAX_UPSTREAM_RETRIES; attempt += 1) {
@@ -737,6 +900,7 @@ time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
 <h1>Unanswered TaxComp questions</h1>
 <p>Only questions submitted with explicit user consent appear here. Consent timestamps are recorded; records expire after 90 days. Treat them as confidential.</p>
 <p><a href="/admin/efris">Open the EFRIS management workspace</a></p>
+<p><a href="/admin/legal-sources">Open legal-source review</a></p>
 <form id="login"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button>Load questions</button></form>
 <p id="status" role="status" aria-live="polite"></p>
 <ul id="questions"></ul>
@@ -762,6 +926,60 @@ form.addEventListener("submit",async event=>{event.preventDefault();token=tokenI
   });
 }
 
+function legalSourceDashboardResponse() {
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TaxComp legal source review</title>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;max-width:1080px;margin:2rem auto;padding:0 1rem;color:#203027}h1{font-size:1.75rem}h2{font-size:1.2rem}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem 1rem;margin:1.2rem 0}label{display:grid;gap:.25rem;font-size:.9rem;font-weight:650}input,select,textarea,button{font:inherit;padding:.55rem;border:1px solid #cbd6cc;border-radius:4px}textarea{min-height:70px}button{cursor:pointer;background:#edf5ee;color:#285d3c}button:disabled{opacity:.5;cursor:wait}.wide{grid-column:1/-1}.source{border-top:1px solid #d5ded6;padding:1rem 0}.source h3{margin:.2rem 0}.source-actions{display:flex;flex-wrap:wrap;gap:.5rem}.muted{color:#5d6a60}.status{min-height:1.5rem}.source-url{overflow-wrap:anywhere}@media(max-width:640px){form{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style></head><body><main><p><a href="/admin">Admin home</a></p><h1>Legal source review</h1>
+<p>New records are saved as pending review. Approval requires checking the source document, provision, dates, and period. Never approve a source you have not inspected.</p>
+<form id="login"><label class="wide" for="token">Admin access token<input id="token" type="password" autocomplete="current-password" required></label><button class="wide">Load source registry</button></form>
+<p id="status" class="status" role="status" aria-live="polite"></p>
+<section id="workspace" hidden><h2>Source record</h2><form id="source-form">
+<label>Source ID<input name="sourceId" required maxlength="120"></label>
+<label>Source type<select name="sourceType"><option value="legislation">Legislation</option><option value="regulation">Regulation</option><option value="ura_guidance">URA guidance</option><option value="judicial_decision">Judicial decision</option><option value="secondary_commentary">Secondary commentary</option></select></label>
+<label>Title<input name="title" maxlength="300"></label><label>Issuing authority<input name="issuingAuthority" maxlength="200"></label>
+<label>Legislation<input name="legislation" maxlength="300"></label><label>Provision<input name="provision" maxlength="200"></label>
+<label>Case reference<input name="caseReference" maxlength="300"></label><label>Publication date<input name="publicationDate" type="date"></label>
+<label>Effective from<input name="effectiveDate" type="date"></label><label>Effective to<input name="endDate" type="date"></label>
+<label>Applicable tax periods<input name="applicableTaxPeriods" placeholder="2024/25, 2025/26"></label><label>Tax heads<input name="relatedTaxHeads" placeholder="value-added-tax"></label>
+<label>Official source URL<input name="officialSourceUrl" type="url" inputmode="url"></label><label>Document reference<input name="documentReference" maxlength="500"></label>
+<label>Related rule IDs<input name="ruleIds" placeholder="Optional IDs only"></label>
+<label class="wide"><span><input name="primaryAuthority" type="checkbox"> Primary authority (reviewer must confirm)</span></label>
+<div class="wide"><button id="save-source">Submit pending draft</button> <button id="cancel-edit" type="button" hidden>Cancel edit</button></div>
+</form><h2>Reviewer decision</h2><form id="review-form">
+<label>Reviewer name<input name="reviewer" required maxlength="120"></label><label>Review date<input name="reviewDate" type="date" required></label>
+<label class="wide">Review notes or rejection reason<textarea name="notes" required maxlength="2000"></textarea></label>
+</form><h2>Registered sources</h2><ul id="sources"></ul></section>
+</main><script>
+const tokenField=document.querySelector('#token'),login=document.querySelector('#login'),workspace=document.querySelector('#workspace'),status=document.querySelector('#status'),sourceForm=document.querySelector('#source-form'),reviewForm=document.querySelector('#review-form'),sourceList=document.querySelector('#sources'),saveButton=document.querySelector('#save-source'),cancelEdit=document.querySelector('#cancel-edit');
+let token='',editingId=null,records=[];
+async function api(path,method='GET',body){const response=await fetch(path,{method,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw new Error(data.error||'Legal-source request failed.');return data}
+function splitList(value){return value.split(',').map(item=>item.trim()).filter(Boolean)}
+function fields(form){return Object.fromEntries(new FormData(form).entries())}
+function sourcePayload(){const value=fields(sourceForm);return {sourceId:(value.sourceId||editingId||'').trim(),sourceType:value.sourceType,title:(value.title||'').trim(),issuingAuthority:(value.issuingAuthority||'').trim(),legislation:(value.legislation||'').trim()||null,provision:(value.provision||'').trim()||null,caseReference:(value.caseReference||'').trim()||null,publicationDate:value.publicationDate||null,effectiveDate:value.effectiveDate||null,endDate:value.endDate||null,applicableTaxPeriods:splitList(value.applicableTaxPeriods||''),relatedTaxHeads:splitList(value.relatedTaxHeads||''),officialSourceUrl:(value.officialSourceUrl||'').trim()||null,documentReference:(value.documentReference||'').trim()||null,ruleIds:splitList(value.ruleIds||''),primaryAuthority:sourceForm.elements.primaryAuthority.checked,verificationStatus:'pending-review'}}
+function renderSources(){sourceList.replaceChildren();for(const item of records){const row=document.createElement('li');row.className='source';const title=document.createElement('h3');title.textContent=item.record.title||item.sourceId;const detail=document.createElement('p');detail.className='muted';detail.textContent=item.sourceId+' · '+item.record.sourceType+' · '+item.status+' · '+(item.record.provision||'No provision recorded');row.append(title,detail);if(item.record.officialSourceUrl){const link=document.createElement('a');link.className='source-url';link.href=item.record.officialSourceUrl;link.rel='noopener noreferrer';link.target='_blank';link.textContent=item.record.officialSourceUrl;row.append(link)}if(item.status==='pending-review'){const actions=document.createElement('div');actions.className='source-actions';const edit=document.createElement('button');edit.type='button';edit.textContent='Edit draft';edit.addEventListener('click',()=>editSource(item.record));const approve=document.createElement('button');approve.type='button';approve.textContent='Approve after review';approve.addEventListener('click',()=>reviewSource(item.sourceId,'verified'));const reject=document.createElement('button');reject.type='button';reject.textContent='Reject draft';reject.addEventListener('click',()=>reviewSource(item.sourceId,'rejected'));actions.append(edit,approve,reject);row.append(actions)}sourceList.append(row)}}
+function editSource(record){editingId=record.sourceId;for(const [key,value] of Object.entries(record)){const field=sourceForm.elements[key];if(!field)continue;if(field.type==='checkbox')field.checked=value===true;else if(Array.isArray(value))field.value=value.join(', ');else if(value!==null&&value!==undefined)field.value=String(value)}sourceForm.elements.sourceId.disabled=true;saveButton.textContent='Update pending draft';cancelEdit.hidden=false;sourceForm.scrollIntoView({behavior:'smooth'})}
+function resetForm(){sourceForm.reset();sourceForm.elements.sourceId.disabled=false;editingId=null;saveButton.textContent='Submit pending draft';cancelEdit.hidden=true}
+async function loadSources(){const data=await api('/admin/legal-sources/api');records=data.sources||[];renderSources();workspace.hidden=false;status.textContent=records.length+' source record(s). Pending records are not treated as verified authority.'}
+login.addEventListener('submit',async event=>{event.preventDefault();token=tokenField.value;try{await loadSources()}catch(error){token='';status.textContent=error.message}});
+sourceForm.addEventListener('submit',async event=>{event.preventDefault();saveButton.disabled=true;try{const source=sourcePayload();if(editingId){await api('/admin/legal-sources/'+encodeURIComponent(editingId),'PUT',{updatedBy:reviewForm.elements.reviewer.value,updates:source})}else{await api('/admin/legal-sources/api','POST',{submittedBy:reviewForm.elements.reviewer.value,record:source})}resetForm();await loadSources()}catch(error){status.textContent=error.message}finally{saveButton.disabled=false}});
+async function reviewSource(id,decision){const reviewer=reviewForm.elements.reviewer.value.trim(),reviewDate=reviewForm.elements.reviewDate.value,notes=reviewForm.elements.notes.value.trim();if(!reviewer||!reviewDate||!notes){status.textContent='Enter reviewer, review date, and notes before a decision.';reviewForm.scrollIntoView({behavior:'smooth'});return}try{await api('/admin/legal-sources/'+encodeURIComponent(id)+'/review','POST',{decision,reviewer,reviewDate,notes});await loadSources()}catch(error){status.textContent=error.message}}
+cancelEdit.addEventListener('click',resetForm);
+</script></body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Cache-Control": "no-store",
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "Referrer-Policy": "no-referrer",
+    },
+  });
+}
+
 async function cleanupExpiredQuestions(env) {
   if (!env.UNANSWERED_QUESTIONS) return;
   await env.UNANSWERED_QUESTIONS.prepare(
@@ -769,17 +987,147 @@ async function cleanupExpiredQuestions(env) {
   ).bind(new Date().toISOString()).run();
 }
 
+async function findStoredLegalSource(env, sourceId) {
+  return env.UNANSWERED_QUESTIONS.prepare(
+    "SELECT source_id AS sourceId, record_json AS recordJson, status, review_history_json AS reviewHistoryJson, created_at AS createdAt, updated_at AS updatedAt FROM legal_sources WHERE source_id = ?",
+  ).bind(sourceId).first();
+}
+
+async function persistLegalSource(env, record, createdAt, updatedAt) {
+  const recordJson = JSON.stringify(record);
+  const historyJson = JSON.stringify(record.reviewHistory || []);
+  await env.UNANSWERED_QUESTIONS.prepare(
+    "INSERT INTO legal_sources (source_id, record_json, status, review_history_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+  ).bind(record.sourceId, recordJson, record.verificationStatus, historyJson, createdAt, updatedAt).run();
+}
+
+async function replaceLegalSource(env, record, updatedAt) {
+  const result = await env.UNANSWERED_QUESTIONS.prepare(
+    "UPDATE legal_sources SET record_json = ?, status = ?, review_history_json = ?, updated_at = ? WHERE source_id = ? AND status = 'pending-review'",
+  ).bind(
+    JSON.stringify(record),
+    record.verificationStatus,
+    JSON.stringify(record.reviewHistory || []),
+    updatedAt,
+    record.sourceId,
+  ).run();
+  return result.meta?.changes || 0;
+}
+
+async function auditLegalSource(env, entry) {
+  await env.UNANSWERED_QUESTIONS.prepare(
+    "INSERT INTO legal_source_audit (id, source_id, action, actor, notes, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+  ).bind(
+    crypto.randomUUID(),
+    entry.sourceId,
+    entry.action,
+    entry.actor,
+    entry.notes || "",
+    entry.createdAt,
+  ).run();
+}
+
+async function handleLegalSourceAdminApi(request, env, url, sourceId) {
+  if (url.pathname === "/admin/legal-sources/api" && request.method === "GET") {
+    const { results } = await env.UNANSWERED_QUESTIONS.prepare(
+      "SELECT source_id AS sourceId, record_json AS recordJson, status, review_history_json AS reviewHistoryJson, created_at AS createdAt, updated_at AS updatedAt FROM legal_sources ORDER BY updated_at DESC LIMIT 1000",
+    ).all();
+    return jsonResponse({ sources: (results || []).map((row) => ({
+      sourceId: row.sourceId,
+      status: row.status,
+      record: JSON.parse(row.recordJson),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      reviewHistory: JSON.parse(row.reviewHistoryJson || "[]"),
+    })) }, 200);
+  }
+
+  let body;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    const tooLarge = error instanceof RangeError;
+    return jsonResponse({ error: tooLarge ? error.message : "The legal-source request must contain valid JSON." }, tooLarge ? 413 : 400);
+  }
+
+  if (url.pathname === "/admin/legal-sources/api" && request.method === "POST") {
+    try {
+      const { record, auditEntry } = createDraftSource(body.record, {
+        submittedBy: body.submittedBy,
+      });
+      const now = new Date().toISOString();
+      await persistLegalSource(env, record, now, now);
+      await auditLegalSource(env, auditEntry);
+      return jsonResponse({ source: record }, 201);
+    } catch (error) {
+      const duplicate = /unique|duplicate/i.test(error instanceof Error ? error.message : "");
+      return jsonResponse({ error: error instanceof Error ? error.message : "Source submission failed." }, duplicate ? 409 : 422);
+    }
+  }
+
+  if (request.method === "PUT" && sourceId) {
+    const stored = await findStoredLegalSource(env, sourceId);
+    if (!stored) return jsonResponse({ error: "Legal source draft was not found." }, 404);
+    try {
+      const record = updateDraftSource(JSON.parse(stored.recordJson), body.updates, {
+        updatedBy: body.updatedBy,
+      });
+      const updatedAt = new Date().toISOString();
+      if (await replaceLegalSource(env, record, updatedAt) === 0) {
+        return jsonResponse({ error: "Only pending-review drafts can be edited." }, 409);
+      }
+      await auditLegalSource(env, {
+        action: "updated-draft",
+        sourceId,
+        actor: body.updatedBy,
+        notes: "Draft metadata updated.",
+        createdAt: updatedAt,
+      });
+      return jsonResponse({ source: record }, 200);
+    } catch (error) {
+      return jsonResponse({ error: error instanceof Error ? error.message : "Draft update failed." }, 422);
+    }
+  }
+
+  if (request.method === "POST" && sourceId) {
+    const stored = await findStoredLegalSource(env, sourceId);
+    if (!stored) return jsonResponse({ error: "Legal source draft was not found." }, 404);
+    try {
+      const { record, auditEntry } = reviewLegalSource(JSON.parse(stored.recordJson), body);
+      const updatedAt = new Date().toISOString();
+      if (await replaceLegalSource(env, record, updatedAt) === 0) {
+        return jsonResponse({ error: "Only pending-review drafts can be reviewed." }, 409);
+      }
+      await auditLegalSource(env, auditEntry);
+      return jsonResponse({ source: record }, 200);
+    } catch (error) {
+      return jsonResponse({ error: error instanceof Error ? error.message : "Source review failed." }, 422);
+    }
+  }
+
+  return jsonResponse({ error: "The legal-source admin endpoint was not found." }, 404);
+}
+
 async function handleAdminRequest(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/admin" && request.method === "GET") {
     return adminDashboardResponse();
   }
+  if (url.pathname === "/admin/legal-sources" && request.method === "GET") {
+    return legalSourceDashboardResponse();
+  }
   const efrisDashboard = url.pathname === "/admin/efris" && request.method === "GET";
   if (efrisDashboard) return efrisDashboardResponse();
   const efrisApi = url.pathname === "/admin/efris/api";
+  const legalSourcesApi = url.pathname === "/admin/legal-sources/api";
+  const legalSourceMatch = url.pathname === "/admin/legal-sources/api"
+    ? null
+    : url.pathname.match(/^\/admin\/legal-sources\/([a-z0-9][a-z0-9._-]{0,119})(?:\/review)?$/i);
+  const legalSourceId = legalSourceMatch?.[1] || null;
+  const legalSourceReview = Boolean(legalSourceId && url.pathname.endsWith("/review"));
   const questionsApi = url.pathname === "/admin/questions" ||
       /^\/admin\/questions\/[a-f0-9-]{36}$/i.test(url.pathname);
-  if (!efrisApi && !questionsApi) {
+  if (!efrisApi && !questionsApi && !legalSourcesApi && !legalSourceId) {
     return jsonResponse({ error: "The requested admin endpoint was not found." }, 404);
   }
   if (efrisApi && request.method !== "GET" && request.method !== "POST") {
@@ -787,6 +1135,10 @@ async function handleAdminRequest(request, env) {
   }
   if (questionsApi && request.method !== "GET" && request.method !== "DELETE") {
     return jsonResponse({ error: "Use GET or DELETE for this admin endpoint." }, 405);
+  }
+  if ((legalSourcesApi && request.method !== "GET" && request.method !== "POST") ||
+      (legalSourceId && (legalSourceReview ? request.method !== "POST" : request.method !== "PUT"))) {
+    return jsonResponse({ error: "Use GET/POST for the source collection, PUT for a draft, or POST for its review decision." }, 405);
   }
   if (typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
       env.ADMIN_DASHBOARD_TOKEN.length < 32) {
@@ -822,6 +1174,9 @@ async function handleAdminRequest(request, env) {
   }
 
   if (efrisApi) return handleEfrisApi(request, env);
+  if (legalSourcesApi || legalSourceId) {
+    return handleLegalSourceAdminApi(request, env, url, legalSourceId);
+  }
 
   const id = url.pathname.match(/^\/admin\/questions\/([a-f0-9-]{36})$/i)?.[1];
   if (request.method === "DELETE" && id) {
@@ -878,6 +1233,9 @@ async function recordUnansweredQuestion(env, question) {
 
 export async function handleRequest(request, env) {
   const requestUrl = new URL(request.url);
+  if (requestUrl.pathname.startsWith("/api/phase6")) {
+    return handlePhase6Request(request, env);
+  }
   if (requestUrl.pathname === "/admin" ||
       requestUrl.pathname.startsWith("/admin/")) {
     try {
@@ -889,7 +1247,8 @@ export async function handleRequest(request, env) {
       return jsonResponse({ error: "The admin question request failed." }, 500);
     }
   }
-  if (requestUrl.pathname !== "/chat") {
+  const advisorRoute = requestUrl.pathname === "/advisor";
+  if (requestUrl.pathname !== "/chat" && !advisorRoute) {
     return jsonResponse({ error: "The requested chat endpoint was not found." }, 404);
   }
 
@@ -945,7 +1304,22 @@ export async function handleRequest(request, env) {
     }, 400, corsHeaders);
   }
 
-  const knowledge = retrieveKnowledge(question);
+  if (body.taxPeriod !== undefined && body.taxPeriod !== null && typeof body.taxPeriod !== "string") {
+    return jsonResponse({ error: "Tax period must be a financial year such as 2025/26." }, 400, corsHeaders);
+  }
+  if (body.providerConsent !== undefined && body.providerConsent !== null && typeof body.providerConsent !== "boolean") {
+    return jsonResponse({ error: "Provider consent must be true or false." }, 400, corsHeaders);
+  }
+  const taxPeriod = typeof body.taxPeriod === "string" ? body.taxPeriod.trim() : "";
+  const periodParts = taxPeriod.match(/^(20\d{2})\/(\d{2})$/);
+  if (taxPeriod && (!periodParts || Number(`${periodParts[1].slice(0, 2)}${periodParts[2]}`) !== Number(periodParts[1]) + 1)) {
+    return jsonResponse({ error: "Tax period must be a consecutive financial year such as 2025/26." }, 400, corsHeaders);
+  }
+  const researchQuestion = taxPeriod
+    ? `${question}\n\nUser-selected tax period: FY ${taxPeriod}.`
+    : question;
+
+  const knowledge = retrieveKnowledge(researchQuestion);
   const isTaxQuestion = /\b(?:tax(?:es|ation|payer|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
     .test(question);
   if (!isTaxQuestion) {
@@ -961,14 +1335,18 @@ export async function handleRequest(request, env) {
     }, 200, corsHeaders);
   }
 
+  if (advisorRoute) return handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders);
+
   const recordRequested = body.recordUnanswered === true;
   const evidence = buildEvidence(knowledge);
-  const result = await callGemini(
-    question,
-    getConversationHistory(body.history),
-    evidence,
-    env,
-  );
+  const result = body.providerConsent === true
+    ? await callGemini(
+      researchQuestion,
+      getConversationHistory(body.history),
+      evidence,
+      env,
+    )
+    : { fallback: true, reason: "provider_consent_required" };
   const answer = result.fallback
     ? createLocalFallback(knowledge)
     : {
@@ -983,6 +1361,23 @@ export async function handleRequest(request, env) {
     answer.answerSource,
     answer.sources,
   );
+  const providerStatus = result.reason === "provider_consent_required"
+    ? "consent-required"
+    : result.reason === "missing_api_key" || !env.GEMINI_API_KEY
+      ? "not-configured"
+      : result.fallback ? "unavailable" : "used";
+  metadata.sourceIndicators.push({
+    kind: "ai_provider",
+    label: "AI provider",
+    used: result.fallback !== true,
+    detail: providerStatus === "consent-required"
+      ? "No provider request was made because consent was not given."
+      : providerStatus === "not-configured"
+        ? "No server-side provider credential is configured."
+        : providerStatus === "unavailable"
+          ? "The provider was unavailable; local notes were used instead."
+          : "A grounded response was received; check its source indicators.",
+  });
   const unansweredQuestion = recordRequested && result.fallback &&
       metadata.unansweredQuestionEligible
     ? await recordUnansweredQuestion(env, question)
@@ -990,6 +1385,7 @@ export async function handleRequest(request, env) {
   const responseBody = {
     ...answer,
     ...metadata,
+    providerStatus,
     questionRecordStatus: !recordRequested
       ? "not_requested"
       : typeof unansweredQuestion === "string" ? "saved"

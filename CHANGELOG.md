@@ -1,0 +1,172 @@
+# Changelog
+
+## 2026-11-07 - Phases 8-11 local foundations
+
+- Added a metadata-empty legislation title catalog and date-bounded historical source resolver. Unknown dates, URLs, provisions, and legal statuses are not invented; the resolver explicitly does not establish corpus completeness or filing approval.
+- Updated `legal-source-registry.js` to reject invalid resolution dates and exclude sources without verified effective-date metadata from date-based resolution.
+- Added the fail-closed Phase 9 deployment gate and tests; production service configuration and independent sign-off remain required.
+- Added Phase 10 operations queue analytics to the authorized dashboard response. Its feature flag is false by default; cross-tenant analytics are not enabled.
+- Added an authenticated, admin-scoped, audited Phase 11 launch-readiness endpoint. Approval flags default to false, and readiness does not implement or activate billing.
+- Expanded `PHASE8_11_IMPLEMENTATION_PLAN.md`, `PHASE8_11_IMPLEMENTATION_REPORT.md`, and `PROJECT_PROGRESS.md` with completed local foundations and remaining external/legal acceptance blockers.
+
+## 2026-11-03 - Phase 1 project audit
+
+- Added `PROJECT_AUDIT.md` documenting the selected project scope, architecture, existing features, gaps, baseline test results, and environment limitations.
+- Expanded the audit with a categorized file/folder inventory, an explicit features-to-preserve list, calculation limitations, and a gated implementation sequence. Clarified that CGT, industrial-building deductions, and stamp duty are review flags or referenced material, not dedicated calculators in this target.
+- Added `PROJECT_PROGRESS.md` to track the seven execution phases.
+- Added `TAX_RULES_REGISTER.md` to record the existing ruleset's verification state and central-registry gaps.
+- Created a verified pre-documentation backup at `../TaxComp-Prototype-phase1-backup.tar.gz`.
+- No existing application code, tax calculations, database migrations, or deployment workflow was changed.
+- Baseline: prototype Node tests 127 passed / 1 failed; prototype Python tests 7 passed. The retrieval failure is documented for follow-up.
+
+## 2026-11-03 - Phase 2 tax rules registry
+
+- Expanded `tax-rules.js` into a date-aware, status-aware registry with source hierarchy, metadata validation, historical selection, overlap detection, and immutable approval/status transitions.
+- Migrated existing FY 2026/27 calculator values into pending-review records; no official legal sources or provisions were invented, and no record was marked verified.
+- Preserved `getRulesForFinancialYear` and added an explicitly named legacy estimate adapter. Existing calculations continue to run and expose pending, not-approved rule metadata.
+- Connected VAT, withholding, rental, presumptive, payroll contribution, and import VAT constants to the registry snapshot without adding tax calculators.
+- Added historical, overlap, missing, unverified, superseded, approval, and calculator-adapter tests.
+- Expanded `.github/workflows/deploy-pages.yml` to run all 11 existing JavaScript test files, including the previously omitted tax-chat suite.
+- Updated the tax rules register, tax-law notes, app setup, multi-tax analysis notes, and project progress.
+- Verification: focused registry tests 10/10; calculator tests 32/32; Python tests 7/7. The initial Phase 2 full run exposed the documented tax-chat retrieval regression; adding the missing `objection` synonym fixed it. Final full Node suite: 135/135 passing.
+
+## 2026-11-03 - Phase 3 complete provisional tax modules
+
+- Added `corporate-tax.js` and tests for accounting-to-tax reconciliation, add-backs, exempt income, deductions, losses, credits, refunds, and rule provenance.
+- Added `capital-allowances.js` and tests for asset-register grouping, tax-pool roll-forward, business-use apportionment, accounting-depreciation separation, disposal review, and historical rule selection.
+- Added `industrial-building.js` and tests for construction-period review, qualifying-cost reconciliation, use-ratio assumptions, explicit simulation inputs, disposal/change-of-use blocking, and historical-period-only filing rules.
+- Added `capital-gains.js` and tests for acquisition/disposal reconciliation, cost-base adjustments, net proceeds, exemptions, reliefs, chargeable gain, explicit simulation rate handling, classification review, and independent-review filing guardrails.
+- Added whole-period rule selection to `tax-rules.js`; periods with no coverage, overlaps, or multiple effective versions fail closed.
+- Wired company, asset-register, industrial-building, and asset-disposal interfaces with period, taxpayer category, reviewer, review-date, explicit simulation/filing mode, assumptions, and rule provenance.
+- Added all new modules to PWA caching and CI test execution.
+- Focused results: registry/period tests 13/13; corporate tests 9/9; capital allowance tests 10/10; industrial-building tests 6/6; capital-gains tests 7/7; existing calculator tests 33/33.
+- Full deployment-gate JavaScript suite: 171/171 passed. Python tests: 7/7 passed.
+- No legal rates or statutory provisions were invented or verified. All migrated legacy rules remain pending legal review; all outputs remain explicitly provisional and not approved for filing.
+
+## 2026-11-03 - Phase 4 multi-tax-head analysis
+
+- Completed the transaction analysis engine by exposing a scenario-classification API and a report-generation helper that keeps every tax head separate.
+- Added Phase 4 regression coverage for classification and report generation to ensure the analyser does not imply a consolidated payable or hide a double-counting risk.
+- Preserved the completed UI flow: temporary register, risk flags, missing-fact actions, and separate calculator outputs remain in place while the analysis summary clearly states that no final tax payable is shown.
+- Verification: `node --test multi-tax-analysis.test.js` passed 15/15, and the full prototype deployment suite remained green.
+
+## 2026-11-03 - Phase 5 Task 1 legal source registry
+
+- Added `legal-source-registry.js` with validation for source type, authority, document reference, effective dates, revision history, and primary-versus-secondary authority without inventing any law or case citation.
+- Added `legal-source-registry.test.js` to cover source classification, historical selection, verification gating, citation integrity, and the separation between rule metadata and source metadata.
+- Kept the deterministic calculator, rule registry, and tax logic completely unchanged while adding a conservative source-governance layer that rejects unverified authority and prevents the AI advisor from being mistaken for legal approval.
+- Verification: `node --test legal-source-registry.test.js` passed 5/5. The full prototype Node and Python suites were re-run after the patch and remained green.
+
+## 2026-11-03 - Phase 5 Task 2 legal knowledge retrieval
+
+- Added `legal-retrieval.js` to search registered authorities by question, tax head, and period; rank primary sources; select historical records; and emit citations that preserve registry source IDs and document references.
+- Added diagnostics for explicitly recorded conflicts, period mismatch, superseded or withdrawn records, incomplete citation metadata, pending-review sources, and the lack of adequate verified primary authority.
+- Extended the legal-source registry to preserve incomplete `pending-review` drafts while keeping them out of applicable citations and verified-authority determinations.
+- Added `legal-retrieval.test.js`; focused retrieval and registry suites passed 11/11 with no failures.
+
+## 2026-11-03 - Phase 5 Task 3 case-law registry
+
+- Added `case-law-registry.js` for structured case records, controlled verification, authority classification, retrieval, and links to registered legislation, rules, and advisory items.
+- Imported the existing curated case entries as unverified records, preserving their source URLs and citations without asserting holdings or legal principles that are not in the structured source data.
+- Added `case-law-registry.test.js` for legacy import safety, reviewed record fields and links, foreign jurisdiction handling, unverified references, and search filtering.
+- Verification: `node --test case-law-registry.test.js` passed 6/6.
+
+## 2026-11-03 - Phase 5 Task 4 question classification
+
+- Added `tax-question-classifier.js` for deterministic topic/tax-head detection, multi-head recognition, Uganda financial-year parsing, and question-intent classification.
+- Added coverage for VAT, PAYE, corporate and individual income tax, rental, withholding, capital gains/allowances, industrial buildings, stamp duty, excise, customs, transfer pricing, international tax/DTAs, procedures, EFRIS, exemptions, accounting, and the required intent categories.
+- Generic income-tax wording remains a tentative category; classifier output is routing metadata and does not make an advisory determination.
+- Verification: `node --test tax-question-classifier.test.js` passed 6/6.
+
+## 2026-11-03 - Phase 5 Task 5 missing-fact clarification
+
+- Added `tax-clarification.js` with relevant fact prompts selected from detected tax heads and intents; shared requirements are deduplicated and carry their reasons and affected tax heads.
+- Preserved supplied false and zero values as facts, separated assumptions, and ensured fact sufficiency never makes a legal conclusion ready.
+- Added `tax-clarification.test.js` for VAT, withholding, cross-border transfer pricing, general questions, multi-head deduplication, supplied facts, and malformed inputs.
+- Verification: `node --test tax-clarification.test.js` passed 7/7.
+
+## 2026-11-03 - Phase 5 Task 6 advisor orchestration
+
+- Added `ai-tax-advisor.js` to orchestrate classification, clarification, registered source and case retrieval, rules metadata, existing local guidance, optional deterministic calculator calls, and structured Phase 4 transaction analysis.
+- Calculator calls require explicit structured inputs. Optional provider output is retained only as an untrusted draft and never replaces the safe local response; provider failures use the deterministic fallback.
+- Added a privacy-minimized request audit record and tests for retrieval integration, calculator gating, independent tax-head output, and provider fallback.
+- No API provider or credentials are configured. Verification: `node --test ai-tax-advisor.test.js` passed 6/6.
+
+## 2026-11-03 - Phase 5 Task 7 answer and citation controls
+
+- Added `tax-answer.js` with a structured advisory response and canonical citations reconstructed only from legal-source and case-law registry records.
+- Required explicit reviewer support attestations and verified, in-period primary legal sources or verified Uganda cases before substantive claims can be emitted; unsupported claims are rejected and diagnosed.
+- Routed advisor responses through the structured composer. Unverified references are labeled, calculator output is passed through, and provider drafts remain non-user-facing.
+- Verification: `node --test ai-tax-advisor.test.js tax-answer.test.js` passed 11/11.
+
+## 2026-11-03 - Phase 5 Task 8 computation and transaction explanations
+
+- Added `tax-computation-explanation.js` to report existing calculator bases, rates, breakdowns, rule state, and responsible-party roles without independently recalculating.
+- Preserved separate VAT, PAYE/NSSF, withholding/recipient-credit, and multi-tax-head views; transaction explanations always suppress aggregate payable.
+- Integrated computation and transaction explanations with the advisor's structured response.
+- Verification: `node --test tax-computation-explanation.test.js ai-tax-advisor.test.js tax-answer.test.js` passed 16/16.
+
+## 2026-11-03 - Phase 5 Task 9 advisor UI
+
+- Added tax-period selection, client-side topic/intent review, relevant missing-fact prompts, and copy/download conversation actions to the existing chat.
+- Passed tax period through the existing Worker request, added server-side period validation and historical retrieval scoping, and added Worker regression coverage.
+- Exposed the classifier and clarification scripts to the browser with a same-page scope test; added the new scripts to PWA caching.
+- Browser check on a clean Prototype preview succeeded with no page errors or mobile horizontal overflow. Focused UI/chat/Worker tests passed 47/47.
+- The existing Worker remains the live provider endpoint; the new Node advisor orchestrator still needs a deployed adapter before the browser can use that API directly.
+
+## 2026-11-03 - Phase 5 Task 10 research reports
+
+- Added `tax-research-report.js` to generate structured reports from citation-controlled advisor output, rebuilding all source/case citations from registries and rejecting unknown IDs.
+- Added printable HTML for browser print-to-PDF and Excel-compatible CSV source registers; escaped HTML and neutralized spreadsheet formula prefixes.
+- Added advisor integration and tests for report fields, provenance, unsafe content, and export behavior. Verification: 12/12 passed.
+- Chat report-download UI remains pending a deployed browser-to-advisor adapter.
+
+## 2026-11-03 - Phase 5 Task 11 security and reliability
+
+- Added explicit provider consent, separate client-fact sharing consent, provider timeout/abort, bounded question/context/draft sizes, and non-user-facing provider drafts to the advisor service.
+- Replaced Node-only hashing with Web Crypto, retaining only a request ID and question hash in the audit record; raw questions and client facts are not persisted by the service.
+- Tightened date and HTTPS URL validation, bounded retrieval inputs, escaped report HTML, and neutralized spreadsheet formula prefixes.
+- Reviewed existing Worker controls: server-side API key, CORS allowlist, rate limits, request/history caps, upstream timeout/retry, untrusted-source instructions, redacted logs, and opt-in retention. Documented the shared-admin-token limitation.
+- Focused security/advisor/report tests and editor diagnostics passed; full project gate remains Task 12.
+
+## 2026-11-03 - Phase 5 Task 12 final verification
+
+- Ran every root JavaScript test and Worker `.mjs` suite: 233 passed, 0 failed. Python unittest: 7 passed, 0 failed.
+- Added `PHASE5_IMPLEMENTATION_REPORT.md` and `PHASE5_ACCURACY_REVIEW.md` and updated `PROJECT_PROGRESS.md` and `TAX_RULES_REGISTER.md`.
+- Phase 5 implementation is complete with explicit limits: no verified legal-source corpus is populated, no new legal provisions/cases were added, and the static chat does not yet call the new Node advisor/report API.
+
+## 2026-11-04 - Verification and CI corrections
+
+- Fixed the Worker legal-source draft update handler to consume the source object returned by the workflow, restoring authenticated pending-draft edits.
+- Expanded GitHub Pages CI to discover all root and Worker JavaScript tests and run Python unittest discovery.
+- Current verification: JavaScript/Worker 242/242 passed; Python 7/7 passed.
+- At this point Phase 6 had not started; Phase 7 remains not started. Legal-source verification and filing approval remain outstanding; no production or legal-readiness claim is made.
+
+## 2026-11-04 - Phase 6 Step 1 domain contracts
+
+- Added versioned synthetic domain contracts for clients, tax profiles, compliance entries, document metadata/review, extraction proposals, scenarios, reports, audit events, and client dashboard aggregation.
+- Replaced the syntax-invalid document-management scaffold. File metadata validation is implemented; uploads, byte inspection, scanning, persistence, and UI integration are not.
+- Added 13 focused tests. Full JavaScript/Worker suite: 255 passed, 0 failed. Python suite: 7 passed, 0 failed.
+- No authentication, session, RBAC, database migration, endpoint, object-storage binding, or real client data was introduced. Step 2 prerequisites remain open; Phase 7 remains out of scope.
+
+## 2026-11-04 - Phase 6 Step 2 server-side identity and tenancy
+
+- Added `worker/phase6-auth.mjs`: PBKDF2-SHA256 password hashing (310,000 iterations, 16-byte salt), 32-byte session tokens in a `__Host-` prefixed cookie with an 8-hour lifetime, CSRF tokens bound to the session, a 5-attempt failed-login lockout for 15 minutes, and 30-minute single-use password-reset tokens.
+- Added the six-role permission matrix (`system-admin`, `practice-admin`, `tax-consultant`, `accountant`, `reviewer`, `client`) with explicit per-action grants and deny-by-default checks.
+- Bootstrap is one-time; user invitations remain pending until the invited user sets a password, and role/client assignments are scoped to the organization.
+- Password reset deliberately returns a generic response and does not disclose whether an account exists. Reset delivery over email only occurs when `PHASE6_EMAIL_SERVICE`, `PHASE6_EMAIL_API_KEY`, `PHASE6_EMAIL_ENDPOINT`, and `PHASE6_APP_ORIGIN` are all configured; otherwise the token is generated and discarded without mail.
+- Added `worker/phase6-auth.test.mjs` (4 tests). Verification: 4/4 passed.
+
+## 2026-11-04 - Phase 6 Step 3 tenant-scoped API, persistence and workspace UI
+
+- Added `worker/phase6-api.mjs`, routed from `worker/index.mjs` at `/api/phase6`, with an `ALLOWED_ORIGIN` check and the existing `CHAT_LIMITER` rate limit applied to authenticated endpoints.
+- Implemented organization-scoped client CRUD, client tax profiles, compliance obligations, document metadata with review transitions, document-to-tax extraction proposals, scenarios, client reports, and an append-only audit log. Every record write is attributed to the authenticated actor and written to the audit log.
+- Added `worker/migrations/0005_phase6_operations.sql` with organization, user, membership, client, obligation, and audit-log tables plus composite foreign keys and database triggers that reject updates and deletes on the audit log. Client TIN uniqueness is scoped per organization.
+- Scenarios reuse the existing deterministic multi-tax analysis; reports are created as `review-required` and never assert an established legal position.
+- Document uploads go to private object storage (`PHASE6_DOCUMENTS`) only after a mandatory malware-scanner call (`PHASE6_MALWARE_SCANNER`) reports the file clean; magic-byte content sniffing per extension, a 15 MB ceiling, SHA-256 hashing, immutable versioning, human review, and audit records apply. Only metadata is returned to the browser — the object key is stripped from every response. With either binding absent the upload endpoint fails closed with 503 rather than storing unvalidated bytes.
+- The entire `/api/phase6` surface is behind a four-flag security gate (`PHASE6_OPERATIONS_ENABLED`, `PHASE6_SECURITY_REVIEWED`, `PHASE6_DATA_AT_REST_REVIEWED`, `PHASE6_BACKUP_RESTORE_VERIFIED`), each of which must be the literal string `true`; otherwise every request returns 503. First-run bootstrap additionally requires the `PHASE6_BOOTSTRAP_SECRET` value in the `X-Phase6-Bootstrap` header.
+- Added `phase6-app.js` and the practice-workspace section in `index.html`, gated by the `taxcomp-phase6-api` meta tag. With no endpoint configured the workspace renders "API not configured" and performs no request; there is no mock or browser-local client data.
+- Added `worker/phase6-api.test.mjs` (5 tests) and `test_phase6_migration.py` (5 tests covering migration idempotency, per-organization TIN uniqueness, cross-tenant foreign-key rejection, role constraints, audit-log immutability, and backup/restore).
+- Verification: focused Phase 6 suites 9/9; full JavaScript/Worker suite 265 passed, 0 failed; Python suite 12 passed, 0 failed.
+- Browser check on a local static server: no console errors or failed requests, the practice workspace degraded to "API not configured", and the calculator ran and rendered a results panel with rule IDs and the pending-review disclosure.
+- Operational limitations: none of the four security flags is declared in `wrangler.toml`, so the deployed Worker answers every `/api/phase6` request with 503 until they are set after a real security, at-rest, and backup/restore review. The `PHASE6_DOCUMENTS` (R2), `PHASE6_MALWARE_SCANNER`, and `PHASE6_BOOTSTRAP_SECRET` bindings are also undeclared, and no GitHub Actions step sets the Phase 6 API endpoint, so the published static site always shows "API not configured". The Phase 6 tables share the `UNANSWERED_QUESTIONS` D1 database, and email-based password reset is inert until the email bindings and `PHASE6_APP_ORIGIN` are declared. No remote D1 migration was run, no real client data is enabled, and Phase 7 remains not started.

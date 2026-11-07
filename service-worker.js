@@ -1,15 +1,23 @@
-const CACHE_NAME = "taxcomp-app-v19";
+const CACHE_NAME = "taxcomp-app-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./app-install.js",
+  "./phase6-app.js",
   "./tax-advisory.js",
   "./tax-rules.js",
   "./tax-calculator.js",
-  "./tax-transaction.js",
+  "./corporate-tax.js",
+  "./capital-allowances.js",
+  "./industrial-building.js",
+  "./capital-gains.js",
+  "./multi-tax-analysis.js",
   "./tax-chat.js",
+  "./tax-question-classifier.js",
+  "./tax-clarification.js",
+  "./tax-advisor-ui.js",
   "./international-tax.js",
   "./audit-health.js",
   "./manifest.webmanifest",
@@ -44,6 +52,10 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(request.url);
   if (requestUrl.origin !== self.location.origin) return;
+  if (requestUrl.pathname.startsWith("/api/phase6") || request.credentials === "include") {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);

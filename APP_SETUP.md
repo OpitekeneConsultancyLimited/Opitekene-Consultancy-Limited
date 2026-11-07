@@ -43,6 +43,65 @@ worked examples. Their calculations check arithmetic only; the tax treatments
 and cited historical law are not independently validated and are not current
 filing advice.
 
+Calculator values in the central FY 2026/27 rules snapshot remain pending
+legal-source review and are not approved for filing. Existing calculators
+preserve their estimate behavior through a backward-compatible adapter; the
+date-based registry will not select a rule until its official source, provision,
+effective dates, methodology, and review record are complete.
+
+The company computation asks for a full tax period and calculation mode. Filing
+mode requires a verified rule for the entire period; simulation mode is
+provisional and not approved for filing. The corporate computation does not
+verify the legal treatment of entered adjustments or capital allowances.
+
+## Phase 6 practice workspace
+
+Phase 6 client/practice APIs and UI are implemented in the source tree but are
+not configured on the live site. The `taxcomp-phase6-api` meta endpoint is
+blank and the Worker returns 503 unless `PHASE6_OPERATIONS_ENABLED=true` is
+explicitly configured after security review. Do not enter real client data.
+
+The API uses the existing Cloudflare Worker/D1 architecture. The additive
+`worker/migrations/0005_phase6_operations.sql` migration has been tested with
+local SQLite-compatible tests, but has not been applied to remote D1. Bootstrap
+requires a Worker secret; user invitations require an email service binding;
+document uploads require private R2 storage and a malware-scanner service.
+Those bindings and backup/restore procedures are not configured here.
+
+Before enabling operations, configure a production API origin that is
+compatible with secure credential cookies, apply and verify the D1 migration
+with a backup/restore plan, configure the required service bindings, and pass
+the security review. Never place secrets in this static app or commit them.
+Software tests do not verify Ugandan tax law. Tax rules, sources, deadlines,
+and filing approvals remain subject to qualified evidence review.
+
+The wear-and-tear workspace accepts a fixed-asset register and separates book
+depreciation from tax allowances. Asset classes and expenditure are user
+selected; a pending rate is only used in simulation mode. Initial allowances
+and disposal balancing adjustments are not calculated.
+
+## Phases 8-11 readiness
+
+The local Phase 8 foundation catalogs legislation titles and resolves available
+dated source records, but it does not contain a verified legal corpus. Missing
+official documents, provisions, effective dates, and reviewer attestations
+must be supplied and reviewed before any source can support filing-approved
+calculations. Historical resolution explicitly reports that repository
+completeness is not established.
+
+Phase 9 keeps practice APIs fail-closed unless all required security flags and
+core bindings are present. This does not substitute for remote D1 migration,
+provider setup, verified backups/restores, or independent security and privacy
+review. Phase 10 dashboard analytics are disabled by default and remain scoped
+to the authenticated organization/client dashboard. Phase 11's
+`/api/phase6/governance/readiness` endpoint is authenticated, administrator
+scoped, and audited; all launch approvals default to false, and it does not
+enable or implement billing.
+
+These are local software foundations only. Do not treat any of Phases 8-11 as
+live, legally verified, or commercially launched until their documented
+external dependencies and reviews are completed.
+
 ## Extract a tax-law PDF
 
 To extract text from a text-based PDF into searchable text, page-by-page JSON

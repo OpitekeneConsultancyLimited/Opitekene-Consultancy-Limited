@@ -13,10 +13,34 @@ subsequent legal developments; read the full judgment and confirm its current
 status before relying on it.
 
 The individual income-tax/PAYE bands, standard resident company income-tax
-rate, and wear-and-tear classes are loaded from the versioned
-`UG-FY2026-27-v1` registry in `tax-rules.js`. They are pending verification
-against primary legislation and are not approved for filing. Other tax rates
-and thresholds elsewhere in the estimator are not yet part of this registry.
+rate, wear-and-tear classes, and other existing calculator parameters are
+stored in the versioned `UG-FY2026-27-v1` registry in `tax-rules.js`. The
+additional records cover VAT, withholding, rental, presumptive, and payroll
+contribution values previously embedded in calculator code. All migrated
+records are pending verification against appropriate official sources and are
+not approved for filing. User-entered customs rates remain assumptions, not
+verified rules.
+
+The strict date-based registry selector only returns verified records. Existing
+calculators use a backward-compatible legacy estimate adapter so established
+arithmetic continues to work; their outputs remain marked pending review and
+not approved for filing. This compatibility behavior is not legal activation.
+
+The corporate computation module requires a taxpayer category and complete
+tax-period dates. It reuses the existing accounting-profit adjustment formula,
+but it does not determine the legal classification of user-entered additions,
+deductions, losses, credits, or capital allowances. Simulation mode can use the
+pending resident-company legacy value only when explicitly selected; filing
+mode returns no tax liability unless a verified company rule covers the full
+period. No historical corporate rates are currently verified or populated.
+
+The capital allowance module groups user-entered fixed assets by selected
+wear-and-tear class and uses the existing reducing-balance pool formula. It
+keeps accounting depreciation separate from the tax allowance. Asset
+classification, qualifying expenditure, business use, and opening tax values
+require review. Initial allowances and balancing adjustments are not computed;
+their presence blocks filing-ready status. Current wear-and-tear rules remain
+pending legal verification.
 When a question names a financial year, chat uses only notes explicitly
 covering that same year. No historical-year legal archive is currently
 maintained, so an unmatched year requires further verification instead of

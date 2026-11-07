@@ -12,21 +12,30 @@
       content="Explore Uganda FY 2026/27 tax estimates, source-linked guidance and Ugandan tax case summaries."
     >
     <meta name="taxcomp-chat-endpoint" content="">
+    <meta name="taxcomp-phase6-api" content="">
     <title>Opitekene TaxComp | Uganda tax solutions</title>
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
     <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
-    <link rel="stylesheet" href="styles.css?v=transaction-analysis-2">
+    <link rel="stylesheet" href="styles.css?v=multi-tax-analysis-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
+    <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
+    <script src="tax-clarification.js?v=phase5-clarification-2" defer></script>
     <script src="tax-calculator.js?v=paye-role-selector-1" defer></script>
-    <script src="tax-transaction.js?v=transaction-analysis-1" defer></script>
-    <script src="app.js?v=paye-role-selector-1" defer></script>
+    <script src="corporate-tax.js?v=corporate-tax-phase3-1" defer></script>
+    <script src="capital-allowances.js?v=capital-allowances-phase3-1" defer></script>
+    <script src="industrial-building.js?v=industrial-building-phase3-1" defer></script>
+    <script src="capital-gains.js?v=capital-gains-phase3-1" defer></script>
+    <script src="app.js?v=phase3-calculators-1" defer></script>
+    <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
+    <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
     <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
+    <script src="phase6-app.js?v=phase6-step3-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -36,10 +45,11 @@
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#estimator">Tax solutions</a>
+        <a href="#multi-tax-analysis">Multi-tax analysis</a>
         <a href="#international-tax">International tax</a>
         <a href="#advisory">Knowledge centre</a>
+        <a href="#phase6-workspace">Practice workspace</a>
         <a href="#law-updates">Tax updates</a>
-        <a href="https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin/assets">Asset workspace</a>
         <a href="#contact">Contact</a>
       </nav>
       <a class="header-link" href="#contact">
@@ -58,6 +68,18 @@
     </aside>
 
     <main>
+      <section class="phase6-section" id="phase6-workspace" aria-labelledby="phase6-title">
+        <div class="phase6-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">PRIVATE PRACTICE WORKSPACE</p>
+            <h2 id="phase6-title">Tax practice operations</h2>
+            <p>Client-linked records are served only through the authenticated Phase 6 API. Tax and legal status remains subject to source verification and professional review.</p>
+          </div>
+          <span class="phase6-status" id="phase6-status" role="status">Checking service configuration</span>
+        </div>
+        <div id="phase6-root" aria-live="polite"></div>
+      </section>
+
       <section class="hero" aria-labelledby="page-title">
         <div class="hero-copy">
           <p class="eyebrow"><span class="eyebrow-dot"></span> UGANDA TAX SOLUTIONS</p>
@@ -79,10 +101,6 @@
             <a class="hero-product-action" href="#audit-health">
               <strong>Check tax health</strong>
               <span>Review a compliance checklist</span>
-            </a>
-            <a class="hero-product-action" href="https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/admin/assets">
-              <strong>Manage business assets</strong>
-              <span>Secure asset lifecycle workspace</span>
             </a>
             <a class="hero-product-action" href="#contact">
               <strong>Talk to a consultant</strong>
@@ -159,6 +177,8 @@
           <button class="tax-tab" id="tab-presumptive" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="presumptive" tabindex="-1">Presumptive tax</button>
           <button class="tax-tab" id="tab-customs" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="customs" tabindex="-1">Imports &amp; exports</button>
           <button class="tax-tab" id="tab-capital-allowances" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="capital-allowances" tabindex="-1">Wear &amp; tear</button>
+          <button class="tax-tab" id="tab-industrial-building" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="industrial-building" tabindex="-1">Industrial building</button>
+          <button class="tax-tab" id="tab-capital-gains" type="button" role="tab" aria-selected="false" aria-controls="tax-form" data-tax-head="capital-gains" tabindex="-1">Asset disposal</button>
         </div>
 
         <div class="estimator-grid">
@@ -256,6 +276,44 @@
             </div>
 
             <div class="tax-fields" data-fields="company" hidden>
+              <div class="field">
+                <label for="company-taxpayer-category">Company tax category</label>
+                <select id="company-taxpayer-category" data-required="true" disabled>
+                  <option value="resident-company">Resident company (standard regime)</option>
+                  <option value="nonresident-company">Non-resident company (rule review required)</option>
+                  <option value="special-regime-company">Special regime (rule review required)</option>
+                </select>
+                <p class="field-help">Only the standard resident-company category has a legacy estimate fixture. Other categories are blocked until their rules are verified.</p>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="company-period-start">Tax period start</label>
+                  <input id="company-period-start" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="company-period-end">Tax period end</label>
+                  <input id="company-period-end" type="date" data-required="true" disabled>
+                </div>
+              </div>
+              <div class="field">
+                <label for="company-calculation-mode">Calculation mode</label>
+                <select id="company-calculation-mode" data-required="true" disabled>
+                  <option value="">Choose a mode</option>
+                  <option value="simulation">Simulation (provisional estimate)</option>
+                  <option value="filing">Filing-ready (verified rules only)</option>
+                </select>
+                <p class="field-help">Simulation may use a pending rule only as a clearly marked estimate. Filing-ready mode will not calculate a liability without verified rules for the entire period.</p>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="company-computation-reviewer">Independent computation reviewer</label>
+                  <input id="company-computation-reviewer" type="text" maxlength="120" placeholder="Required for filing-ready output" disabled>
+                </div>
+                <div class="field">
+                  <label for="company-computation-review-date">Review date</label>
+                  <input id="company-computation-review-date" type="date" disabled>
+                </div>
+              </div>
               <div class="field">
                 <label for="company-profit">Annual accounting profit before tax</label>
                 <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="company-profit" type="number" step="1" inputmode="numeric" placeholder="Enter profit or loss from accounts" data-required="true" disabled></div>
@@ -542,35 +600,336 @@
 
             <div class="tax-fields" data-fields="capital-allowances" hidden>
               <div class="field">
-                <label for="allowance-class">Wear-and-tear class</label>
-                <select id="allowance-class" data-required="true">
-                  <option value="">Choose the asset class</option>
+                <label for="allowance-taxpayer-type">Taxpayer category</label>
+                <select id="allowance-taxpayer-type" data-required="true">
+                  <option value="company">Company/business taxpayer</option>
+                  <option value="individual">Individual business taxpayer</option>
                 </select>
-                <p class="field-help">Class 1 — 40%: computers and data-handling equipment.</p>
-                <p class="field-help">Class 2 — 30%: plant and machinery used in farming, manufacturing or mining.</p>
-                <p class="field-help">Class 3 — 20%: automobiles; buses/minibuses; construction and earth-moving equipment; specialised trucks, tractors, trailers and trailer-mounted containers; rail cars, locomotives and equipment; vessels, barges, tugs and similar water-transport equipment; aircraft; specialised public-utility plant/equipment/machinery; office furniture, fixtures and equipment; and other depreciable assets not in Classes 1 or 2.</p>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="allowance-period-start">Tax period start</label>
+                  <input id="allowance-period-start" type="date" data-required="true">
+                </div>
+                <div class="field">
+                  <label for="allowance-period-end">Tax period end</label>
+                  <input id="allowance-period-end" type="date" data-required="true">
+                </div>
               </div>
               <div class="field">
-                <label for="allowance-opening-value">Opening tax written-down value (UGX)</label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-opening-value" type="number" min="0" step="1" inputmode="numeric" placeholder="Enter prior-year closing pool value" data-required="true"></div>
-                <p class="field-help">For a new class pool, enter 0. Otherwise enter the previous year’s closing tax pool balance, already adjusted for business use.</p>
+                <label for="allowance-calculation-mode">Calculation mode</label>
+                <select id="allowance-calculation-mode" data-required="true">
+                  <option value="">Choose a mode</option>
+                  <option value="simulation">Simulation (provisional estimate)</option>
+                  <option value="filing">Filing-ready (verified rules only)</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="allowance-computation-reviewer">Independent computation reviewer</label>
+                  <input id="allowance-computation-reviewer" type="text" maxlength="120" placeholder="Required for filing-ready output" disabled>
+                </div>
+                <div class="field">
+                  <label for="allowance-computation-review-date">Review date</label>
+                  <input id="allowance-computation-review-date" type="date" disabled>
+                </div>
+              </div>
+              <div class="capital-register-heading">
+                <h4>Fixed asset register</h4>
+                <button class="secondary-button" id="add-capital-asset" type="button">Add asset</button>
+              </div>
+              <div id="capital-asset-rows"></div>
+              <template id="capital-asset-row-template">
+                <fieldset class="capital-asset-row" data-asset-row>
+                  <legend data-asset-title>Asset</legend>
+                  <button class="remove-capital-asset" type="button" data-remove-asset>Remove</button>
+                  <div class="adjustment-grid">
+                    <div class="field adjustment-field">
+                      <label data-label-for="assetId">Asset ID</label>
+                      <input type="text" data-asset-field="assetId" data-required="true" maxlength="80">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="description">Asset description</label>
+                      <input type="text" data-asset-field="description" data-required="true" maxlength="160">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="assetClass">User-selected wear-and-tear class</label>
+                      <select data-asset-field="assetClass" data-required="true">
+                        <option value="">Select class</option>
+                        <option value="class-1">Class 1</option>
+                        <option value="class-2">Class 2</option>
+                        <option value="class-3">Class 3</option>
+                      </select>
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="acquisitionDate">Acquisition date</label>
+                      <input type="date" data-asset-field="acquisitionDate" data-required="true">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="dateBroughtIntoUse">Date first used</label>
+                      <input type="date" data-asset-field="dateBroughtIntoUse" data-required="true">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="openingTaxWrittenDownValue">Opening tax written-down value (UGX)</label>
+                      <input type="number" min="0" step="1" value="0" data-asset-field="openingTaxWrittenDownValue">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="qualifyingExpenditure">Qualifying expenditure (UGX)</label>
+                      <input type="number" min="0" step="1" data-required="true" data-asset-field="qualifyingExpenditure">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="accountingDepreciation">Accounting depreciation (UGX)</label>
+                      <input type="number" min="0" step="1" value="0" data-asset-field="accountingDepreciation">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="disposalDate">Disposal date (optional)</label>
+                      <input type="date" data-asset-field="disposalDate">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="disposalProceeds">Disposal proceeds (UGX)</label>
+                      <input type="number" min="0" step="1" value="0" data-asset-field="disposalProceeds">
+                    </div>
+                    <div class="field adjustment-field">
+                      <label data-label-for="businessUsePercent">Business use (%)</label>
+                      <input type="number" min="0" max="100" step="0.01" value="100" data-required="true" data-asset-field="businessUsePercent">
+                    </div>
+                    <label class="checkbox-label">
+                      <input type="checkbox" data-asset-field="classificationConfirmed" data-required="true">
+                      Classification reviewed by user
+                    </label>
+                  </div>
+                </fieldset>
+              </template>
+              <label class="checkbox-label">
+                <input id="initial-allowance-requested" type="checkbox">
+                Initial allowance may apply; request legal review
+              </label>
+              <p class="field-help">Asset class and expenditure are user supplied. Accounting depreciation is shown separately. Initial allowances and balancing adjustments are not calculated without verified rules.</p>
+            </div>
+
+            <div class="tax-fields" data-fields="industrial-building" hidden>
+              <div class="field">
+                <label for="industrial-building-description">Building description</label>
+                <input id="industrial-building-description" type="text" maxlength="180" data-required="true" disabled>
               </div>
               <div class="field">
-                <label for="allowance-additions">Qualifying additions in the year (UGX) <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-additions" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
-                <p class="field-help">Enter qualifying capital cost, excluding recoverable VAT and costs that are not part of the asset’s tax basis.</p>
+                <label for="industrial-building-owner">Legal owner</label>
+                <input id="industrial-building-owner" type="text" maxlength="160" data-required="true" disabled>
               </div>
               <div class="field">
-                <label for="allowance-disposals">Disposal proceeds for this class pool (UGX) <span>(optional)</span></label>
-                <div class="input-wrap"><span class="currency-prefix" aria-hidden="true">UGX</span><input id="allowance-disposals" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
-                <p class="field-help">Enter proceeds attributable to assets in this class. Any proceeds exceeding the pool balance are flagged for a separate balancing-adjustment review.</p>
+                <label for="industrial-building-taxpayer">Taxpayer category</label>
+                <select id="industrial-building-taxpayer" data-required="true" disabled>
+                  <option value="company">Company</option>
+                  <option value="individual">Individual</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-period-start">Tax period start</label>
+                  <input id="industrial-building-period-start" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-period-end">Tax period end</label>
+                  <input id="industrial-building-period-end" type="date" data-required="true" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-construction-start">Construction commenced</label>
+                  <input id="industrial-building-construction-start" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-construction-complete">Construction completed</label>
+                  <input id="industrial-building-construction-complete" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-first-used">First used</label>
+                  <input id="industrial-building-first-used" type="date" data-required="true" disabled>
+                </div>
               </div>
               <div class="field">
-                <label for="allowance-business-use">Business-use percentage</label>
-                <div class="input-wrap"><input id="allowance-business-use" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="e.g. 100" data-required="true"><span class="currency-prefix" aria-hidden="true">%</span></div>
-                <p class="field-help">Applied to current-year additions and disposal proceeds. Use the already apportioned amount for the opening pool value.</p>
+                <label for="industrial-building-use">Nature of use</label>
+                <textarea id="industrial-building-use" rows="3" maxlength="500" data-required="true" disabled></textarea>
               </div>
-              <p class="field-help">Wear-and-tear uses reducing-balance rates by statutory class. This schedule is separate from the 5% straight-line industrial building allowance. <a href="https://taxsummaries.pwc.com/uganda/corporate/deductions" target="_blank" rel="noopener noreferrer">Read the Uganda depreciation summary</a> and confirm the current law and asset eligibility.</p>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-construction-cost">Total construction expenditure (UGX)</label>
+                  <input id="industrial-building-construction-cost" type="number" min="0" step="1" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-qualifying-cost">Qualifying construction costs entered (UGX)</label>
+                  <input id="industrial-building-qualifying-cost" type="number" min="0" step="1" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-prior-deductions">Previous deductions (UGX)</label>
+                  <input id="industrial-building-prior-deductions" type="number" min="0" step="1" value="0" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-disposal-date">Disposal date (optional)</label>
+                  <input id="industrial-building-disposal-date" type="date" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-change-use-date">Change-of-use date (optional)</label>
+                  <input id="industrial-building-change-use-date" type="date" disabled>
+                </div>
+              </div>
+              <label class="checkbox-label">
+                <input id="industrial-building-qualification-confirmed" type="checkbox" disabled>
+                Eligibility reviewed by a qualified reviewer (simulation input only)
+              </label>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-computation-reviewer">Independent computation reviewer</label>
+                  <input id="industrial-building-computation-reviewer" type="text" maxlength="120" placeholder="Required for filing-ready output" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-computation-review-date">Review date</label>
+                  <input id="industrial-building-computation-review-date" type="date" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="industrial-building-calculation-mode">Calculation mode</label>
+                  <select id="industrial-building-calculation-mode" data-required="true" disabled>
+                    <option value="">Choose a mode</option>
+                    <option value="simulation">Simulation (provisional only)</option>
+                    <option value="filing">Filing-ready (verified rules only)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-method">Simulation method</label>
+                  <select id="industrial-building-method" disabled>
+                    <option value="">No method selected</option>
+                    <option value="straight-line">Straight-line scenario</option>
+                    <option value="reducing-balance">Reducing-balance scenario</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-rate">User-entered simulation rate (%)</label>
+                  <input id="industrial-building-rate" type="number" min="0" max="100" step="0.01" placeholder="No default" disabled>
+                </div>
+                <div class="field">
+                  <label for="industrial-building-use-percent">Period-use percentage</label>
+                  <input id="industrial-building-use-percent" type="number" min="0" max="100" step="0.01" placeholder="Enter confirmed proportion" disabled>
+                </div>
+              </div>
+              <p class="field-help">Commercial use does not establish industrial-building qualification. No statutory provision, rate, or deduction method is verified in the registry. User-entered simulation parameters are not legal rules.</p>
+            </div>
+
+            <div class="tax-fields" data-fields="capital-gains" hidden>
+              <div class="field">
+                <label for="capital-gains-asset-description">Asset description</label>
+                <input id="capital-gains-asset-description" type="text" maxlength="180" data-required="true" disabled>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-asset-category">Asset category</label>
+                  <select id="capital-gains-asset-category" data-required="true" disabled>
+                    <option value="">Choose a category</option>
+                    <option value="immovable-property">Immovable property</option>
+                    <option value="shares">Shares or securities</option>
+                    <option value="business-asset">Business asset</option>
+                    <option value="investment-asset">Investment asset</option>
+                    <option value="other">Other / requires review</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-taxpayer">Taxpayer category</label>
+                  <select id="capital-gains-taxpayer" data-required="true" disabled>
+                    <option value="company">Company</option>
+                    <option value="individual">Individual</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-period-start">Tax period start</label>
+                  <input id="capital-gains-period-start" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-period-end">Tax period end</label>
+                  <input id="capital-gains-period-end" type="date" data-required="true" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-acquisition-date">Acquisition date</label>
+                  <input id="capital-gains-acquisition-date" type="date" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-disposal-date">Disposal date</label>
+                  <input id="capital-gains-disposal-date" type="date" data-required="true" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-acquisition-cost">Acquisition cost (UGX)</label>
+                  <input id="capital-gains-acquisition-cost" type="number" min="0" step="1" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-acquisition-costs">Incidental acquisition costs (UGX)</label>
+                  <input id="capital-gains-acquisition-costs" type="number" min="0" step="1" value="0" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-improvements">Improvement expenditure (UGX)</label>
+                  <input id="capital-gains-improvements" type="number" min="0" step="1" value="0" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-proceeds">Disposal proceeds (UGX)</label>
+                  <input id="capital-gains-proceeds" type="number" min="0" step="1" data-required="true" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-disposal-costs">Incidental disposal costs (UGX)</label>
+                  <input id="capital-gains-disposal-costs" type="number" min="0" step="1" value="0" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-wht-credits">Withholding credits (UGX)</label>
+                  <input id="capital-gains-wht-credits" type="number" min="0" step="1" value="0" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-exemption">User-entered exemption amount (UGX)</label>
+                  <input id="capital-gains-exemption" type="number" min="0" step="1" value="0" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-relief">User-entered relief amount (UGX)</label>
+                  <input id="capital-gains-relief" type="number" min="0" step="1" value="0" disabled>
+                </div>
+              </div>
+              <label class="checkbox-label">
+                <input id="capital-gains-classification-confirmed" type="checkbox" disabled>
+                Asset category and tax classification reviewed
+              </label>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-computation-reviewer">Independent computation reviewer</label>
+                  <input id="capital-gains-computation-reviewer" type="text" maxlength="120" placeholder="Required for filing-ready output" disabled>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-computation-review-date">Review date</label>
+                  <input id="capital-gains-computation-review-date" type="date" disabled>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="capital-gains-calculation-mode">Calculation mode</label>
+                  <select id="capital-gains-calculation-mode" data-required="true" disabled>
+                    <option value="">Choose a mode</option>
+                    <option value="simulation">Simulation (provisional only)</option>
+                    <option value="filing">Filing-ready (verified rules only)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="capital-gains-rate">User-entered simulation rate (%)</label>
+                  <input id="capital-gains-rate" type="number" min="0" max="100" step="0.01" placeholder="No default" disabled>
+                </div>
+              </div>
+              <p class="field-help">Asset categories may have different tax treatment. No universal rate, exemption, or relief is assumed; enter only reviewed assumptions for simulation.</p>
             </div>
 
             <button class="calculate-button" type="submit">
@@ -578,7 +937,7 @@
               <span aria-hidden="true">→</span>
             </button>
             <p class="form-error" id="form-error" role="alert" hidden></p>
-            <p class="form-note">A planning estimate under standard FY 2026/27 rules, not an official tax assessment.</p>
+            <p class="form-note">Unverified rules produce provisional estimates only. No calculator output is an official tax assessment.</p>
           </form>
 
           <section class="results-card" aria-labelledby="results-title" aria-live="polite">
@@ -628,6 +987,259 @@
             </div>
           </section>
         </div>
+      </section>
+
+      <section class="multi-tax-section" id="multi-tax-analysis" aria-labelledby="multi-tax-title">
+        <div class="multi-tax-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">EARLY ACCESS · PRELIMINARY REVIEW</p>
+            <h2 id="multi-tax-title">Assess one transaction across tax heads.</h2>
+            <p>Enter the event once. TaxComp will map potential obligations, flag missing facts and use existing calculators where their inputs fit.</p>
+          </div>
+          <span class="year-badge">Uganda · FY 2026/27 rules</span>
+        </div>
+
+        <div class="multi-tax-notice" role="note">
+          <strong>Prototype: do not enter confidential client information.</strong>
+          This preview does not save, send or approve assessments. It is not a tax opinion; mappings and estimates require professional and legal review.
+        </div>
+
+        <form class="multi-tax-form" id="multi-tax-form">
+          <div class="multi-tax-form-heading">
+            <div>
+              <span class="step-number">01</span>
+              <h3>Transaction details</h3>
+            </div>
+            <p>Description is for your reference only. The analysis uses the structured answers below, not description keywords.</p>
+          </div>
+
+          <div class="multi-tax-fields">
+            <div class="field">
+              <label for="multi-tax-reference">Transaction reference</label>
+              <input id="multi-tax-reference" name="reference" type="text" maxlength="80" placeholder="e.g. TXN-001">
+            </div>
+            <div class="field">
+              <label for="multi-tax-date">Transaction/event date</label>
+              <input id="multi-tax-date" name="eventDate" type="date" required>
+            </div>
+            <div class="field">
+              <label for="multi-tax-scenario">Transaction category</label>
+              <select id="multi-tax-scenario" name="scenario" required>
+                <option value="">Choose a category</option>
+                <option value="property">Commercial property sale or purchase</option>
+                <option value="construction">Construction contract</option>
+                <option value="imported-machinery">Imported machinery</option>
+                <option value="professional-services">Consultancy or professional services</option>
+                <option value="commercial-rental">Commercial rental</option>
+                <option value="employment">Employee remuneration</option>
+                <option value="share-transfer">Company share transfer</option>
+                <option value="industrial-building">Industrial building acquisition or disposal</option>
+                <option value="other">Other transaction</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-direction">Transaction direction</label>
+              <select id="multi-tax-direction" name="direction" required>
+                <option value="purchase">Purchase / acquisition</option>
+                <option value="sale">Sale / disposal</option>
+                <option value="payment">Payment / supply</option>
+                <option value="income">Income received</option>
+                <option value="payroll">Payroll event</option>
+                <option value="other">Other / not yet known</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-party-type">Taxpayer being assessed</label>
+              <select id="multi-tax-party-type" name="partyType" required>
+                <option value="unknown">Not yet known</option>
+                <option value="individual">Individual</option>
+                <option value="company">Company</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-party-role">Assessed party's role</label>
+              <select id="multi-tax-party-role" name="partyRole" required>
+                <option value="unknown">Not yet known</option>
+                <option value="buyer">Buyer / purchaser</option>
+                <option value="seller">Seller / disposer</option>
+                <option value="supplier">Supplier / service provider</option>
+                <option value="customer">Customer / recipient</option>
+                <option value="landlord">Landlord</option>
+                <option value="tenant">Tenant</option>
+                <option value="employer">Employer</option>
+                <option value="employee">Employee</option>
+                <option value="importer">Importer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-residency">Assessed party's tax residence</label>
+              <select id="multi-tax-residency" name="residency" required>
+                <option value="unknown">Not yet known</option>
+                <option value="resident">Uganda resident</option>
+                <option value="nonresident">Non-resident</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-supplier-residency">Supplier/payee tax residence</label>
+              <select id="multi-tax-supplier-residency" name="supplierResidency" required>
+                <option value="unknown">Not yet known</option>
+                <option value="resident">Uganda resident</option>
+                <option value="nonresident">Non-resident</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-amount">Transaction amount</label>
+              <div class="input-wrap">
+                <span class="currency-prefix" aria-hidden="true">UGX</span>
+                <input id="multi-tax-amount" name="amount" type="number" min="0" max="1000000000000" step="0.01" inputmode="decimal" required>
+              </div>
+              <p class="field-help">For payroll, enter one month's taxable pay. Rental computations require the annual-rent option below.</p>
+            </div>
+            <div class="field">
+              <label for="multi-tax-asset-type">Asset or supply type</label>
+              <select id="multi-tax-asset-type" name="assetType" required>
+                <option value="unknown">Not yet known</option>
+                <option value="land">Land</option>
+                <option value="building">Building</option>
+                <option value="machinery">Machinery / equipment</option>
+                <option value="mixed-property">Land and/or building package</option>
+                <option value="shares">Company shares</option>
+                <option value="services">Services / contract work</option>
+                <option value="rent">Rental of property</option>
+                <option value="employment">Employment / payroll</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-vat-status">Supplier's VAT registration</label>
+              <select id="multi-tax-vat-status" name="supplierVat" required>
+                <option value="unknown">Not yet known</option>
+                <option value="registered">Registered</option>
+                <option value="not-registered">Not registered</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-vat-treatment">VAT treatment, if verified</label>
+              <select id="multi-tax-vat-treatment" name="vatTreatment" required>
+                <option value="unknown">Not yet known</option>
+                <option value="standard">Standard-rated</option>
+                <option value="zero-rated">Zero-rated</option>
+                <option value="exempt">Exempt</option>
+                <option value="out-of-scope">Outside scope</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-wht-agent">Payer is a designated WHT agent</label>
+              <select id="multi-tax-wht-agent" name="whtAgent" required>
+                <option value="unknown">Not yet known</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-employment">Consultant is actually an employee?</label>
+              <select id="multi-tax-employment" name="employmentRelationship" required>
+                <option value="unknown">Not yet assessed</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-instrument">Chargeable instrument signed/executed?</label>
+              <select id="multi-tax-instrument" name="instrumentExecuted" required>
+                <option value="unknown">Not yet known</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-industrial-use">Qualifying industrial-building use confirmed?</label>
+              <select id="multi-tax-industrial-use" name="industrialBuilding" required>
+                <option value="unknown">Not yet assessed</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="multi-tax-efris-status">Related EFRIS document status</label>
+              <select id="multi-tax-efris-status" name="efrisStatus" required>
+                <option value="not-recorded">Not recorded / not known</option>
+                <option value="draft">Draft</option>
+                <option value="validated">Validated locally</option>
+                <option value="submitted">Reported as submitted</option>
+                <option value="fiscalised">Reported as fiscalised</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <p class="field-help">This is a user-entered note, not a connection to URA or proof of fiscalisation.</p>
+            </div>
+            <div class="field" data-paye-role-field>
+              <label for="multi-tax-paye-role">Employee's role for PAYE</label>
+              <select id="multi-tax-paye-role" name="payeRole">
+                <option value="primary">Primary employment</option>
+                <option value="secondary">Secondary employment</option>
+              </select>
+            </div>
+            <div class="field" data-primary-pay-field hidden>
+              <label for="multi-tax-primary-pay">Monthly primary taxable pay (for secondary PAYE)</label>
+              <div class="input-wrap">
+                <span class="currency-prefix" aria-hidden="true">UGX</span>
+                <input id="multi-tax-primary-pay" name="primaryMonthlyTaxableIncome" type="number" min="0" max="1000000000000" step="0.01" inputmode="decimal" disabled>
+              </div>
+            </div>
+            <div class="field" data-rental-annual-field hidden>
+              <label class="checkbox-label" for="multi-tax-rental-annual">
+                <input id="multi-tax-rental-annual" name="annualRentalAmount" type="checkbox">
+                Amount entered is annual gross rental income
+              </label>
+            </div>
+            <div class="field multi-tax-wide">
+              <label for="multi-tax-description">Short description (not used to infer tax heads)</label>
+              <textarea id="multi-tax-description" name="description" rows="3" maxlength="2000" placeholder="Avoid names, TINs, account numbers or confidential contract details."></textarea>
+            </div>
+            <label class="checkbox-label multi-tax-wide" for="multi-tax-related-party">
+              <input id="multi-tax-related-party" name="relatedParty" type="checkbox">
+              The parties are related / under common control
+            </label>
+            <label class="checkbox-label multi-tax-wide" for="multi-tax-vat-inclusive">
+              <input id="multi-tax-vat-inclusive" name="amountIncludesVat" type="checkbox">
+              The entered transaction amount includes VAT
+            </label>
+          </div>
+
+          <div class="multi-tax-form-actions">
+            <button class="primary-button" type="submit">Analyse potential tax heads</button>
+            <button class="secondary-button" type="reset">Clear entry</button>
+            <p id="multi-tax-error" class="form-error" role="alert" hidden></p>
+          </div>
+        </form>
+
+        <section class="multi-tax-results" id="multi-tax-results" aria-live="polite" aria-labelledby="multi-tax-results-title" hidden>
+          <div class="multi-tax-results-header">
+            <div>
+              <p class="eyebrow section-eyebrow">PRELIMINARY ASSESSMENT</p>
+              <h3 id="multi-tax-results-title">Potential tax-head review</h3>
+              <p id="multi-tax-status" class="assessment-status"></p>
+            </div>
+            <button class="secondary-button" id="multi-tax-register-add" type="button">Add to temporary register</button>
+          </div>
+          <p id="multi-tax-summary" class="multi-tax-summary"></p>
+          <div id="multi-tax-risk-flags" class="multi-tax-risk-flags"></div>
+          <div id="multi-tax-head-list" class="multi-tax-head-list"></div>
+          <p class="multi-tax-total-note"><strong>No consolidated net payable is shown.</strong> Estimates, withholding credits, recoverable VAT and liabilities are kept separate to avoid double counting.</p>
+        </section>
+
+        <section class="multi-tax-register" aria-labelledby="multi-tax-register-title">
+          <div class="multi-tax-register-heading">
+            <div>
+              <p class="eyebrow section-eyebrow">THIS PAGE ONLY · CLEARED ON REFRESH</p>
+              <h3 id="multi-tax-register-title">Temporary transaction register</h3>
+            </div>
+            <button class="secondary-button" id="multi-tax-register-clear" type="button">Clear register</button>
+          </div>
+          <p id="multi-tax-register-empty">No assessments in this temporary register.</p>
+          <div id="multi-tax-register-list" class="multi-tax-register-list"></div>
+        </section>
       </section>
 
       <section class="international-tax-section" id="international-tax" aria-labelledby="international-tax-title">
@@ -831,173 +1443,68 @@
             <h2 id="tax-chat-title">Ask a tax question.</h2>
             <p>Ask about Uganda taxes, reviewed guidance or case summaries. If Google Search grounding is available, the AI can cite current public web sources and open a related calculator; otherwise, answers use TaxComp local notes with clear verification labels.</p>
           </div>
-          <button class="tax-chat-clear" id="tax-chat-clear" type="button">Clear chat</button>
+          <div class="tax-chat-heading-actions">
+            <button class="tax-chat-tool" id="tax-chat-copy" type="button">Copy conversation</button>
+            <button class="tax-chat-tool" id="tax-chat-download" type="button">Download conversation</button>
+            <button class="tax-chat-tool" id="tax-chat-report-html" type="button" disabled>Download research report</button>
+            <button class="tax-chat-tool" id="tax-chat-citations-csv" type="button" disabled>Download source register</button>
+            <button class="tax-chat-clear" id="tax-chat-clear" type="button">Clear chat</button>
+          </div>
         </div>
         <p class="tax-chat-privacy" role="note">
           Do not enter your TIN, passwords, mobile-money PINs, account numbers or confidential documents.
           Chat history is not saved. When AI is connected, your question and recent chat turns are sent
-          through Cloudflare to Google Gemini. Only grounded responses are labeled as live web research;
+          through Cloudflare to Google Gemini only when you opt in below. Only grounded responses are labeled as live web research;
           this chat does not accept uploaded client documents. Always check cited sources and effective dates.
         </p>
         <div class="tax-chat-panel">
-          <div class="tax-chat-mode-switch" role="tablist" aria-label="TaxComp chat mode">
-            <button id="tax-chat-question-tab" type="button" role="tab" aria-selected="true" aria-controls="tax-chat-question-mode" data-tax-chat-mode="question">Ask a tax question</button>
-            <button id="tax-chat-transaction-tab" type="button" role="tab" aria-selected="false" aria-controls="tax-chat-transaction-mode" data-tax-chat-mode="transaction" tabindex="-1">Analyse a transaction</button>
-          </div>
-          <div id="tax-chat-question-mode" role="tabpanel" aria-labelledby="tax-chat-question-tab">
-            <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
-            <form class="tax-chat-form" id="tax-chat-form">
-              <label for="tax-chat-input">Your question</label>
-              <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
-              <label class="tax-chat-record-consent" for="tax-chat-record-unanswered">
-                <input id="tax-chat-record-unanswered" type="checkbox">
-                If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
-              </label>
-              <p class="tax-chat-consent-withdrawal">If you later withdraw consent or want this record deleted sooner, TaxComp provides a reference and an email-draft option after saving. The email is not sent automatically; do not resend confidential information.</p>
-              <div class="tax-chat-form-footer">
-                <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
-                <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
-              </div>
-            </form>
-            <div class="tax-chat-shortcuts" aria-label="Example chat questions">
-              <span>Try asking:</span>
-              <button type="button" data-chat-question="What are the VAT registration thresholds?">VAT thresholds</button>
-              <button type="button" data-chat-question="Which employment benefits can affect PAYE?">PAYE benefits</button>
-              <button type="button" data-chat-question="What should I check before claiming a tax treaty rate?">Tax treaties</button>
-              <button type="button" data-chat-question="How is wear-and-tear calculated by asset class?">Wear and tear</button>
-              <button type="button" data-chat-question="What did the Quickway input VAT case decide?">Tax case summary</button>
+          <div class="tax-chat-messages" id="tax-chat-messages" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <form class="tax-chat-form" id="tax-chat-form">
+            <label for="tax-chat-input">Your question</label>
+            <textarea id="tax-chat-input" maxlength="1600" rows="3" placeholder="e.g. What evidence should I keep for an input VAT claim?" autocomplete="off"></textarea>
+            <div class="tax-chat-context">
+              <label for="tax-chat-period">Tax period</label>
+              <select id="tax-chat-period" name="taxPeriod">
+                <option value="">Not specified</option>
+                <option value="2026/27">2026/27</option>
+                <option value="2025/26">2025/26</option>
+                <option value="2024/25">2024/25</option>
+                <option value="2023/24">2023/24</option>
+                <option value="2022/23">2022/23</option>
+                <option value="2021/22">2021/22</option>
+                <option value="2020/21">2020/21</option>
+              </select>
             </div>
-          </div>
-          <div id="tax-chat-transaction-mode" class="tax-chat-transaction-mode" role="tabpanel" aria-labelledby="tax-chat-transaction-tab" hidden>
-            <p class="tax-transaction-privacy" role="note">This screening tool does not send transaction details to Gemini, save them, or accept uploads. Do not enter TINs, names, account details, or confidential information. It is limited to UGX and FY 2026/27.</p>
-            <form id="tax-transaction-form" class="tax-transaction-form">
-              <label class="tax-transaction-field" for="transaction-type">Transaction type
-                <select id="transaction-type" name="type" required>
-                  <option value="">Choose a transaction</option>
-                  <option value="property-purchase">Purchase of land or a building</option>
-                  <option value="property-disposal">Sale or disposal of land or a building</option>
-                  <option value="consultancy-payment">Consultancy or professional-services payment</option>
-                  <option value="construction-contract">Construction or engineering contract</option>
-                  <option value="rental-income">Rental income or property letting</option>
-                  <option value="employee-compensation">Employee remuneration or benefits</option>
-                  <option value="goods-import">Import of goods</option>
-                  <option value="goods-export">Export of goods</option>
-                  <option value="machinery-purchase">Business machinery acquisition</option>
-                  <option value="other">Other business transaction</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-description">Non-confidential description
-                <textarea id="transaction-description" name="description" maxlength="1000" required rows="2" placeholder="Describe the goods, services or asset without names, TINs or account details."></textarea>
-              </label>
-              <label class="tax-transaction-field" for="transaction-date">Transaction date
-                <input id="transaction-date" name="transactionDate" type="date" required>
-              </label>
-              <label class="tax-transaction-field" for="transaction-amount">Transaction amount (UGX)
-                <input id="transaction-amount" name="amount" type="number" min="0" step="0.01" required>
-              </label>
-              <label class="tax-transaction-field" for="transaction-currency">Currency
-                <select id="transaction-currency" name="currency" required>
-                  <option value="UGX">UGX</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-party-role">Your role in the transaction
-                <select id="transaction-party-role" name="partyRole" required>
-                  <option value="">Choose your role</option>
-                  <option value="buyer">Buyer</option>
-                  <option value="seller">Seller</option>
-                  <option value="payer">Payer</option>
-                  <option value="supplier">Supplier</option>
-                  <option value="landlord">Landlord</option>
-                  <option value="tenant">Tenant</option>
-                  <option value="employer">Employer</option>
-                  <option value="employee">Employee</option>
-                  <option value="importer">Importer</option>
-                  <option value="exporter">Exporter</option>
-                  <option value="asset-owner">Asset owner</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-taxpayer-type">Your taxpayer type
-                <select id="transaction-taxpayer-type" name="taxpayerType" required>
-                  <option value="">Choose a type</option>
-                  <option value="individual">Individual</option>
-                  <option value="company">Company</option>
-                  <option value="unknown">Not yet known</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-taxpayer-residency">Your tax residence
-                <select id="transaction-taxpayer-residency" name="taxpayerResidency" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="resident">Uganda resident</option>
-                  <option value="nonresident">Non-resident</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-counterparty-residency">Counterparty tax residence
-                <select id="transaction-counterparty-residency" name="counterpartyResidency" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="resident">Uganda resident</option>
-                  <option value="nonresident">Non-resident</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-vat-registration">VAT registration status
-                <select id="transaction-vat-registration" name="vatRegistration" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="yes">Registered</option>
-                  <option value="no">Not registered</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-withholding-agent">Withholding-agent status
-                <select id="transaction-withholding-agent" name="withholdingAgent" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="yes">Designated/required to withhold</option>
-                  <option value="no">Not designated (as currently understood)</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-related-party">Related-party relationship
-                <select id="transaction-related-party" name="relatedParty" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="yes">Related parties</option>
-                  <option value="no">Not related (as currently understood)</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-employment-relationship">Work relationship
-                <select id="transaction-employment-relationship" name="employmentRelationship" required>
-                  <option value="">Choose or mark not applicable</option>
-                  <option value="employee">Employment relationship</option>
-                  <option value="independent">Independent contractor (needs fact review)</option>
-                  <option value="uncertain">Uncertain</option>
-                  <option value="not-applicable">Not applicable</option>
-                </select>
-              </label>
-              <label class="tax-transaction-field" for="transaction-efris-invoice">EFRIS invoice or receipt
-                <select id="transaction-efris-invoice" name="efrisInvoice" required>
-                  <option value="">Choose or mark unknown</option>
-                  <option value="yes">Available</option>
-                  <option value="no">Not available</option>
-                  <option value="unknown">Unknown</option>
-                </select>
-              </label>
-              <label class="tax-transaction-confirm">
-                <input type="checkbox" name="factsConfirmed" required>
-                I have reviewed these non-confidential facts and confirm they are accurate to the best of my knowledge.
-              </label>
-              <button class="tax-transaction-submit" type="submit">Identify potential tax heads</button>
-            </form>
-            <p id="tax-transaction-status" class="tax-chat-status" role="status" aria-live="polite"></p>
-            <div id="tax-transaction-assessment" class="tax-transaction-assessment" hidden></div>
-            <form id="tax-transaction-calculator-form" class="tax-transaction-calculator-form" hidden>
-              <label class="tax-transaction-field" for="tax-transaction-calculator">Run an existing deterministic calculator
-                <select id="tax-transaction-calculator" required></select>
-              </label>
-              <div id="tax-transaction-calculator-fields" class="tax-transaction-fields"></div>
-              <button class="tax-transaction-submit" type="submit">Calculate indicative amount</button>
-            </form>
-            <div id="tax-transaction-calculation-results" class="tax-transaction-results" aria-live="polite"></div>
+            <label class="tax-chat-record-consent" for="tax-chat-provider-consent">
+              <input id="tax-chat-provider-consent" type="checkbox">
+              I consent to send this question to the configured AI provider for an untrusted draft. Client facts are not shared by the advisor unless separately provided.
+            </label>
+            <section class="tax-advisor-review" id="tax-advisor-review" aria-live="polite" hidden>
+              <h3>Question review</h3>
+              <dl class="tax-advisor-review-summary">
+                <div><dt>Tax heads</dt><dd id="tax-advisor-review-heads"></dd></div>
+                <div><dt>Question type</dt><dd id="tax-advisor-review-intent"></dd></div>
+                <div><dt>Tax period</dt><dd id="tax-advisor-review-period"></dd></div>
+              </dl>
+              <ul id="tax-advisor-review-questions"></ul>
+            </section>
+            <label class="tax-chat-record-consent" for="tax-chat-record-unanswered">
+              <input id="tax-chat-record-unanswered" type="checkbox">
+              If TaxComp cannot answer from its notes, I agree to save this question for research. It will be visible only to administrators and deleted after 90 days. Do not include confidential information.
+            </label>
+            <p class="tax-chat-consent-withdrawal">If you later withdraw consent or want this record deleted sooner, TaxComp provides a reference and an email-draft option after saving. The email is not sent automatically; do not resend confidential information.</p>
+            <div class="tax-chat-form-footer">
+              <span>Up to 1,600 characters · Enter to send, Shift+Enter for a new line</span>
+              <button id="tax-chat-submit" type="submit">Send question <span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+          <div class="tax-chat-shortcuts" aria-label="Example chat questions">
+            <span>Try asking:</span>
+            <button type="button" data-chat-question="What are the VAT registration thresholds?">VAT thresholds</button>
+            <button type="button" data-chat-question="Which employment benefits can affect PAYE?">PAYE benefits</button>
+            <button type="button" data-chat-question="What should I check before claiming a tax treaty rate?">Tax treaties</button>
+            <button type="button" data-chat-question="How is wear-and-tear calculated by asset class?">Wear and tear</button>
+            <button type="button" data-chat-question="What did the Quickway input VAT case decide?">Tax case summary</button>
           </div>
         </div>
         <p class="tax-chat-status" id="tax-chat-status" aria-live="polite"></p>

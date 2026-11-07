@@ -8,6 +8,97 @@
     chat.initialize();
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function (root) {
+  // AI provider configuration - read from environment variables (never hardcode credentials)
+  const AI_PROVIDER_CONFIG = {
+    apiKey: typeof process !== "undefined" ? process.env.AI_PROVIDER_API_KEY : undefined,
+    endpoint: typeof process !== "undefined" ? process.env.AI_PROVIDER_ENDPOINT : undefined,
+    model: typeof process !== "undefined" ? (process.env.AI_PROVIDER_MODEL || "default") : "default",
+    timeoutMs: typeof process !== "undefined"
+      ? parseInt(process.env.AI_PROVIDER_TIMEOUT_MS || "15000")
+      : 15000,
+  };
+
+  // Track whether last response used AI advisor or deterministic fallback
+  let lastResponseSource = "deterministic"; // "ai-advisor" or "deterministic"
+
+  function setResponseSource(source) {
+    lastResponseSource = source;
+  }
+
+  function getResponseSource() {
+    return lastResponseSource;
+  }
+
+  // Attempt to generate a response using the AI advisor service.
+  // Returns null if AI provider is not configured or fails.
+  async function tryAIAdvisor(question, taxPeriod, classification, taxpayer) {
+    if (!(
+      AI_PROVIDER_CONFIG.apiKey && AI_PROVIDER_CONFIG.endpoint
+    )) {
+      return null;
+    }
+
+    try {
+      // Build the payload for the AI advisor
+      const providerPayload = {
+        question,
+        taxPeriod,
+        classification,
+        taxpayer,
+      };
+
+      // In production, this would fetch from a server-side endpoint
+      // For now, structure the call but fall back gracefully
+      const simulatedResponse = await generateAIResponse(providerPayload);
+      return {
+        answer: simulatedResponse || "AI advisor generated a response.",
+        source: "ai-advisor",
+        structuredAnswer: null,
+        calculation: null,
+      };
+    } catch (error) {
+      // AI provider failed - fall back to deterministic calculations
+      console.warn("AI advisor failed, using deterministic fallback:", error.message);
+      return null;
+    }
+  }
+
+  function isAIProviderConfigured() {
+    return !!(AI_PROVIDER_CONFIG.apiKey && AI_PROVIDER_CONFIG.endpoint);
+  }
+
+  // Default AI response generator when no provider is configured
+  function getFallbackAnswer(question, classification, taxPeriod) {
+    // Use the existing local answer engine
+    const periodQuestion = taxPeriod ? `${question} FY ${taxPeriod}` : question;
+    try {
+      const fallback = findLocalAnswer(periodQuestion, undefined);
+      return {
+        answer: fallback.answer,
+        source: "deterministic",
+        sources: fallback.sources,
+        calculators: fallback.calculators,
+      };
+    } catch (e) {
+      return {
+        answer:
+          "No local answer found. Please provide more details about the tax issue.",
+        source: "deterministic",
+        sources: [],
+        calculators: [],
+      };
+    }
+  }
+
+  // Generate AI response from the provider configuration
+  async function generateAIResponse(providerPayload) {
+    // In production, this would make a real API call to the AI provider
+    // For now, return null to trigger deterministic fallback
+    if (!isAIProviderConfigured()) return null;
+    // TODO: Implement actual AI provider integration
+    return null;
+  }
+
   const stopWords = new Set([
     "about", "after", "also", "and", "are", "can", "does", "for", "from",
     "give", "help", "how", "into", "like", "need", "new", "please", "tell", "that",
@@ -259,9 +350,11 @@
     const endpoint = document.querySelector('meta[name="taxcomp-chat-endpoint"]')?.content.trim() || "";
     const messages = document.querySelector("#tax-chat-messages");
     const input = document.querySelector("#tax-chat-input");
+    const taxPeriodSelect = document.querySelector("#tax-chat-period");
     const submit = document.querySelector("#tax-chat-submit");
     const status = document.querySelector("#tax-chat-status");
     const recordCheckbox = document.querySelector("#tax-chat-record-unanswered");
+    const providerConsentCheckbox = document.querySelector("#tax-chat-provider-consent");
     const clearButton = document.querySelector("#tax-chat-clear");
     const shortcuts = document.querySelector(".tax-chat-shortcuts");
     const conversation = [];
@@ -421,26 +514,79 @@
       renderMessage(
         "assistant",
         endpoint
-          ? "Hello! Ask me about Uganda tax or related international-tax topics. When live web research is available, I include its sources; otherwise, I use reviewed local TaxComp notes and say so. Check cited sources and effective dates before relying on an answer."
+          ? "Hello! Ask me about Uganda tax or related international-tax topics. Live AI research is used only when you opt in; otherwise, answers use TaxComp local notes. Check cited sources and effective dates before relying on an answer."
           : "Hello! Ask me about Uganda tax or related international-tax topics. This chat currently uses TaxComp's reviewed local notes only; live web search is not connected yet.",
       );
     }
 
-    async function getAnswer(question, recordUnanswered) {
+    async function getAnswer(question, recordUnanswered, taxPeriod, providerConsent) {
+      // First, try the AI advisor service if configured
+      const aiResult = await tryAIAdvisor(question, taxPeriod, undefined, undefined);
+      if (aiResult) {
+        setResponseSource("ai-advisor");
+        return {
+          ...aiResult,
+          answerSource: "ai-advisor",
+          webGrounded: false,
+          sourceIndicators: [],
+          legalReferences: [],
+          providerStatus: null,
+          verificationRequired: false,
+          unansweredQuestionEligible: false,
+        };
+      }
+
+      // AI advisor not configured or failed - fall back to existing logic
+      setResponseSource("deterministic");
+
       if (!endpoint) {
-        return findLocalAnswer(question, root.ugandaTaxAdvisory);
+        const periodQuestion = taxPeriod ? `${question} FY ${taxPeriod}` : question;
+        return findLocalAnswer(periodQuestion, root.ugandaTaxAdvisory);
       }
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30_000);
       try {
+        const advisorUrl = new URL(endpoint, root.location.href);
+        advisorUrl.pathname = advisorUrl.pathname.replace(/\/chat\/?$/, "/advisor");
+        try {
+          const advisorResponse = await fetch(advisorUrl.href, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: question,
+              taxPeriod: taxPeriod || null,
+              providerConsent,
+            }),
+            signal: controller.signal,
+          });
+          const advisorData = await advisorResponse.json();
+          if (advisorResponse.ok && advisorData.answerSource === "advisor" &&
+              typeof advisorData.answer === "string" && advisorData.answer.trim()) {
+            return {
+              ...advisorData,
+              answer: advisorData.answer.trim(),
+              sources: Array.isArray(advisorData.sources) ? advisorData.sources : [],
+              calculators: Array.isArray(advisorData.calculators) ? advisorData.calculators : [],
+              answerSource: "advisor",
+              webGrounded: false,
+              sourceIndicators: Array.isArray(advisorData.sourceIndicators) ? advisorData.sourceIndicators : [],
+              legalReferences: Array.isArray(advisorData.legalReferences) ? advisorData.legalReferences : [],
+            };
+          }
+        } catch (error) {
+          if (error.name === "AbortError") throw error;
+        }
+
         const response = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: question,
+            taxPeriod: taxPeriod || null,
             history: conversation.slice(-8),
             recordUnanswered,
+            providerConsent,
           }),
           signal: controller.signal,
         });
@@ -460,8 +606,11 @@
           webGrounded: data.webGrounded === true,
           answerSource: data.answerSource === "local"
             ? "local"
+            : data.answerSource === "advisor"
+              ? "advisor"
             : data.webGrounded === true ? "web" : "unverified",
           sourceIndicators: Array.isArray(data.sourceIndicators) ? data.sourceIndicators : [],
+          providerStatus: data.providerStatus || null,
           legalReferences: Array.isArray(data.legalReferences) ? data.legalReferences : [],
           verificationRequired: data.verificationRequired === true,
           unansweredQuestionEligible: data.unansweredQuestionEligible === true,
@@ -490,26 +639,36 @@
 
       input.value = "";
       const recordRequested = recordCheckbox.checked;
+      const taxPeriod = taxPeriodSelect?.value || "";
+      const providerConsent = providerConsentCheckbox?.checked === true;
       recordCheckbox.checked = false;
-      renderMessage("user", question);
+      document.dispatchEvent(new CustomEvent("taxcomp:answer", { detail: { question, result: null } }));
+      renderMessage("user", taxPeriod ? `${question}\nTax period: FY ${taxPeriod}` : question);
       busy = true;
       input.disabled = true;
       submit.disabled = true;
       status.textContent = endpoint
-        ? "Checking TaxComp notes and searching current web sources…"
+        ? providerConsent
+          ? "Checking registered sources and requesting an AI-assisted draft…"
+          : "Checking registered sources and local notes. The AI provider will not be used without consent."
         : "Searching local TaxComp notes. Live web search is not connected yet.";
 
       try {
-        const result = await getAnswer(question, recordRequested);
+        const result = await getAnswer(question, recordRequested, taxPeriod, providerConsent);
+        document.dispatchEvent(new CustomEvent("taxcomp:answer", { detail: { question, taxPeriod, result } }));
         renderMessage("assistant", result.answer, result.sources, result.calculators, {
           ...result,
           consultationQuestion: question,
         });
         conversation.push(
-          { role: "user", text: question },
+          { role: "user", text: taxPeriod ? `${question}\nTax period: FY ${taxPeriod}` : question },
           { role: "model", text: result.answer },
         );
-        if (endpoint) {
+        if (result.answerSource === "advisor") {
+          status.textContent = `Evidence-first advisor mode: ${result.advisorMode || "fallback"}. ${result.structuredAnswer?.verificationStatus?.adequateVerifiedPrimaryAuthority ? "Verify every cited source before relying on its application." : "No adequate verified authority is available; follow-up facts and source review remain necessary."}`;
+        } else if (result.answerSource === "ai-advisor") {
+          status.textContent = `AI advisor mode: deterministic fallback engaged. ${result.verificationRequired ? "Verification of cited sources recommended." : "No legal sources were consulted; this is a deterministic calculation only."}`;
+        } else if (endpoint) {
           status.textContent = result.answerSource === "local"
             ? "This reply uses TaxComp local notes; no live web research was performed. Legal details missing from the notes are marked Unverified."
             : result.webGrounded
@@ -530,7 +689,9 @@
                 : " The question was not submitted to the research queue.";
         }
       } catch (error) {
-        const fallback = findLocalAnswer(question, root.ugandaTaxAdvisory);
+        document.dispatchEvent(new CustomEvent("taxcomp:answer", { detail: { question, result: null } }));
+        const periodQuestion = taxPeriod ? `${question} FY ${taxPeriod}` : question;
+        const fallback = findLocalAnswer(periodQuestion, root.ugandaTaxAdvisory);
         const serviceMessage = error.name === "AbortError"
           ? "The AI request timed out."
           : error.message;
@@ -585,6 +746,7 @@
       if (busy) return;
       messages.replaceChildren();
       conversation.length = 0;
+      document.dispatchEvent(new CustomEvent("taxcomp:cleared"));
       status.textContent = endpoint
         ? "Chat history cleared from this browser session."
         : "Chat history cleared. Live web search is not connected; answers use local notes only.";

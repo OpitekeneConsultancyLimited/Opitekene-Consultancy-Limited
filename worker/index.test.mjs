@@ -23,6 +23,27 @@ test("retrieves scoped international-tax notes and relevant references", () => {
   assert.ok(transferPricing.sources.some((source) => source.url.includes("transfer-pricing")));
 });
 
+test("Phase 6 API is routed through authentication at the Worker entry point", async () => {
+  const response = await handleRequest(request(undefined, {
+    path: "/api/phase6/clients",
+    method: "GET",
+  }), {
+    ...env,
+    PHASE6_OPERATIONS_ENABLED: "true",
+    PHASE6_SECURITY_REVIEWED: "true",
+    PHASE6_DATA_AT_REST_REVIEWED: "true",
+    PHASE6_BACKUP_RESTORE_VERIFIED: "true",
+    UNANSWERED_QUESTIONS: {
+      prepare: () => { throw new Error("Unauthenticated request must not query the database."); },
+      batch: async () => { throw new Error("Unauthenticated request must not write the database."); },
+    },
+  });
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error, "Authentication required.");
+  assert.equal(response.headers.get("Cache-Control"), "no-store, private");
+});
+
 test("does not apply current-period notes to an unrepresented historical financial year", () => {
   const historical = retrieveKnowledge(
     "What were the VAT registration thresholds for FY 2020/21?",
@@ -38,17 +59,212 @@ test("does not apply current-period notes to an unrepresented historical financi
   assert.ok(current.guidance.some((item) => item.title === "VAT registration thresholds"));
 });
 
+test("scopes the Worker fallback to the user-selected historical tax period", async () => {
+  const response = await handleRequest(
+    request({ message: "What are the VAT registration thresholds?", taxPeriod: "2020/21" }),
+    { ...env, GEMINI_API_KEY: "" },
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.webGrounded, false);
+  assert.match(body.answer, /FY 2020\/21/);
+  assert.match(body.answer, /could not find a reviewed TaxComp local note/i);
+});
+
 function request(body, options = {}) {
-  return new Request("https://worker.example/chat", {
+  return new Request(`https://worker.example${options.path || "/chat"}`, {
     method: options.method || "POST",
     headers: {
       Origin: options.origin || origin,
       "Content-Type": options.contentType || "application/json",
       "CF-Connecting-IP": "192.0.2.1",
+      ...(options.authorization ? { Authorization: options.authorization } : {}),
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify({ providerConsent: true, ...body }),
   });
 }
+
+function legalSourceDatabase() {
+  const records = new Map();
+  const audit = [];
+  return {
+    records,
+    audit,
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async run() {
+              if (sql.includes("INSERT INTO legal_sources")) {
+                const [sourceId, recordJson, status, reviewHistoryJson, createdAt, updatedAt] = values;
+                if (records.has(sourceId)) throw new Error("duplicate source");
+                records.set(sourceId, { sourceId, recordJson, status, reviewHistoryJson, createdAt, updatedAt });
+              } else if (sql.includes("UPDATE legal_sources")) {
+                const [recordJson, status, reviewHistoryJson, updatedAt, sourceId] = values;
+                const current = records.get(sourceId);
+                if (!current || current.status !== "pending-review") return { meta: { changes: 0 } };
+                records.set(sourceId, { ...current, recordJson, status, reviewHistoryJson, updatedAt });
+              } else if (sql.includes("INSERT INTO legal_source_audit")) {
+                const [id, sourceId, action, actor, notes, createdAt] = values;
+                audit.push({ id, sourceId, action, actor, notes, createdAt });
+              }
+              return { meta: { changes: 1 } };
+            },
+            async first() {
+              const row = records.get(values[0]);
+              return row ? { ...row, reviewHistoryJson: row.reviewHistoryJson } : null;
+            },
+          };
+        },
+        async all() {
+          return { results: [...records.values()].map((row) => ({ ...row })) };
+        },
+      };
+    },
+  };
+}
+
+function sourceFixture(overrides = {}) {
+  return {
+    sourceId: "vat-act-section-27",
+    sourceType: "legislation",
+    title: "Fixture Value Added Tax Act",
+    issuingAuthority: "Parliament of Uganda",
+    legislation: "Fixture Value Added Tax Act",
+    provision: "Section 27",
+    publicationDate: "2024-01-01",
+    effectiveDate: "2024-07-01",
+    endDate: null,
+    applicableTaxPeriods: ["2024/25", "2025/26"],
+    officialSourceUrl: "https://example.invalid/vat-act-section-27",
+    documentReference: "Fixture legislative copy, section 27",
+    verificationStatus: "verified",
+    lastVerificationDate: "2026-01-15",
+    reviewer: "Untrusted incoming reviewer",
+    relatedTaxHeads: ["value-added-tax"],
+    ruleIds: [],
+    primaryAuthority: true,
+    keywords: ["input tax", "credit"],
+    ...overrides,
+  };
+}
+
+test("advisor route returns source-checked structured fallback and downloadable reports", async () => {
+  const response = await handleRequest(request({
+    message: "Can I claim input VAT on this purchase?",
+    taxPeriod: "2025/26",
+    providerConsent: false,
+  }, { path: "/advisor" }), { ...env, GEMINI_API_KEY: "" });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.answerSource, "advisor");
+  assert.equal(body.providerStatus, "not-configured");
+  assert.equal(body.advisorMode, "fallback-provider-not-configured");
+  assert.equal(body.structuredAnswer.taxPeriod, "2025/26");
+  assert.ok(body.clarification.missingFacts.length > 0);
+  assert.equal(body.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority, false);
+  assert.match(body.answer, /No adequate verified primary authority/);
+  assert.match(body.reportHtml, /not a formal legal opinion/i);
+  assert.match(body.citationCsv, /Citation ID/);
+});
+
+test("legal-source ingestion is authenticated and forces pending-review before admin approval", async () => {
+  const database = legalSourceDatabase();
+  const adminEnv = { ...env, UNANSWERED_QUESTIONS: database, ADMIN_DASHBOARD_TOKEN: testAdminToken };
+  const draftResponse = await handleRequest(request({
+    record: sourceFixture(),
+    submittedBy: "Admin reviewer",
+  }, {
+    path: "/admin/legal-sources/api",
+    method: "POST",
+    authorization: `Bearer ${testAdminToken}`,
+  }), adminEnv);
+  const draftBody = await draftResponse.json();
+
+  assert.equal(draftResponse.status, 201);
+  assert.equal(draftBody.source.verificationStatus, "pending-review");
+  assert.equal(draftBody.source.reviewer, null);
+
+  const updatedDraftResponse = await handleRequest(request({
+    updatedBy: "Admin reviewer",
+    updates: { title: "Reviewed fixture title", sourceId: "forged-id", verificationStatus: "verified" },
+  }, {
+    path: "/admin/legal-sources/vat-act-section-27",
+    method: "PUT",
+    authorization: `Bearer ${testAdminToken}`,
+  }), adminEnv);
+  const updatedDraft = await updatedDraftResponse.json();
+  assert.equal(updatedDraftResponse.status, 200, JSON.stringify(updatedDraft));
+  assert.equal(updatedDraft.source.sourceId, "vat-act-section-27");
+  assert.equal(updatedDraft.source.verificationStatus, "pending-review");
+  assert.equal(updatedDraft.source.title, "Reviewed fixture title");
+
+  const review = await handleRequest(request({
+    decision: "verified",
+    reviewer: "Legal reviewer",
+    reviewDate: "2026-11-02",
+    notes: "Compared to official document and checked the effective period.",
+  }, {
+    path: "/admin/legal-sources/vat-act-section-27/review",
+    authorization: `Bearer ${testAdminToken}`,
+  }), adminEnv);
+  const reviewBody = await review.json();
+  assert.equal(review.status, 200);
+  assert.equal(reviewBody.source.verificationStatus, "verified");
+  assert.equal(database.audit.length, 3);
+
+  const advisorResponse = await handleRequest(request({
+    message: "Can I claim input VAT on this purchase?",
+    taxPeriod: "2025/26",
+    providerConsent: false,
+  }, { path: "/advisor" }), { ...adminEnv, GEMINI_API_KEY: "" });
+  const advisorBody = await advisorResponse.json();
+  assert.equal(advisorResponse.status, 200);
+  assert.equal(advisorBody.structuredAnswer.verificationStatus.adequateVerifiedPrimaryAuthority, true);
+  assert.ok(advisorBody.citations.some((citation) => citation.sourceId === "vat-act-section-27"));
+
+  const unauthenticated = await handleRequest(request(undefined, {
+    path: "/admin/legal-sources/api",
+    method: "GET",
+  }), adminEnv);
+  assert.equal(unauthenticated.status, 401);
+  const loginPage = await handleRequest(request(undefined, {
+    path: "/admin/legal-sources",
+    method: "GET",
+  }), adminEnv);
+  assert.equal(loginPage.status, 200);
+  assert.match(await loginPage.text(), /Legal source review/);
+});
+
+test("advisor handles missing provider credentials and provider errors without exposing drafts", async () => {
+  const missingCredentials = await handleRequest(request({
+    message: "What VAT treatment applies to this purchase?",
+    providerConsent: true,
+  }, { path: "/advisor" }), { ...env, GEMINI_API_KEY: "" });
+  const missingBody = await missingCredentials.json();
+  assert.equal(missingBody.providerStatus, "not-configured");
+  assert.equal(missingBody.advisorMode, "fallback-provider-not-configured");
+
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    error: { status: "UNAUTHENTICATED", message: "sensitive provider diagnostic" },
+  }), { status: 401 });
+  try {
+    const failed = await handleRequest(request({
+      message: "What VAT treatment applies to this purchase?",
+      providerConsent: true,
+    }, { path: "/advisor" }), env);
+    const body = await failed.json();
+    assert.equal(body.providerStatus, "unavailable");
+    assert.equal(body.providerDraft, undefined);
+    assert.doesNotMatch(JSON.stringify(body), /sensitive provider diagnostic/);
+    assert.match(body.answer, /No adequate verified primary authority/);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
 
 test("handles preflight only for the configured TaxComp origin", async () => {
   const response = await handleRequest(
@@ -74,6 +290,15 @@ test("rejects malformed requests and keeps unrelated questions in scope", async 
     const invalid = await handleRequest(request({ message: "" }), env);
     assert.equal(invalid.status, 400);
 
+    const invalidPeriod = await handleRequest(request({ message: "VAT", taxPeriod: "2025/27" }), env);
+    assert.equal(invalidPeriod.status, 400);
+
+    const wrongPeriodType = await handleRequest(request({ message: "VAT", taxPeriod: 202526 }), env);
+    assert.equal(wrongPeriodType.status, 400);
+
+    const wrongConsentType = await handleRequest(request({ message: "VAT", providerConsent: "yes" }), env);
+    assert.equal(wrongConsentType.status, 400);
+
     const wrongType = await handleRequest(
       request({ message: "VAT" }, { contentType: "text/plain" }),
       env,
@@ -83,6 +308,29 @@ test("rejects malformed requests and keeps unrelated questions in scope", async 
     const unrelated = await handleRequest(request({ message: "weather tomorrow" }), env);
     assert.equal(unrelated.status, 200);
     assert.match((await unrelated.json()).answer, /Uganda tax/i);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test("does not call Gemini or send history without explicit provider consent", async () => {
+  const previousFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    throw new Error("No provider request is allowed without consent.");
+  };
+  try {
+    const response = await handleRequest(request({
+      message: "VAT threshold",
+      providerConsent: false,
+      history: [{ role: "user", text: "Private prior context" }],
+    }), env);
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(calls, 0);
+    assert.equal(body.providerStatus, "consent-required");
+    assert.equal(body.sourceIndicators.find((item) => item.kind === "ai_provider").used, false);
   } finally {
     globalThis.fetch = previousFetch;
   }
