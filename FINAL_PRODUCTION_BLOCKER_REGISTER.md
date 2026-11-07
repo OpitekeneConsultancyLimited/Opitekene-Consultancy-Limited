@@ -18,7 +18,7 @@ Overall: **NOT PRODUCTION-READY. Do not enable client-data operations or commerc
 | PAY-2 | Invoices/refunds and live billing approval | **BLOCKED** | Validate invoice requirements, complete sandbox refunds/cancellations, obtain commercial/legal authorization. No live billing is active. |
 | LEG-1 | Uganda primary legal sources and provisions | **BLOCKED** | `LEGAL_REVIEW_REGISTER.md` lists all 43 current rule records; official source/provision/amendments and qualified reviewer are missing for every row. |
 | LEG-2 | Tax-year and computation approval | **AWAITING EXTERNAL APPROVAL** | Qualified Ugandan reviewer must verify each rule's period, applicability, amendments, methodology and approval history. |
-| REL-1 | Source-controlled release candidate | **BLOCKED** | Workspace has no Git metadata; create/review a source-controlled immutable revision and independently reproduce test/build evidence. |
+| REL-1 | Source-controlled release candidate | **PASSED WITH LIMITATIONS** | Non-production branch and direct-child commit created; unsigned annotated tag and SHA-256 inventory added. No signed tag or protected-tag policy was verified. |
 | REL-2 | Production deployment and launch approval | **BLOCKED** | Keep deployment gates closed until all mandatory security, operations, legal and commercial criteria pass. |
 
 ## Closed locally (not production acceptance)

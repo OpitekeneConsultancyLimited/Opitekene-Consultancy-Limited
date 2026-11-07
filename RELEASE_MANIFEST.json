@@ -10,7 +10,10 @@
   "candidate": {
     "branch": "release-candidate/2026-11-07-production-gate",
     "tag": "taxcomp-2.0.0-rc.1",
-    "deploymentAuthorized": false
+    "deploymentAuthorized": false,
+    "sourceCommit": "fe27d7231d7774da7448a252aa1599b83395ff2e",
+    "sourceTree": "05cfbc828ab7194e8d3454ee9301a9871ab93f12",
+    "tagIsSigned": false
   },
   "verification": {
     "javascriptAndWorker": "299 passed, 0 failed",
@@ -20,7 +23,7 @@
     "workerDryRun": "passed"
   },
   "releaseGates": {
-    "sourceIntegrity": "awaiting candidate ref and tag verification",
+    "sourceIntegrity": "candidate branch and source commit verified; tag is unsigned",
     "atRestEncryptionAndKeyRotation": "blocked",
     "independentSecurityScans": "blocked",
     "stagingD1MigrationAndRollback": "blocked",

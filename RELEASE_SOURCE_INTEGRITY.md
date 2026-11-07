@@ -1,7 +1,7 @@
 # Release source integrity
 
 Date: 2026-11-07  
-Status: **BLOCKED for an immutable candidate until the remote candidate ref is created**
+Status: **PASSED for source-controlled candidate commit; final tag points to the metadata-complete revision**
 
 ## Verified production source
 
@@ -10,7 +10,7 @@ Status: **BLOCKED for an immutable candidate until the remote candidate ref is c
 - Confirmed commit tree: `b84f7ae87890464b0747c474e4ef6409baabf3aa`
 - Read-only GitHub branch check reports `main` at the confirmed commit.
 - The production D1 inventory was read only; migrations 0004–0006 remain pending.
-- Git is not installed in this workspace and the project directory contains no `.git`. Therefore no local Git diff, local branch, commit or tag can be created or verified here.
+- Git is not installed in this workspace and the project directory contains no `.git`; the candidate commit was created through GitHub's Git Data API from the verified production tree.
 
 ## Local comparison and restoration
 
@@ -25,10 +25,13 @@ The full Node suite was rerun with these files included: 299 passed, 0 failed. N
 
 ## Candidate provenance
 
-The candidate is intended to be a child of the confirmed production commit, with only the local candidate additions/updates overlaid. The repository's Pages workflow deploys pushes to `main` only; creating a separate release-candidate branch does not match that trigger. The immutable candidate revision and tag must be recorded here after creation. Until the branch/tag is actually created and independently inspected, this file does not claim that a release commit exists.
+The release-candidate branch points to commit `fe27d7231d7774da7448a252aa1599b83395ff2e` (tree `05cfbc828ab7194e8d3454ee9301a9871ab93f12`), whose sole parent is the confirmed production commit above. The commit overlays 52 source and evidence files and performs no deletions. The final annotated tag `taxcomp-2.0.0-rc.1` points to the metadata-complete candidate revision; the tag is unsigned and no protected-tag policy was configured. The commit content is content-addressed, but the tag is not a cryptographic signature or proof of protected-ref immutability.
+
+The Pages deployment workflow is restricted to `main`; this candidate branch does not trigger it. The CodeQL workflow in this candidate is not on the default branch and the candidate branch does not match its `push` trigger, so no CodeQL run is claimed.
 
 ## Exclusions and cautions
 
-- Four Python bytecode files present in the remote tree were absent locally; they are not source and are not copied as new candidate content. A tree-based candidate should preserve them unless a separate reviewed cleanup is approved.
+- Four Python bytecode files present in the remote tree were absent locally; they were retained from the base tree and not deleted.
 - No local Git history was synthesized.
 - No production deployment, remote D1 migration, analytics enablement or billing activation occurred.
+- `RELEASE_MANIFEST.json` and `RELEASE_CHECKSUMS.txt` provide release metadata and SHA-256 digests; the checksum list excludes itself to avoid self-reference.

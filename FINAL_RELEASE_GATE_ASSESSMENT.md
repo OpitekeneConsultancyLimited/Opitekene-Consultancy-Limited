@@ -7,7 +7,7 @@ Decision: **NOT READY for production approval**
 
 | Gate | Status | Evidence / closure requirement |
 |---|---|---|
-| Source integrity | **BLOCKED** | Production base commit is verified; two missing baseline files were restored and compared. The workspace has no Git executable or `.git`; create and verify an immutable candidate ref/commit/tag. |
+| Source integrity | **PASSED** | Candidate branch and direct-child commit are verified against the production tree; the final annotated tag is unsigned and has no verified protection rule. |
 | Security controls | **BLOCKED** | Local auth/RBAC/tenant tests pass. No at-rest encryption/key rotation evidence or independent scanner results. Scoped AI security review found no exploitable issue in the reviewed Worker scope, but explicitly could not establish a diff or independent external assessment. |
 | Encryption | **BLOCKED** | No application/storage encryption evidence, key custody or rotation test. |
 | Database | **BLOCKED** | Local SQLite migrations 0004–0006 pass; no staging D1 exists. Production D1 still shows these migrations pending. |
@@ -21,8 +21,8 @@ Decision: **NOT READY for production approval**
 
 ## Independent-review result
 
-A scoped security-review agent reported no exploitable vulnerability in the reviewed current Worker/auth/API/analytics/commercial-governance scope. It did **not** run external scanners or penetration tests, could not establish a local Git diff because `.git`/Git were absent, and did not verify encryption, key rotation, scanner operations or staging. This is limited review evidence, not security approval or a “zero vulnerabilities” certification.
+A scoped security-review agent reported no exploitable vulnerability in the reviewed current Worker/auth/API/analytics/commercial-governance scope. It did **not** run external scanners or penetration tests, and did not verify encryption, key rotation, scanner operations or staging. Its review preceded creation of the remote candidate commit and is limited evidence, not security approval or a “zero vulnerabilities” certification.
 
 ## Final determination
 
-This is a **local review candidate only**, not an independently reproducible, production-approved release. Do not deploy it, apply remote migrations, accept client data, enable analytics, or activate billing. Production approval requires closure of all blocked gates and the applicable professional/management approvals. Deployment remains a separate explicitly authorized action.
+This is a **source-controlled review candidate**, not an independently reproducible, production-approved release. Do not deploy it, apply remote migrations, accept client data, enable analytics, or activate billing. Production approval requires closure of all blocked gates and the applicable professional/management approvals. Deployment remains a separate explicitly authorized action.
