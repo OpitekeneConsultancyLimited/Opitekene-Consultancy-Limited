@@ -24,7 +24,7 @@ Candidate: **source-controlled review candidate; not deployable or production-ap
 | Analytics privacy unit tests | **PASSED** | Allowlisted aggregate service; not wired to production sources, and flag remains false. |
 | Payment sandbox | **BLOCKED** | No provider or sandbox credentials. |
 | At-rest encryption / key rotation | **BLOCKED** | No cryptographic or provider configuration evidence. |
-| Candidate CI and CodeQL | **IN PROGRESS** | Candidate workflows run on branch pushes. RC4 closed the two JavaScript alerts but left two high and two medium Python alerts; RC5 includes a MIME allowlist fix and needs a fresh CodeQL/alert-state check. Independent vulnerability scans remain blocked. |
+| Candidate CI and CodeQL | **PASSED on RC5** | RC5 candidate validation and CodeQL succeeded; CodeQL reports zero open alerts across both languages. Independent vulnerability scans remain blocked; the RC6 evidence-only workflow rerun is pending. |
 | Legal source approval | **BLOCKED** | 43 executable rules remain pending primary-source verification; register is not an approval. |
 | Production readiness | **BLOCKED** | Multiple mandatory approvals and provider/staging tests remain outstanding. |
 

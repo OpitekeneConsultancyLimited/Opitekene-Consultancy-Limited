@@ -16,7 +16,7 @@ Status: **BLOCKED for production acceptance**
 | Secrets management | PARTIAL | Gemini/Admin credentials are Cloudflare Worker secrets and not in `wrangler.toml`. Phase 6 bootstrap/email secrets and R2/scanner bindings are absent. |
 | At-rest encryption and key rotation | BLOCKED | No application envelope encryption, customer-managed key, key rotation procedure, or independent verification was provided. Do not store real client information. |
 | Backup, retention and full restore | BLOCKED | Local SQLite backup/restore test passed; there is no configured/verified production D1 backup schedule, retention policy, integrity check, or live restoration exercise. |
-| Dependency/code scanning | BLOCKED pending retest and external scan | RC4 CodeQL identified two high and two medium Python alerts after closing the RC3 JavaScript alerts; RC5 changes replace path-derived MIME values with fixed types. Dependabot alerts are disabled; no dependency manifests/lockfiles were found. |
+| Dependency/code scanning | CodeQL PASSED; external scan BLOCKED | RC5 CodeQL passed with zero open alerts after fixing six historical findings. Independent vulnerability scans remain outstanding; Dependabot alerts are disabled and no dependency manifests/lockfiles were found. |
 | Critical/high vulnerability assessment | BLOCKED | No independent penetration test or complete SAST/dependency scan result is available. No zero-findings claim is made. |
 
 ## Files changed or relied upon
