@@ -8,7 +8,7 @@ Decision: **NOT READY for production approval**
 | Gate | Status | Evidence / closure requirement |
 |---|---|---|
 | Source integrity | **PASSED** | Candidate branch and direct-child commit are verified against the production tree; the final annotated tag is unsigned and has no verified protection rule. |
-| Security controls | **BLOCKED** | Local auth/RBAC/tenant tests pass. No at-rest encryption/key rotation evidence or independent scanner results. Scoped AI security review found no exploitable issue in the reviewed Worker scope, but explicitly could not establish a diff or independent external assessment. |
+| Security controls | **BLOCKED** | Local auth/RBAC/tenant tests pass. Candidate CodeQL is enabled but must pass on the final tag. No at-rest encryption/key rotation evidence or independent scanner results. Scoped AI security review found no exploitable issue in the reviewed Worker scope, but this is not independent security approval. |
 | Encryption | **BLOCKED** | No application/storage encryption evidence, key custody or rotation test. |
 | Database | **BLOCKED** | Local SQLite migrations 0004–0006 pass; no staging D1 exists. Production D1 still shows these migrations pending. |
 | Backup / disaster recovery | **BLOCKED** | Local synthetic SQLite restore passed; no automated D1 backup, isolated D1 restore, approved RPO/RTO, or disaster drill. |
