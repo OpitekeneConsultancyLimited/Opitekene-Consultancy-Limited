@@ -14,7 +14,7 @@ Status: **PARTIAL REVIEW — independent audit and automated scans pending**
 - Worker responses include content-security policy, nosniff, frame denial and referrer policy in reviewed paths. Live Pages HEAD response included HSTS.
 - Gemini/Admin keys are configured as Worker secrets; they are not stored in `wrangler.toml`.
 - Phase 6 production API currently returns 503 because approval flags are unset.
-- Candidate CodeQL run 42452241675 completed for RC3 and found two high and two medium alerts; candidate fixes are present in RC4 but not yet retested.
+- RC3 CodeQL found two high and two medium alerts. RC4 closed the two JavaScript alerts but left two high and two medium Python alerts; RC5 remediates the path-derived MIME values and is awaiting retest.
 
 ## Findings and blockers
 
@@ -22,7 +22,7 @@ Status: **PARTIAL REVIEW — independent audit and automated scans pending**
 |---|---|---|---|
 | 1 | HIGH | At-rest encryption strategy, application/key ownership, key rotation and evidence are not established for sensitive client records. | BLOCKED before client data |
 | 2 | HIGH | Production D1 backup schedule, retention, integrity verification and real restore exercise are absent. | BLOCKED before client data |
-| 3 | HIGH | Independent assessment and dependency scan remain unavailable. RC3 CodeQL found two high and two medium alerts; RC4 remediations await retest. | BLOCKED for security sign-off |
+| 3 | HIGH | Independent assessment and dependency scan remain unavailable. RC4 CodeQL left two high and two medium Python alerts; RC5 remediation awaits retest. | BLOCKED for security sign-off |
 | 4 | MEDIUM | Phase 6 has no configured production bootstrap/email/R2/scanner service bindings and its API is disabled. | Intentionally fail-closed |
 | 5 | MEDIUM | Phase 10 telemetry ingestion/retention/access flow is incomplete and analytics remains disabled. | Not active |
 | 6 | MEDIUM | Billing endpoints/provider verification/replay protection and entitlement enforcement are not implemented. | Not active |
@@ -32,9 +32,9 @@ These are readiness findings, not a claim that the listed conditions are remotel
 ## Tests and scans
 
 - Auth/API/migration-related tests included in complete suite: JS/Worker 301 passed, Python 17 passed.
-- CodeQL: RC3 run completed with four findings; RC4 fixes require re-analysis.
+- CodeQL: RC4 run completed with four open Python findings; RC5 requires re-analysis.
 - Dependabot: API reports alerts disabled for the repository.
-- Code scanning: CodeQL RC3 run available; no clean RC4 result yet.
+- Code scanning: no clean RC5 result yet.
 - At-rest encryption and production restore: not verified.
 
 ## Required actions

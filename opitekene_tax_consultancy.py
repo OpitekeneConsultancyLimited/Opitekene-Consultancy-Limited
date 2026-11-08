@@ -18,7 +18,6 @@ from urllib.parse import unquote, urlsplit
 from urllib.request import Request, urlopen
 import argparse
 import json
-import mimetypes
 import re
 import stat
 import webbrowser
@@ -385,16 +384,38 @@ def apply_mobile_fixes(site_files):
 
 
 def response_content_type(path):
-    if path.endswith(".webmanifest"):
+    suffix = PurePosixPath(path).suffix.lower()
+    if suffix == ".webmanifest":
         return "application/manifest+json"
-
-    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
-    if not re.fullmatch(
-        r"[A-Za-z0-9!#$%&'*+.^_`|~-]+/[A-Za-z0-9!#$%&'*+.^_`|~-]+",
-        content_type,
-    ):
-        return "application/octet-stream"
-    return content_type
+    if suffix in {".html", ".htm"}:
+        return "text/html"
+    if suffix == ".css":
+        return "text/css"
+    if suffix in {".js", ".mjs"}:
+        return "application/javascript"
+    if suffix == ".json":
+        return "application/json"
+    if suffix == ".xml":
+        return "application/xml"
+    if suffix == ".svg":
+        return "image/svg+xml"
+    if suffix == ".png":
+        return "image/png"
+    if suffix in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if suffix == ".gif":
+        return "image/gif"
+    if suffix == ".webp":
+        return "image/webp"
+    if suffix == ".ico":
+        return "image/x-icon"
+    if suffix == ".woff2":
+        return "font/woff2"
+    if suffix == ".woff":
+        return "font/woff"
+    if suffix == ".pdf":
+        return "application/pdf"
+    return "application/octet-stream"
 
 
 def make_handler(site_files):

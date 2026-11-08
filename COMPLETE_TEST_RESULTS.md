@@ -22,5 +22,5 @@ Test coverage included tax calculators, rules, international-tax and multi-tax a
 - No production database migrations were run.
 - The initial Worker dry run reported duplicate object keys (one in `tax-advisory.js`, one in `worker/phase6-api.mjs`); both duplicates were removed without changing behavior. The final dry run passed with those warnings cleared; Wrangler still reports its existing experimental `unsafe` configuration warning.
 - No payment sandbox tests were possible; no provider is configured.
-- CodeQL ran on RC3 and reported two high and two medium alerts; the RC4 candidate changes remediate the flagged code paths. A fresh CodeQL run on RC4 is required before claiming that these alerts are resolved. Independent scanner CLIs remain unavailable, and no project dependency manifest/lockfile was found.
+- CodeQL ran on RC3 and RC4 and identified Python alert paths still requiring remediation; RC5 replaces path-derived content types with fixed values. A fresh RC5 CodeQL run is required before claiming those alerts are resolved. Independent scanner CLIs remain unavailable, and no project dependency manifest/lockfile was found.
 - The candidate is not deployed. Production `main` remains at `6572ba8dbc693dc827bf3cb561f5656bbc41bc86`; no production deployment occurred.

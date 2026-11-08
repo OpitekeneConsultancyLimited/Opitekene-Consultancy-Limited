@@ -30,7 +30,7 @@ The current production-readiness command supersedes the earlier Phase 8-11 taxon
 - **Phase 10:** Operational analytics remain disabled; a privacy-minimized ingestion/retention contract is locally tested but not wired to API event sources or a scheduled job. Admin reporting and privacy approval remain outstanding.
 - **Phase 11:** Configurable plan/entitlement helpers and a provider interface are local foundations only; they are not integrated with billing APIs or persisted lifecycle.
 - **Phase 12:** No tax source is filing-approved without qualified review. Catalog completeness and legal accuracy remain unestablished.
-- Latest complete local verification: JavaScript/Worker 301/301 and Python 17/17 passed; focused security/API suite 28/28 and migration/restore suite 9/9 passed. The RC3 CodeQL run found four alerts; remediation is pending fresh RC4 verification. These tests do not satisfy external deployment, legal, privacy, security, or payment-provider acceptance gates.
+- Latest complete local verification: JavaScript/Worker 301/301 and Python 17/17 passed; focused security/API suite 28/28 and migration/restore suite 9/9 passed. RC4 CodeQL left two high and two medium Python alerts after closing two JavaScript alerts; RC5 remediation awaits a fresh scan. These tests do not satisfy external deployment, legal, privacy, security, or payment-provider acceptance gates.
 
 ## Phase 6 - Step 1 domain contracts
 

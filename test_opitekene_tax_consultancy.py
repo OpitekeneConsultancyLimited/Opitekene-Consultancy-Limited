@@ -30,6 +30,8 @@ class SmartLauncherTests(unittest.TestCase):
         malicious_path = "page.html\r\nX-Injected: yes"
         self.assertEqual(consultancy_content_type(malicious_path), "application/octet-stream")
         self.assertEqual(get_taxcomp_content_type(malicious_path), "application/octet-stream")
+        self.assertEqual(consultancy_content_type("index.html"), "text/html")
+        self.assertEqual(get_taxcomp_content_type("site.css"), "text/css")
         self.assertEqual(consultancy_content_type("manifest.webmanifest"), "application/manifest+json")
 
 
