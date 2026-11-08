@@ -9,8 +9,8 @@
   },
   "candidate": {
     "branch": "release-candidate/2026-11-07-production-gate",
-    "tag": "taxcomp-2.0.0-rc.6",
-    "supersedesTag": "taxcomp-2.0.0-rc.5",
+    "tag": "taxcomp-2.0.0-rc.7",
+    "supersedesTag": "taxcomp-2.0.0-rc.6",
     "deploymentAuthorized": false,
     "foundationCommit": "fe27d7231d7774da7448a252aa1599b83395ff2e",
     "foundationTree": "05cfbc828ab7194e8d3454ee9301a9871ab93f12",
@@ -26,8 +26,8 @@
   "releaseGates": {
     "sourceIntegrity": "candidate branch and source commit verified; tag is unsigned",
     "atRestEncryptionAndKeyRotation": "blocked",
-    "candidateValidationWorkflow": "RC5 passed; RC6 documentation-only rerun pending",
-    "candidateCodeQLWorkflow": "RC5 passed; zero open alerts; RC6 documentation-only rerun pending",
+    "candidateValidationWorkflow": "RC6 passed; RC7 evidence-only rerun pending",
+    "candidateCodeQLWorkflow": "RC6 passed; zero open alerts; RC7 evidence-only rerun pending",
     "independentSecurityScans": "blocked",
     "stagingD1MigrationAndRollback": "blocked",
     "providerBackupAndFullRestore": "blocked",

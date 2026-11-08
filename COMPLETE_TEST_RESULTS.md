@@ -18,11 +18,11 @@ Test coverage included tax calculators, rules, international-tax and multi-tax a
 
 ## Limits of this evidence
 
-Candidate CI on RC5 passed: [validation workflow](https://github.com/OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited/actions/runs/42459184193) and [CodeQL workflow](https://github.com/OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited/actions/runs/42459184299). RC6 only updates evidence and awaits its candidate-only CI rerun.
+Candidate CI on RC6 passed: [validation workflow](https://github.com/OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited/actions/runs/42459982299) and [CodeQL workflow](https://github.com/OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited/actions/runs/42459982413). RC7 only updates evidence and awaits its candidate-only CI rerun.
 
 - Tests are local and use synthetic data/fakes or SQLite; they do not prove tax-law accuracy, Cloudflare D1 staging behavior, encryption at rest, performance under concurrency, production backup restoration, wired analytics, or payment-provider behavior.
 - No production database migrations were run.
 - The initial Worker dry run reported duplicate object keys (one in `tax-advisory.js`, one in `worker/phase6-api.mjs`); both duplicates were removed without changing behavior. The final dry run passed with those warnings cleared; Wrangler still reports its existing experimental `unsafe` configuration warning.
 - No payment sandbox tests were possible; no provider is configured.
-- CodeQL run 42459184299 passed on RC5 for Python and JavaScript/TypeScript; the repository reports six historical findings fixed and zero open alerts. Independent scanner CLIs remain unavailable, and no project dependency manifest/lockfile was found.
+- CodeQL run 42459982413 passed on RC6 for Python and JavaScript/TypeScript; the repository reports six historical findings fixed and zero open alerts. Independent scanner CLIs remain unavailable, and no project dependency manifest/lockfile was found.
 - The candidate is not deployed. Production `main` remains at `6572ba8dbc693dc827bf3cb561f5656bbc41bc86`; no production deployment occurred.

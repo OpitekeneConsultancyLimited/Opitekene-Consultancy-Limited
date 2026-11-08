@@ -2,10 +2,10 @@
 
 ## 2026-11-08 - Candidate security remediation
 
-- RC4 CodeQL closed the two JavaScript findings but reported additional Python findings. Replaced path-derived MIME values with a static allowlist in RC5; RC5 CodeQL passed for both languages with zero open alerts.
+- RC4 CodeQL closed the two JavaScript findings but reported additional Python findings. Replaced path-derived MIME values with a static allowlist in RC5; RC6 CodeQL passed for both languages with zero open alerts.
 - Added candidate-branch validation and CodeQL workflows without changing the Pages deployment trigger.
 - Addressed the four RC3 CodeQL findings: cryptographic user IDs and bcrypt-only fail-closed password helpers in the legacy prototype, safe dashboard-script syntax checking, and validated MIME response headers in both Python launcher variants.
-- Local regression now passes: JavaScript/Worker 301/301, Python 17/17, focused security/API/analytics/subscription 28/28, migration/restore 9/9. RC5 candidate CI and CodeQL passed; RC6 contains evidence-only updates and its CI rerun is pending.
+- Local regression now passes: JavaScript/Worker 301/301, Python 17/17, focused security/API/analytics/subscription 28/28, migration/restore 9/9. RC6 candidate CI and CodeQL passed; RC7 contains evidence-only updates and its CI rerun is pending.
 - No production deployment, remote migration, analytics activation, or billing activation occurred.
 
 ## 2026-11-07 - Production blocker verification
