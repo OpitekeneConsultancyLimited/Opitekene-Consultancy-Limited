@@ -9,7 +9,7 @@ Scope: local `TaxComp-Prototype/` source and synthetic tests. This is not an ind
 |---|---|---|
 | At-rest encryption | **BLOCKED** | No encryption of sensitive D1 columns or application-level envelope encryption was demonstrated. A readiness flag is not cryptographic evidence. Cloud-provider encryption and account configuration were not independently verified. |
 | Key ownership, storage and rotation | **BLOCKED** | No key-management binding, key inventory, rotation procedure, or rotation test is configured. |
-| CodeQL | **PASSED on RC6** | Run 42459982413 passed for both languages; six historical findings are fixed and zero alerts remain open. Independent scanning remains outstanding. |
+| CodeQL | **PASSED on RC7** | Run 42460331340 passed for both languages; six historical findings are fixed and zero alerts remain open. Independent scanning remains outstanding. |
 | Independent dependency/vulnerability scans | **BLOCKED** | `codeql`, `pip-audit`, `trivy`, `osv-scanner`, `snyk`, and `grype` are unavailable. No npm/Python dependency manifest or lockfile was found for the project. No independent scan was represented as passed. |
 | Authentication/session/CSRF/lockout | **PASSED** | Local `worker/phase6-auth.test.mjs`: salted PBKDF2 hash verification, expiring hashed sessions, CSRF, password reset/revocation, lockout and role checks. Uses synthetic D1 fake; no penetration test. |
 | Server-side RBAC and privilege boundaries | **PASSED** | Local `worker/phase6-api.test.mjs`: unauthenticated and bad-origin denial, CSRF-required mutation, admin-scoped governance, invitations/role assignment and synthetic workflow tests. |

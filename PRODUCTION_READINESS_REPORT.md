@@ -19,7 +19,7 @@ The release-candidate branch changes (including migration 0006, analytics schema
 
 | Phase | Result | Main blocker |
 |---|---|---|
-| 8 — Security and reliability | BLOCKED | RC6 CodeQL passed with zero open alerts. No verified at-rest encryption/key rotation, production backups/restore, independent security approval or external vulnerability scan. |
+| 8 — Security and reliability | BLOCKED | RC7 CodeQL passed with zero open alerts. No verified at-rest encryption/key rotation, production backups/restore, independent security approval or external vulnerability scan. |
 | 9 — Database and production operations | BLOCKED | No staging D1; read-only remote migration list shows 0004–0006 pending. No remote migrations were applied. |
 | 10 — Analytics and monitoring | PARTIAL / DISABLED | Operational summaries exist, but usage ingestion/retention/privacy review are incomplete; feature flag remains false. |
 | 11 — Commercialization and launch | BLOCKED | No provider implementation/credentials/sandbox tests, subscription API lifecycle, legal/support approvals, or launch approval. |
@@ -32,7 +32,7 @@ The release-candidate branch changes (including migration 0006, analytics schema
 - Local migration/restore tests passed; not a Cloudflare D1 staging restore.
 - Wrangler Worker dry-run bundle succeeded after duplicate-key cleanup; no duplicate-key warnings remain. Wrangler still reports its existing experimental `unsafe` configuration warning. No deployment was performed.
 - Current live site security headers include HSTS. Header review was limited to a HEAD response.
-- Candidate CodeQL RC6 passed with zero open alerts. Dependabot alerts are disabled and independent vulnerability scans remain outstanding.
+- Candidate CodeQL RC7 passed with zero open alerts. Dependabot alerts are disabled and independent vulnerability scans remain outstanding.
 
 ## Production controls that remain disabled
 

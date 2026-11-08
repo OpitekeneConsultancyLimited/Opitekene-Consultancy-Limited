@@ -6,7 +6,7 @@ Overall: **NOT PRODUCTION-READY. Do not enable client-data operations or commerc
 | ID | Requirement | Status | Evidence / closure criteria |
 |---|---|---|---|
 | SEC-1 | At-rest encryption and key management | **BLOCKED** | Obtain provider/account evidence, approved key ownership/rotation design and test evidence. The readiness flag alone is insufficient. |
-| SEC-2 | CodeQL and independent vulnerability/dependency scan | **CodeQL PASSED / external scan BLOCKED** | RC6 run 42459982413 succeeded for Python and JavaScript/TypeScript; all six tracked findings are fixed and zero remain open. Independent vulnerability/dependency scans remain blocked until an approved scanner is available; no project lockfiles were found. |
+| SEC-2 | CodeQL and independent vulnerability/dependency scan | **CodeQL PASSED / external scan BLOCKED** | RC7 run 42460331340 succeeded for Python and JavaScript/TypeScript; all six tracked findings are fixed and zero remain open. Independent vulnerability/dependency scans remain blocked until an approved scanner is available; no project lockfiles were found. |
 | SEC-3 | Independent security/privacy approval | **AWAITING EXTERNAL APPROVAL** | Perform independent security assessment, review tenant boundaries and data protection controls; record approvals. |
 | BCP-1 | Automated backups and retention | **BLOCKED** | Configure approved provider schedule/retention and integrity monitoring. |
 | BCP-2 | Isolated production-equivalent restore; RPO/RTO | **AWAITING EXTERNAL APPROVAL** | Define RPO/RTO with owner and demonstrate a D1 restore/reconciliation in isolated staging. Local SQLite restore is not enough. |

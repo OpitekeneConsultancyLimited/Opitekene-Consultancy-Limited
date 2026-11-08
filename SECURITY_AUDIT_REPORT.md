@@ -14,7 +14,7 @@ Status: **PARTIAL REVIEW — independent audit and automated scans pending**
 - Worker responses include content-security policy, nosniff, frame denial and referrer policy in reviewed paths. Live Pages HEAD response included HSTS.
 - Gemini/Admin keys are configured as Worker secrets; they are not stored in `wrangler.toml`.
 - Phase 6 production API currently returns 503 because approval flags are unset.
-- RC6 CodeQL run 42459982413 passed for both languages and the alert API reports zero open alerts; six prior alerts are fixed. Independent security/dependency assessment remains outstanding.
+- RC7 CodeQL run 42460331340 passed for both languages and the alert API reports zero open alerts; six prior alerts are fixed. Independent security/dependency assessment remains outstanding.
 
 ## Findings and blockers
 
@@ -22,7 +22,7 @@ Status: **PARTIAL REVIEW — independent audit and automated scans pending**
 |---|---|---|---|
 | 1 | HIGH | At-rest encryption strategy, application/key ownership, key rotation and evidence are not established for sensitive client records. | BLOCKED before client data |
 | 2 | HIGH | Production D1 backup schedule, retention, integrity verification and real restore exercise are absent. | BLOCKED before client data |
-| 3 | HIGH | Independent assessment and dependency scan remain unavailable despite the clean RC6 CodeQL result. | BLOCKED for security sign-off |
+| 3 | HIGH | Independent assessment and dependency scan remain unavailable despite the clean RC7 CodeQL result. | BLOCKED for security sign-off |
 | 4 | MEDIUM | Phase 6 has no configured production bootstrap/email/R2/scanner service bindings and its API is disabled. | Intentionally fail-closed |
 | 5 | MEDIUM | Phase 10 telemetry ingestion/retention/access flow is incomplete and analytics remains disabled. | Not active |
 | 6 | MEDIUM | Billing endpoints/provider verification/replay protection and entitlement enforcement are not implemented. | Not active |
@@ -32,9 +32,9 @@ These are readiness findings, not a claim that the listed conditions are remotel
 ## Tests and scans
 
 - Auth/API/migration-related tests included in complete suite: JS/Worker 301 passed, Python 17 passed.
-- CodeQL: RC6 run completed successfully; six historical findings are fixed and zero remain open.
+- CodeQL: RC7 run completed successfully; six historical findings are fixed and zero remain open.
 - Dependabot: API reports alerts disabled for the repository.
-- Code scanning: zero open RC6 alerts; this is not a full security audit.
+- Code scanning: zero open RC7 alerts; this is not a full security audit.
 - At-rest encryption and production restore: not verified.
 
 ## Required actions

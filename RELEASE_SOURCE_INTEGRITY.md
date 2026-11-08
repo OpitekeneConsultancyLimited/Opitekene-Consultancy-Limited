@@ -27,7 +27,7 @@ The full Node suite was rerun with these files included: 301 passed, 0 failed. S
 
 The release-candidate branch's initial source commit `fe27d7231d7774da7448a252aa1599b83395ff2e` (tree `05cfbc828ab7194e8d3454ee9301a9871ab93f12`) is a direct child of the confirmed production commit above. The latest candidate tag is recorded in `RELEASE_MANIFEST.json` and pins the complete review tree; earlier RC tags are superseded. The tag is unsigned and no protected-tag policy was configured. The commit content is content-addressed, but the tag is not a cryptographic signature or proof of protected-ref immutability.
 
-The Pages deployment workflow is restricted to `main`; this candidate branch does not trigger it. Candidate pushes trigger a validation workflow (tests and Wrangler dry-run) and CodeQL. RC6 commit `37af43590eaf8705c3749931b35af2b617260262` passed both workflows; CodeQL found zero open alerts after fixing six historical findings. RC7 contains evidence/report updates only, and its CI rerun is pending.
+The Pages deployment workflow is restricted to `main`; this candidate branch does not trigger it. Candidate pushes trigger a validation workflow (tests and Wrangler dry-run) and CodeQL. RC7 commit `bad850a7780d2d3d681571fef945bc517e22fa9d` passed both workflows; CodeQL found zero open alerts after fixing six historical findings. RC8 contains evidence/report updates only and reruns the same workflows.
 
 ## Exclusions and cautions
 
