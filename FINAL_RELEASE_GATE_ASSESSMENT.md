@@ -15,13 +15,13 @@ Decision: **NOT READY for production approval**
 | Analytics | **BLOCKED** | Local privacy-minimized ingestion/retention contracts pass; no production event wiring, admin report boundary or scheduled retention. Production flag remains false. |
 | Payment infrastructure | **BLOCKED** | Generic adapter/entitlement helpers and schema constraints are tested; no provider, sandbox credentials, webhook verifier or lifecycle/invoice implementation. Live billing remains inactive. |
 | Uganda tax legal accuracy | **BLOCKED** | All 43 records are individually inventoried; none has a complete official source/provision/amendment review or qualified approval. |
-| Regression testing | **PASSED** | 299 JavaScript/Worker, 16 Python, 26 focused auth/API/security/analytics/subscription, and 9 migration/restore tests passed locally. Wrangler dry-run passed. These do not replace external gates. |
+| Regression testing | **PASSED** | 301 JavaScript/Worker, 17 Python, 28 focused auth/API/security/analytics/subscription, and 9 migration/restore tests passed locally. Candidate CI passed on RC3; the changed RC4 security fixes need a fresh CI run. Wrangler dry-run passed. These do not replace external gates. |
 | Operational approvals | **AWAITING APPROVAL** | Security, privacy, backup/recovery, staging and launch owners must sign after evidence is produced. |
 | Commercial launch approvals | **AWAITING APPROVAL** | Payment provider, pricing, invoices, terms, privacy notices, support and launch approvals remain outstanding. |
 
 ## Independent-review result
 
-A scoped security-review agent reported no exploitable vulnerability in the reviewed current Worker/auth/API/analytics/commercial-governance scope. It did **not** run external scanners or penetration tests, and did not verify encryption, key rotation, scanner operations or staging. Its review preceded creation of the remote candidate commit and is limited evidence, not security approval or a “zero vulnerabilities” certification.
+A scoped security-review agent reported no exploitable vulnerability in the reviewed current Worker/auth/API/analytics/commercial-governance scope. A separate RC3 CodeQL run found two high and two medium alerts; remediations are in RC4 and need a confirming scan. Neither review is a substitute for external penetration/dependency scans, encryption/key rotation evidence, staging, or security approval.
 
 ## Final determination
 

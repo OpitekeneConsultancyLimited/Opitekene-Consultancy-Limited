@@ -1,15 +1,15 @@
 # Complete test results
 
-Date: 2026-11-07  
+Date: 2026-11-08  
 Project: `TaxComp-Prototype/`
 
 ## Final complete local suites
 
 | Suite | Command | Result |
 |---|---|---|
-| Application and Worker JavaScript | `node --test --test-reporter=spec *.test.js worker/*.test.mjs` | 299 passed, 0 failed |
-| Python | `py -m unittest discover -s . -q` | 16 passed, 0 failed |
-| Targeted security/deployment/subscription/API | Node selectors for deployment, analytics, governance, auth/API and subscriptions | 26 passed, 0 failed |
+| Application and Worker JavaScript | `node --test --test-reporter=spec *.test.js worker/*.test.mjs` | 301 passed, 0 failed |
+| Python | `py -m unittest discover -s . -q` | 17 passed, 0 failed |
+| Targeted security/deployment/subscription/API | Node selectors for deployment, analytics, governance, auth/API, legacy auth, and subscriptions | 28 passed, 0 failed |
 | Migration / restore / tenant constraints | `py -m unittest test_phase6_migration -v` | 9 passed, 0 failed |
 | Changed-module syntax | `node --check` on Phase 6 API/auth, security gate, analytics, governance and subscription module | Passed |
 | Cloudflare Worker bundle | `npx wrangler deploy --dry-run` | Passed; no deployment performed |
@@ -22,5 +22,5 @@ Test coverage included tax calculators, rules, international-tax and multi-tax a
 - No production database migrations were run.
 - The initial Worker dry run reported duplicate object keys (one in `tax-advisory.js`, one in `worker/phase6-api.mjs`); both duplicates were removed without changing behavior. The final dry run passed with those warnings cleared; Wrangler still reports its existing experimental `unsafe` configuration warning.
 - No payment sandbox tests were possible; no provider is configured.
-- The CodeQL workflow is present on the non-production candidate branch but has not run: it is not on the default branch and its push trigger is restricted to `main`. CodeQL and independent scanner CLIs are unavailable, and no project dependency manifest/lockfile was found.
+- CodeQL ran on RC3 and reported two high and two medium alerts; the RC4 candidate changes remediate the flagged code paths. A fresh CodeQL run on RC4 is required before claiming that these alerts are resolved. Independent scanner CLIs remain unavailable, and no project dependency manifest/lockfile was found.
 - The candidate is not deployed. Production `main` remains at `6572ba8dbc693dc827bf3cb561f5656bbc41bc86`; no production deployment occurred.

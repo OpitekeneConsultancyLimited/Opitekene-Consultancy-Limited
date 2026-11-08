@@ -37,5 +37,5 @@ Remote status was read with `wrangler d1 migrations list --remote`. No migration
 ## Results / outstanding work
 
 - Python migration suite: 9 passed.
-- All Python tests: 16 passed.
+- All Python tests: 17 passed.
 - Staging migration, live transaction/concurrency tests, D1 backup/recovery integration, and production apply: **BLOCKED / NOT RUN**.

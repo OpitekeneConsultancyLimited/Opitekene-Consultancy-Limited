@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import test from "node:test";
 import {
   calculateInvoice,
@@ -268,10 +269,16 @@ test("creates a client-scoped internal draft without a fiscalisation action", as
 test("serves a syntactically valid, non-fiscalising dashboard", async () => {
   const response = efrisDashboardResponse();
   const html = await response.text();
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+  const scriptTagStart = html.indexOf("<script>");
+  const scriptStart = scriptTagStart + "<script>".length;
+  const scriptEnd = html.indexOf("</script>", scriptStart);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.match(html, /manual\/import workflow only/i);
   assert.match(html, /not submitted or fiscalised/i);
-  assert.ok(script);
-  assert.doesNotThrow(() => new Function(script));
+  assert.ok(scriptTagStart >= 0);
+  assert.ok(scriptEnd > scriptStart);
+  assert.doesNotThrow(() => execFileSync(process.execPath, ["--check", "-"], {
+    input: html.slice(scriptStart, scriptEnd),
+    encoding: "utf8",
+  }));
 });

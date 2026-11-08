@@ -384,6 +384,19 @@ def apply_mobile_fixes(site_files):
     site_files["index.html"] = html.encode("utf-8")
 
 
+def response_content_type(path):
+    if path.endswith(".webmanifest"):
+        return "application/manifest+json"
+
+    content_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
+    if not re.fullmatch(
+        r"[A-Za-z0-9!#$%&'*+.^_`|~-]+/[A-Za-z0-9!#$%&'*+.^_`|~-]+",
+        content_type,
+    ):
+        return "application/octet-stream"
+    return content_type
+
+
 def make_handler(site_files):
     class TaxCompHandler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -410,9 +423,7 @@ def make_handler(site_files):
                 self.send_error(404)
                 return
 
-            content_type = mimetypes.guess_type(normalized_path)[0] or "application/octet-stream"
-            if normalized_path.endswith(".webmanifest"):
-                content_type = "application/manifest+json"
+            content_type = response_content_type(normalized_path)
 
             self.send_response(200)
             self.send_header("Content-Type", f"{content_type}; charset=utf-8"

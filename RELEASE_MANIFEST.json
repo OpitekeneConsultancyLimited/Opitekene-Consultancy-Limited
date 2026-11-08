@@ -9,24 +9,25 @@
   },
   "candidate": {
     "branch": "release-candidate/2026-11-07-production-gate",
-    "tag": "taxcomp-2.0.0-rc.3",
-    "supersedesTag": "taxcomp-2.0.0-rc.2",
+    "tag": "taxcomp-2.0.0-rc.4",
+    "supersedesTag": "taxcomp-2.0.0-rc.3",
     "deploymentAuthorized": false,
     "foundationCommit": "fe27d7231d7774da7448a252aa1599b83395ff2e",
     "foundationTree": "05cfbc828ab7194e8d3454ee9301a9871ab93f12",
     "tagIsSigned": false
   },
   "verification": {
-    "javascriptAndWorker": "299 passed, 0 failed",
-    "python": "16 passed, 0 failed",
-    "focusedSecurityApiAnalyticsSubscription": "26 passed, 0 failed",
+    "javascriptAndWorker": "301 passed, 0 failed",
+    "python": "17 passed, 0 failed",
+    "focusedSecurityApiAnalyticsSubscription": "28 passed, 0 failed",
     "migrationAndRestore": "9 passed, 0 failed",
     "workerDryRun": "passed"
   },
   "releaseGates": {
     "sourceIntegrity": "candidate branch and source commit verified; tag is unsigned",
     "atRestEncryptionAndKeyRotation": "blocked",
-    "candidateCodeQLAndValidationWorkflow": "pending final tagged-commit CI results",
+    "candidateValidationWorkflow": "pending RC4 commit run",
+    "candidateCodeQLWorkflow": "pending RC4 alert verification; RC3 reported 4 alerts, fixes applied in RC4",
     "independentSecurityScans": "blocked",
     "stagingD1MigrationAndRollback": "blocked",
     "providerBackupAndFullRestore": "blocked",

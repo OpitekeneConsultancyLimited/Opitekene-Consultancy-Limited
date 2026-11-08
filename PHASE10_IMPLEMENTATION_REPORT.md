@@ -24,7 +24,7 @@ Status: **PARTIAL; production analytics disabled**
 
 ## Tests
 
-- Analytics service/API tests pass as part of the full 299-test JavaScript/Worker suite.
+- Analytics service/API tests pass as part of the full 301-test JavaScript/Worker suite.
 - Migration schema and constraints are tested in the 15-test Python suite.
 
 ## Remaining risks and approvals

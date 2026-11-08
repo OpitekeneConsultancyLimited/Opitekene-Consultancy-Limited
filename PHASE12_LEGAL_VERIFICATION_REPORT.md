@@ -31,7 +31,7 @@ Status: **BLOCKED — no filing-approved legal corpus**
 
 ## Tests
 
-- Legal-source and Phase 8 suites pass in the complete 299-test JavaScript/Worker run.
+- Legal-source and Phase 8 suites pass in the complete 301-test JavaScript/Worker run.
 - Tests establish metadata validation and gating behavior only, not the truth or legal effect of any statute.
 
 ## Required legal approvals

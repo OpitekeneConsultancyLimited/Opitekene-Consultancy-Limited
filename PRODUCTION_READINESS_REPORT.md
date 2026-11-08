@@ -1,6 +1,6 @@
 # Production readiness report
 
-Date: 2026-11-07  
+Date: 2026-11-08  
 Project: Opitekene TaxComp 2.0  
 Overall status: **NOT READY for client-data operations or commercial launch**
 
@@ -13,13 +13,13 @@ Overall status: **NOT READY for client-data operations or commercial launch**
 - Pages HTTP smoke check returned 200 after that deployment.
 - Phase 6 API returned 503 with the intended fail-closed response and missing flags. This is expected, not a production-operations pass.
 
-The current local changes in this readiness work (including migration 0006, analytics schema, subscription helpers, CodeQL workflow, and this report set) have **not** been deployed. Do not equate the prior deployment with these local changes.
+The release-candidate branch changes (including migration 0006, analytics schema, subscription helpers, security remediations, and candidate workflows) have **not** been deployed to production. Do not equate the prior deployment with the candidate.
 
 ## Phase gates
 
 | Phase | Result | Main blocker |
 |---|---|---|
-| 8 — Security and reliability | BLOCKED | No verified at-rest encryption/key rotation, production backups/restore, CodeQL results or independent security review. |
+| 8 — Security and reliability | BLOCKED | RC3 CodeQL found two high and two medium alerts; RC4 remediation retest is pending. No verified at-rest encryption/key rotation, production backups/restore, independent security approval or external scan. |
 | 9 — Database and production operations | BLOCKED | No staging D1; read-only remote migration list shows 0004–0006 pending. No remote migrations were applied. |
 | 10 — Analytics and monitoring | PARTIAL / DISABLED | Operational summaries exist, but usage ingestion/retention/privacy review are incomplete; feature flag remains false. |
 | 11 — Commercialization and launch | BLOCKED | No provider implementation/credentials/sandbox tests, subscription API lifecycle, legal/support approvals, or launch approval. |
@@ -27,12 +27,12 @@ The current local changes in this readiness work (including migration 0006, anal
 
 ## Acceptance evidence
 
-- JavaScript/Worker: 299 passed, 0 failed.
-- Python: 16 passed, 0 failed.
+- JavaScript/Worker: 301 passed, 0 failed.
+- Python: 17 passed, 0 failed.
 - Local migration/restore tests passed; not a Cloudflare D1 staging restore.
 - Wrangler Worker dry-run bundle succeeded after duplicate-key cleanup; no duplicate-key warnings remain. Wrangler still reports its existing experimental `unsafe` configuration warning. No deployment was performed.
 - Current live site security headers include HSTS. Header review was limited to a HEAD response.
-- Dependabot alerts are disabled; no code-scanning analysis was available at time of review.
+- Candidate CodeQL RC3 completed with four alerts; remediation retest on RC4 is pending. Dependabot alerts are disabled.
 
 ## Production controls that remain disabled
 

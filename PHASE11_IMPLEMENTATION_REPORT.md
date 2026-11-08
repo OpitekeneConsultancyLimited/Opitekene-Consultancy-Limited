@@ -25,7 +25,7 @@ Status: **BLOCKED for commercial launch; no payments active**
 
 ## Tests
 
-- Subscription/configuration and launch-gate tests pass in the 299-test JavaScript/Worker suite.
+- Subscription/configuration and launch-gate tests pass in the 301-test JavaScript/Worker suite.
 - Database uniqueness and schema checks pass in the 16-test Python suite.
 - No payment sandbox tests were run because no provider is selected/configured.
 

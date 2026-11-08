@@ -1,15 +1,15 @@
 # Final regression test report
 
-Date: 2026-11-07  
+Date: 2026-11-08  
 Scope: full local project suites, including restored production-baseline transaction files.
 
 ## Results
 
 | Suite | Command | Result |
 |---|---|---|
-| JavaScript and Worker | `node --test --test-reporter=spec *.test.js worker/*.test.mjs` | **299 passed, 0 failed** |
-| Focused security/API/deployment/analytics/subscription | `node --test --test-reporter=spec worker/operations-analytics.test.mjs worker/phase6-auth.test.mjs worker/phase6-api.test.mjs worker/deployment-security.test.mjs subscription-management.test.js` | **26 passed, 0 failed** |
-| Python | `py -m unittest discover -s . -q` | **16 passed, 0 failed** |
+| JavaScript and Worker | `node --test --test-reporter=spec *.test.js worker/*.test.mjs` | **301 passed, 0 failed** |
+| Focused security/API/deployment/analytics/subscription | `node --test --test-reporter=spec authentication.test.js worker/operations-analytics.test.mjs worker/phase6-auth.test.mjs worker/phase6-api.test.mjs worker/deployment-security.test.mjs subscription-management.test.js` | **28 passed, 0 failed** |
+| Python | `py -m unittest discover -s . -q` | **17 passed, 0 failed** |
 | Migrations, tenant constraints, analytics and restore | `py -m unittest test_phase6_migration -v` | **9 passed, 0 failed** |
 | Worker bundle | `npx wrangler deploy --dry-run` | **Passed**, no deployment |
 

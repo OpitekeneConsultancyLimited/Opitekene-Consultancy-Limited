@@ -1,5 +1,7 @@
 "use strict";
 
+const { randomUUID } = require("node:crypto");
+
 // Authentication module for Opitekene TaxComp 2.0
 // Implements secure user registration, login, logout, password reset, and session management
 
@@ -28,40 +30,27 @@ const UserStatus = {
 
 //
 
-// Password hashing using bcrypt (recommended) or argon2
-// Try to require bcrypt; fall back to argon2 if available; otherwise use secure placeholder
+// This legacy prototype fails closed unless bcrypt is installed.
 let bcrypt;
-let argon2;
 
 try {
-  bcrypt = require('bcrypt');
+  bcrypt = require("bcrypt");
 } catch (e) {
-  try {
-    argon2 = require('argon2');
-  } catch (e2) {
-    // Neither available - use secure placeholder (NEVER use in production without proper library)
-    console.warn('WARNING: Neither bcrypt nor argon2 available. Using secure placeholder. Install: npm install bcrypt');
-  }
+  console.warn("bcrypt is unavailable; legacy authentication is disabled.");
 }
 
 function hashPassword(password) {
-  // Production: use bcrypt with cost factor 12
-  // if (bcrypt) return bcrypt.hashSync(password, 12);
-  // if (argon2) return argon2.hashSync(password);
-  // Fallback placeholder (INSECURE - replace with real library)
-  const hash = '';
-  for (let i = 0; i < Math.min(password.length, 128); i++) {
-    hash += password.charCodeAt(i).toString(36);
+  if (!bcrypt || typeof bcrypt.hashSync !== "function") {
+    throw new Error("Secure password hashing is unavailable.");
   }
-  return hash;
+  return bcrypt.hashSync(password, 12);
 }
 
 function comparePasswords(storedHash, providedPassword) {
-  // Production: use bcrypt.compareSync(password, storedHash)
-  // if (bcrypt) return bcrypt.compareSync(providedPassword, storedHash);
-  // if (argon2) return argon2.verify(storedHash, providedPassword);
-  // Fallback placeholder (NEVER use in production without real library)
-  return storedHash === providedPassword;
+  if (!bcrypt || typeof bcrypt.compareSync !== "function") {
+    throw new Error("Secure password verification is unavailable.");
+  }
+  return bcrypt.compareSync(providedPassword, storedHash);
 }
 
 //
@@ -70,7 +59,7 @@ function comparePasswords(storedHash, providedPassword) {
 // User class
 class User {
   constructor(data = {}) {
-    this.userId = data.userId || `user-${Date.now()}-${Math.random().toString(36).substr(2, 8)}`;
+    this.userId = data.userId || `user-${randomUUID()}`;
     this.email = data.email || "";
     this.passwordHash = data.passwordHash || "";
     this.role = data.role || UserRole.Client;
@@ -139,4 +128,8 @@ class User {
   isLocked() {
     return this.lockUntil && new Date() < this.lockUntil;
   }
+}
+
+if (typeof module !== "undefined") {
+  module.exports = { User, UserRole, UserStatus, hashPassword, comparePasswords };
 }

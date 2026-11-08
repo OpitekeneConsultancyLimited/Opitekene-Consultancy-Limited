@@ -9,7 +9,7 @@ Scope: local `TaxComp-Prototype/` source and synthetic tests. This is not an ind
 |---|---|---|
 | At-rest encryption | **BLOCKED** | No encryption of sensitive D1 columns or application-level envelope encryption was demonstrated. A readiness flag is not cryptographic evidence. Cloud-provider encryption and account configuration were not independently verified. |
 | Key ownership, storage and rotation | **BLOCKED** | No key-management binding, key inventory, rotation procedure, or rotation test is configured. |
-| CodeQL | **IN PROGRESS** | Candidate pushes now trigger the CodeQL workflow. A successful result on the final tagged commit is still required; the CodeQL CLI is unavailable locally. |
+| CodeQL | **IN PROGRESS** | RC3 run 42452241675 found two high and two medium alerts; RC4 includes remediation and needs a fresh result before these are considered cleared. |
 | Independent dependency/vulnerability scans | **BLOCKED** | `codeql`, `pip-audit`, `trivy`, `osv-scanner`, `snyk`, and `grype` are unavailable. No npm/Python dependency manifest or lockfile was found for the project. No independent scan was represented as passed. |
 | Authentication/session/CSRF/lockout | **PASSED** | Local `worker/phase6-auth.test.mjs`: salted PBKDF2 hash verification, expiring hashed sessions, CSRF, password reset/revocation, lockout and role checks. Uses synthetic D1 fake; no penetration test. |
 | Server-side RBAC and privilege boundaries | **PASSED** | Local `worker/phase6-api.test.mjs`: unauthenticated and bad-origin denial, CSRF-required mutation, admin-scoped governance, invitations/role assignment and synthetic workflow tests. |
@@ -25,8 +25,8 @@ Focused command:
 node --test --test-reporter=spec worker/operations-analytics.test.mjs worker/phase6-auth.test.mjs worker/phase6-api.test.mjs worker/deployment-security.test.mjs subscription-management.test.js
 ```
 
-Result: **26 passed, 0 failed** at final execution. This focused run does not include CodeQL, dependency scanning, cryptographic certification, or a full penetration test.
+Result: **28 passed, 0 failed** for focused security/API/deployment/analytics/legacy-auth/subscription tests. This run does not include dependency scanning, cryptographic certification, or a full penetration test.
 
 ## Required before any client-data operation
 
-Candidate source is pinned by the release tag `taxcomp-2.0.0-rc.2`; obtain provider/account evidence for encryption at rest; decide and verify key-management/rotation controls; run CodeQL and dependency/SAST scans against the exact release commit; independently test authentication, privilege escalation and tenant isolation; resolve every critical/high finding; and record security/privacy approvals. Keep the existing Phase 6 gate closed until then.
+Candidate source is pinned by the release tag in `RELEASE_MANIFEST.json`; obtain provider/account evidence for encryption at rest; decide and verify key-management/rotation controls; confirm the RC4 CodeQL remediation run and run independent dependency/SAST scans; independently test authentication, privilege escalation and tenant isolation; resolve every critical/high finding; and record security/privacy approvals. Keep the existing Phase 6 gate closed until then.

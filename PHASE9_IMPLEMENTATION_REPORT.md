@@ -27,7 +27,7 @@ Status: **BLOCKED for staging/production acceptance**
 ## Tests and operational evidence
 
 - `py -m unittest test_phase6_migration -v`: 9 passed, including migrations 0004–0006 idempotence, tenant constraints, commercial uniqueness, audit immutability, analytics aggregate/retention, and local backup/restore integrity.
-- Full Python suite: 16 passed.
+- Full Python suite: 17 passed.
 - Remote D1 migration listing was read-only; it showed migrations 0004–0006 remain unapplied.
 - **No remote migration was applied.**
 

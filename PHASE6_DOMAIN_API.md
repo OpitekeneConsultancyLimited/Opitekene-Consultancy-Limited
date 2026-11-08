@@ -7,7 +7,7 @@ Status: Domain contracts and local Worker/D1 API implemented. Remote migration, 
 
 Domain records use `schemaVersion: 1` and carry organization/client ownership fields where applicable. The Worker authenticates an HttpOnly session, checks organization membership/role and client assignment server-side, applies CSRF checks to mutations, and performs organization-qualified D1 queries. The repository-injected client service itself remains a domain component, not an authorization boundary. The browser's `taxcomp-phase6-api` meta endpoint is intentionally empty and Phase 6 remains disabled unless `PHASE6_OPERATIONS_ENABLED=true` is explicitly configured after security review.
 
-All tests use synthetic fixtures. The existing unsafe `authentication.js` and `rbac.js` prototypes are not imported or used. The production API, email, scanner, object storage, CORS origin, bootstrap secret, and D1 remote migration are not configured or deployed. Never enable the operations flag or use real data until the security gate is met.
+All tests use synthetic fixtures. The legacy `authentication.js` and `rbac.js` prototypes are not imported or used by this API. The authentication helper now uses secure UUIDs and requires bcrypt, failing closed when unavailable, but it is not a production identity integration. The production API, email, scanner, object storage, CORS origin, bootstrap secret, and D1 remote migration are not configured or deployed. Never enable the operations flag or use real data until the security gate is met.
 
 ## Shared Validators
 

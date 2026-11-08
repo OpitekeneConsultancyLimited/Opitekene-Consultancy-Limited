@@ -21,7 +21,7 @@ The comparison found two tracked application files missing locally: `tax-transac
 - `tax-transaction.js`: `5e7669ef4e8397f72ba063ea350bc0e1e92131ec`
 - `tax-transaction.test.js`: `708344fb6c4d5c9a0209bd9e991f5b1e6833aee8`
 
-The full Node suite was rerun with these files included: 299 passed, 0 failed. No production source was changed.
+The full Node suite was rerun with these files included: 301 passed, 0 failed. Subsequent RC4 security fixes are confined to candidate files and have separate regression coverage.
 
 ## Candidate provenance
 

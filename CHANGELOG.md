@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-08 - Candidate security remediation
+
+- Added candidate-branch validation and CodeQL workflows without changing the Pages deployment trigger.
+- Addressed the four RC3 CodeQL findings: cryptographic user IDs and bcrypt-only fail-closed password helpers in the legacy prototype, safe dashboard-script syntax checking, and validated MIME response headers in both Python launcher variants.
+- Local regression now passes: JavaScript/Worker 301/301, Python 17/17, focused security/API/analytics/subscription 28/28, migration/restore 9/9. RC4 CodeQL verification is pending; do not treat the RC3 findings as cleared until it completes.
+- No production deployment, remote migration, analytics activation, or billing activation occurred.
+
 ## 2026-11-07 - Production blocker verification
 
 - Added allowlisted aggregate analytics ingestion and tenant-scoped expiry deletion contracts, both disabled unless explicitly enabled; no production event source or retention job is wired.

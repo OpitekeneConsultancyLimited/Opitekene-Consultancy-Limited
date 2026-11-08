@@ -16,7 +16,7 @@ Status: **BLOCKED for production acceptance**
 | Secrets management | PARTIAL | Gemini/Admin credentials are Cloudflare Worker secrets and not in `wrangler.toml`. Phase 6 bootstrap/email secrets and R2/scanner bindings are absent. |
 | At-rest encryption and key rotation | BLOCKED | No application envelope encryption, customer-managed key, key rotation procedure, or independent verification was provided. Do not store real client information. |
 | Backup, retention and full restore | BLOCKED | Local SQLite backup/restore test passed; there is no configured/verified production D1 backup schedule, retention policy, integrity check, or live restoration exercise. |
-| Dependency/code scanning | BLOCKED pending GitHub configuration/run | Added `.github/workflows/codeql.yml`; no CodeQL results exist yet. Dependabot alerts are disabled for the repository; no package manifest/lockfile exists in this project for npm dependency audit. |
+| Dependency/code scanning | BLOCKED pending retest and external scan | RC3 CodeQL found two high and two medium alerts; RC4 fixes require a confirming run. Dependabot alerts are disabled; no dependency manifests/lockfiles were found. |
 | Critical/high vulnerability assessment | BLOCKED | No independent penetration test or complete SAST/dependency scan result is available. No zero-findings claim is made. |
 
 ## Files changed or relied upon
@@ -26,7 +26,7 @@ Status: **BLOCKED for production acceptance**
 
 ## Tests
 
-- `node --test --test-reporter=spec *.test.js worker/*.test.mjs`: 299 passed, 0 failed.
+- `node --test --test-reporter=spec *.test.js worker/*.test.mjs`: 301 passed, 0 failed.
 - Changed Worker modules passed `node --check`.
 - These are software tests, not cryptographic certification or penetration testing.
 
