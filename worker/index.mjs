@@ -8,6 +8,7 @@ import legalWorkflowModule from "../legal-source-workflow.js";
 import { handlePhase6Request } from "./phase6-api.mjs";
 import { withDatabase } from "./db.mjs";
 import { withSupabaseStorage } from "./supabase-storage.mjs";
+import { withMalwareScanner } from "./malware-scanner.mjs";
 
 const { createTaxAdvisor } = advisorModule;
 const { createLegalSourceRegistry } = legalSourceModule;
@@ -1410,7 +1411,7 @@ export async function handleRequest(request, env) {
 // SUPABASE_SERVICE_ROLE_KEY, client documents use Supabase Storage.
 export default {
   fetch(request, env, context) {
-    return withDatabase(env, context, (scopedEnv) => handleRequest(request, withSupabaseStorage(scopedEnv)));
+    return withDatabase(env, context, (scopedEnv) => handleRequest(request, withMalwareScanner(withSupabaseStorage(scopedEnv))));
   },
   scheduled(_event, env, context) {
     context.waitUntil(withDatabase(env, context, (scopedEnv) => cleanupExpiredQuestions(scopedEnv)));

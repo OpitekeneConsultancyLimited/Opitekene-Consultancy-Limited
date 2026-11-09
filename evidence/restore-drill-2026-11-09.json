@@ -1,0 +1,189 @@
+{
+  "generatedAt": "2026-11-09T09:57:39.131Z",
+  "purpose": "TaxComp backup/restore drill evidence (BCP-2 / DB-2)",
+  "source": "aws-0-eu-west-1.pooler.supabase.com/postgres as taxcomp_worker.xbooviddjkikcbccfcnw",
+  "restored": "aws-0-eu-west-1.pooler.supabase.com/postgres as postgres.uuqcoghggqkvcgylxutd",
+  "durationMs": 7972,
+  "verdict": "MATCH",
+  "differences": [],
+  "tables": {
+    "efris_audit_log": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "efris_clients": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "efris_imports": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "efris_invoices": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "efris_products": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "legal_source_audit": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "legal_sources": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase10_usage_daily": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase11_invoices": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase11_payment_events": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase11_subscriptions": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_analysis_proposals": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_audit_log": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_bootstrap_state": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_client_access": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_client_tax_profiles": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_clients": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_compliance_documents": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_document_reviews": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_document_versions": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_documents": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_engagements": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_memberships": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_obligations": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_organizations": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_report_versions": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_reports": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_scenario_documents": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_scenario_versions": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_scenarios": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "phase6_users": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "unanswered_questions": {
+      "rows": 0,
+      "sourceMd5": "d41d8cd98f00b204e9800998ecf8427e",
+      "restoredMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "schema": {
+    "source": {
+      "columnsMd5": "0788a29614a49fd57fc61c4c95cf1396",
+      "constraintsMd5": "cfca6ef74985f0a86e4d7635ec9ab063",
+      "indexesMd5": "615c650a82a0ca2a850ae9b8064fbb4f",
+      "policies": 32,
+      "workerGrantsMd5": "0e05870b2e3ea597e155efd36e72ad88",
+      "triggers": "phase6_audit_log_no_delete,phase6_audit_log_no_update"
+    },
+    "restored": {
+      "columnsMd5": "0788a29614a49fd57fc61c4c95cf1396",
+      "constraintsMd5": "cfca6ef74985f0a86e4d7635ec9ab063",
+      "indexesMd5": "615c650a82a0ca2a850ae9b8064fbb4f",
+      "policies": 32,
+      "workerGrantsMd5": "0e05870b2e3ea597e155efd36e72ad88",
+      "triggers": "phase6_audit_log_no_delete,phase6_audit_log_no_update"
+    }
+  }
+}
