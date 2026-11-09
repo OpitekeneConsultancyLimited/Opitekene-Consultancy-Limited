@@ -1,16 +1,69 @@
 # Moving TaxComp from Cloudflare D1 to Supabase
 
-Status: **Phase 1 (database) built, tested and provisioned. Not yet switched on in production.**
-Phase 2 (document storage) and Phase 3 (Supabase Auth) come next.
+Status (2026-11-09): **all three phases are built, tested and provisioned in Supabase.**
+They are not live until the remaining deploy steps below are done.
 
-### Provisioned on 2026-11-09 (one-time setup steps 1–5 below are DONE)
+| Phase | What | State |
+|---|---|---|
+| 1. Database | Supabase Postgres via Hyperdrive, D1-compatible adapter | Built, tested, provisioned |
+| 2. Storage | Client documents in private Supabase Storage bucket `phase6-documents` | Built, tested, bucket created, verified against live Storage |
+| 3. Auth | Phase 6 sign-in, password reset and invitations via Supabase Auth | Built, tested, verified against the live signing keys |
+
+### Remaining steps (need your permission or your hands)
+Run them from `TaxComp-Prototype` in a terminal, in this order:
+
+1. **Merge PR #2** into `main` (GitHub "Merge pull request"). This publishes the site changes.
+2. **Give the Worker the Supabase service key.** This pipes the legacy `service_role`
+   key (a JWT; Storage rejects the newer `sb_secret_` keys) straight into the
+   secret, without displaying it:
+   ```powershell
+   $k = ((npx supabase@2.121.0 projects api-keys --project-ref xbooviddjkikcbccfcnw -o json | Out-String) -replace '(?s)^[^\[]*','' | ConvertFrom-Json | ? name -eq service_role).api_key
+   $k | npx wrangler@4.158.0 secret put SUPABASE_SERVICE_ROLE_KEY
+   $k | npx wrangler@4.158.0 secret put SUPABASE_SERVICE_ROLE_KEY -c wrangler.preview.toml
+   Remove-Variable k
+   ```
+3. **Supabase Auth URL settings.** Dashboard → Authentication → URL Configuration:
+   Site URL `https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/`,
+   and add the same URL under Redirect URLs. Invitation and reset links only return there.
+4. **Email.** Supabase's built-in email sender allows only a few emails per hour.
+   Before inviting staff, set up custom SMTP (Authentication → Emails → SMTP Settings).
+5. **Preview Worker:** `npx wrangler@4.158.0 deploy -c wrangler.preview.toml`, then check the chat still answers.
+6. **Production Worker:** uncomment the `[[hyperdrive]]` block in `wrangler.toml`, then
+   `npx wrangler@4.158.0 deploy`. Production D1 was checked on 2026-11-09: every
+   data table was empty, so no data copy is needed.
+7. **Rollback** if anything is wrong:
+   `npx wrangler@4.158.0 rollback 7c86d391-0856-4b18-b238-8f8b6f8d5264`
+   (the production version from 2026-11-07).
+
+The Phase 6 practice workspace itself stays switched off until you set the
+`taxcomp-phase6-api` meta tag in `index.html`, the `PHASE6_*` review flags, and
+the `PHASE6_BOOTSTRAP_SECRET` secret, as the release gate requires.
+
+### Provisioned on 2026-11-09
 | Item | Value |
 |---|---|
 | Supabase project | `xbooviddjkikcbccfcnw` ("opitekenecons-lab's Project", eu-west-1, Postgres 17), org OPITEKENE CONSULTANCY LIMITED |
-| Migrations applied | `20261109000000_taxcomp_schema`, `20261109000100_audit_logs_append_only` (via `supabase db push`) |
+| Migrations applied | `…000000_taxcomp_schema`, `…000100_audit_logs_append_only`, `…000200_storage_and_supabase_auth` (via `supabase db push`) |
 | Worker DB login | role `taxcomp_worker`. Its password and connection string are in `%USERPROFILE%\TaxComp-secrets\supabase-taxcomp-worker.txt` (outside OneDrive, owner-only). Move them to a password manager and delete the file. |
-| Verified | login through session pooler; `search_path=taxcomp`; 34 tables; cannot read `auth.*` or create tables; audit tables INSERT/SELECT only; adapter round trip OK |
-| Hyperdrive | `taxcomp-supabase`, id `1ec8106d082a4e309115ab818454fc8b` (already in `wrangler.toml`, commented out) |
+| Storage | private bucket `phase6-documents`, 10 MiB limit, `application/octet-stream` only, no access policies (only the Worker's service key can use it) |
+| Auth | ES256 signing keys (JWKS). Browser config in `index.html`: `taxcomp-supabase-url` and `taxcomp-supabase-anon-key` (the publishable key, which is public by design) |
+| Verified live | worker login via pooler; `search_path=taxcomp`; 32 tables; no `auth.*` access; audit tables INSERT/SELECT only; adapter round trip; real JWKS rejects a forged token; Storage upload, read, refused overwrite, blocked public URL, delete |
+| Hyperdrive | `taxcomp-supabase`, id `1ec8106d082a4e309115ab818454fc8b` (in `wrangler.preview.toml`; commented out in `wrangler.toml`) |
+
+### How Phase 3 sign-in works
+* The browser (`phase6-app.js`) signs in with supabase-js 2.118.0, loaded only when
+  the workspace is configured. It sends the Supabase access token as
+  `Authorization: Bearer`, plus `X-Organization-Id` when the user belongs to several practices.
+* The Worker verifies the token itself against the project's public signing keys
+  (`worker/supabase-auth.mjs`). TaxComp's own tables still decide access:
+  memberships, roles and client assignments, re-checked on every request, so
+  deactivation is immediate.
+* Passwords, lockout, resets and invitation emails are handled by Supabase Auth. The old
+  `/auth/login` and `/auth/password-reset/*` endpoints answer 410 Gone, and there are no
+  cookies or CSRF tokens. The first practice is created by a signed-in user with
+  the bootstrap secret.
+* Invitations: new emails get a Supabase invite; existing Supabase accounts are
+  linked through `taxcomp.auth_user_id_by_email` (callable only by the Worker role).
 
 Re-running migrations by hand: always run **all** files in `supabase/migrations` in
 name order. Re-running only the first one re-grants privileges a later one revokes.
@@ -109,9 +162,12 @@ goes back to D1 immediately. D1 stays bound, unchanged, for at least two weeks a
 cutover. Anything written to Supabase in the meantime is not copied back to D1.
 
 ## Notes and limits
-* `phase6_users.password_hash`, `phase6_sessions` and `phase6_password_resets`
-  remain for now. Phase 3 replaces them with Supabase Auth.
-* Client documents still use the `PHASE6_DOCUMENTS` R2-style binding until Phase 2.
+* Phase 6 needs Supabase. Without the `HYPERDRIVE` binding it answers 503, because the
+  legacy D1 schema cannot hold Supabase Auth identities. The chat, `/admin`, EFRIS
+  and legal-source tools keep working on either database.
+* `/admin`, `/admin/efris` and the legal-source admin still use the
+  `ADMIN_DASHBOARD_TOKEN` operator token, not Supabase Auth.
+* If a `PHASE6_DOCUMENTS` binding is configured, it takes precedence over Supabase Storage.
 * Supabase backups: the free plan has no point-in-time recovery. Check your plan's
   backup and retention terms against blocker BCP-1 before storing client data.
 * SQLite-only SQL handled by the adapter: `?` placeholders, camelCase aliases,

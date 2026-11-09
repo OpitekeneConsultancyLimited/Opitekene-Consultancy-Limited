@@ -14,6 +14,9 @@ crons = ["15 2 * * *"]
 [vars]
 ALLOWED_ORIGIN = "https://opitekeneconsultancylimited.github.io"
 GEMINI_MODEL = "gemini-3.5-flash-lite"
+# Supabase project (public URL). Phase 6 sign-in (Supabase Auth) and documents
+# (Supabase Storage) also need the SUPABASE_SERVICE_ROLE_KEY Worker secret.
+SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
 PHASE10_OPERATIONS_ANALYTICS_ENABLED = "false"
 PHASE11_LEGAL_REVIEW_APPROVED = "false"
 PHASE11_SECURITY_REVIEW_APPROVED = "false"

@@ -11,7 +11,7 @@ const readyEnv = {
   PHASE6_DATA_AT_REST_REVIEWED: "true",
   PHASE6_BACKUP_RESTORE_VERIFIED: "true",
   PHASE6_APP_ORIGIN: "https://example.invalid",
-  PHASE6_EMAIL_ENDPOINT: "https://email.example.invalid/send",
+  SUPABASE_URL: "https://project.supabase.example.invalid",
 };
 
 test("core deployment gate passes while unconfigured production services remain visible", () => {
@@ -26,8 +26,7 @@ test("core deployment gate passes while unconfigured production services remain 
 test("production readiness requires every provider and storage service binding", () => {
   const readiness = validateDeploymentReadiness({
     ...readyEnv,
-    PHASE6_EMAIL_SERVICE: { fetch: async () => new Response(null, { status: 204 }) },
-    PHASE6_EMAIL_API_KEY: "synthetic-email-api-key-at-least-24",
+    SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.synthetic",
     PHASE6_DOCUMENTS: {
       put: async () => {},
       get: async () => null,
@@ -38,6 +37,9 @@ test("production readiness requires every provider and storage service binding",
 
   assert.equal(readiness.productionReady, true);
   assert.deepEqual(readiness.missingProductionBindings, []);
+
+  const newStyleKey = validateDeploymentReadiness({ ...readyEnv, SUPABASE_SERVICE_ROLE_KEY: "sb_secret_abcdefghijklmnopqrstuvwxyz" });
+  assert.ok(newStyleKey.missingProductionBindings.includes("SUPABASE_SERVICE_ROLE_KEY"), "Storage needs the service_role JWT");
 });
 
 test("deployment readiness fails closed when required flags are missing", () => {
@@ -57,9 +59,11 @@ test("deployment readiness flags missing critical configuration before live oper
     ...readyEnv,
     ALLOWED_ORIGIN: "http://insecure.invalid",
     PHASE6_BOOTSTRAP_SECRET: "short",
+    SUPABASE_URL: undefined,
   });
 
   assert.equal(readiness.isReady, false);
   assert.ok(readiness.missingBindings.includes("ALLOWED_ORIGIN"));
+  assert.ok(readiness.missingBindings.includes("SUPABASE_URL"), "Phase 6 needs Supabase Auth");
   assert.ok(readiness.missingProductionBindings.includes("PHASE6_BOOTSTRAP_SECRET"));
 });

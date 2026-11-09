@@ -21,7 +21,9 @@ export const TABLE_ORDER = Object.freeze([
   "efris_clients", "efris_products", "efris_invoices", "efris_imports", "efris_audit_log",
   "legal_sources", "legal_source_audit",
   "phase6_bootstrap_state", "phase6_organizations", "phase6_users", "phase6_memberships",
-  "phase6_sessions", "phase6_password_resets", "phase6_clients", "phase6_client_access",
+  // phase6_sessions / phase6_password_resets are not copied: sign-in moved to
+  // Supabase Auth and those tables no longer exist in Supabase.
+  "phase6_clients", "phase6_client_access",
   "phase6_client_tax_profiles", "phase6_engagements", "phase6_obligations", "phase6_documents",
   "phase6_compliance_documents", "phase6_document_versions", "phase6_document_reviews",
   "phase6_analysis_proposals", "phase6_scenarios", "phase6_scenario_documents",

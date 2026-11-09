@@ -7,6 +7,7 @@ import reportModule from "../tax-research-report.js";
 import legalWorkflowModule from "../legal-source-workflow.js";
 import { handlePhase6Request } from "./phase6-api.mjs";
 import { withDatabase } from "./db.mjs";
+import { withSupabaseStorage } from "./supabase-storage.mjs";
 
 const { createTaxAdvisor } = advisorModule;
 const { createLegalSourceRegistry } = legalSourceModule;
@@ -1405,10 +1406,11 @@ export async function handleRequest(request, env) {
 }
 
 // With a HYPERDRIVE binding the database is Supabase Postgres (worker/db.mjs);
-// without one the D1 binding is used unchanged.
+// without one the D1 binding is used unchanged. With SUPABASE_URL and
+// SUPABASE_SERVICE_ROLE_KEY, client documents use Supabase Storage.
 export default {
   fetch(request, env, context) {
-    return withDatabase(env, context, (scopedEnv) => handleRequest(request, scopedEnv));
+    return withDatabase(env, context, (scopedEnv) => handleRequest(request, withSupabaseStorage(scopedEnv)));
   },
   scheduled(_event, env, context) {
     context.waitUntil(withDatabase(env, context, (scopedEnv) => cleanupExpiredQuestions(scopedEnv)));

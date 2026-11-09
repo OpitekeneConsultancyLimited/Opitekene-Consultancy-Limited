@@ -14,7 +14,8 @@ const workerDir = path.dirname(fileURLToPath(import.meta.url));
 async function extractPreparedSql() {
   const statements = [];
   for (const name of (await readdir(workerDir)).sort()) {
-    if (!name.endsWith(".mjs") || name.endsWith(".test.mjs") || name === "db.mjs") continue;
+    // Worker modules only: skip tests and test-only helpers (names contain "test").
+    if (!name.endsWith(".mjs") || name.includes("test") || name === "db.mjs") continue;
     const source = await readFile(path.join(workerDir, name), "utf8");
     let from = 0;
     for (;;) {
@@ -86,10 +87,12 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   // would re-grant privileges that later migrations revoke).
   for (const file of await migrationFiles()) await pg.exec(await readFile(file, "utf8"));
   const tables = await pg.query("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'taxcomp' ORDER BY 1");
-  assert.equal(tables.rows.length, 34, "all 34 tables from D1 migrations 0001-0006");
+  // 34 tables from D1 migrations 0001-0006, minus phase6_sessions and
+  // phase6_password_resets (retired when sign-in moved to Supabase Auth).
+  assert.equal(tables.rows.length, 32);
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
   const policies = await pg.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'taxcomp' AND policyname = 'taxcomp_worker_all'");
-  assert.equal(policies.rows[0].n, 34);
+  assert.equal(policies.rows[0].n, 32);
   const role = await pg.query("SELECT rolcanlogin, rolconfig FROM pg_roles WHERE rolname = 'taxcomp_worker'");
   assert.equal(role.rows[0].rolcanlogin, false, "the migration must not create a login/password");
   assert.deepEqual(role.rows[0].rolconfig, ["search_path=taxcomp"]);

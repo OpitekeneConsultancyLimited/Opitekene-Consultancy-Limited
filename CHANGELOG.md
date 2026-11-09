@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-09 - Supabase: database, storage and authentication
+
+- Phase 1, database: Supabase Postgres through Cloudflare Hyperdrive, using a D1-compatible adapter (`worker/db.mjs`). Schema in the private `taxcomp` schema with RLS on, a least-privilege `taxcomp_worker` role and append-only audit trails. D1 stays the fallback while `[[hyperdrive]]` is not bound.
+- Phase 2, storage: Phase 6 client documents go to the private Supabase Storage bucket `phase6-documents` (`worker/supabase-storage.mjs`), with versioned keys that are never overwritten. Downloads still pass through Worker authorization.
+- Phase 3, authentication: Phase 6 identity uses Supabase Auth. Tokens are verified locally against the project's ES256 signing keys (`worker/supabase-auth.mjs`); memberships, roles and client access stay in TaxComp tables and are re-checked on every request. The custom PBKDF2 passwords, session cookies, CSRF tokens, lockout and reset tokens were removed; `/auth/login` and `/auth/password-reset/*` now return 410. Invitations use Supabase invites, and existing accounts are linked through `taxcomp.auth_user_id_by_email`. `phase6-app.js` signs in with supabase-js 2.118.0, loaded only when configured.
+- Fixes: a duplicate client TIN, or a repeated bootstrap, returned 500 instead of 409. The D1 export script failed on Windows because cmd.exe treated `<>` in SQL as a redirect.
+- Tests: Phase 6 API, auth and end-to-end suites now run on real Postgres (PGlite) with real ES256 tokens and a fake Supabase HTTP API, replacing the hand-written D1 fake. Every static Worker query is compile-checked against the Supabase schema. JavaScript/Worker 322/322, Python 17/17.
+- Verified against the live Supabase project: Worker role privileges, real signing keys, and a Storage round trip.
+- No production Worker deployment occurred; see `SUPABASE_MIGRATION.md` for the remaining steps.
+
 ## 2026-11-08 - Candidate security remediation
 
 - RC4 CodeQL closed the two JavaScript findings but reported additional Python findings. Replaced path-derived MIME values with a static allowlist in RC5; RC7 CodeQL passed for both languages with zero open alerts.
