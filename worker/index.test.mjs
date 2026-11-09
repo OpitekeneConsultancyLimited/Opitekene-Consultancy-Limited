@@ -15,6 +15,62 @@ const env = {
   PREMIUM_ACCESS_CHECK: async () => true,
 };
 
+test("site search returns grounded web results to every visitor, for tax topics only", async () => {
+  const originalFetch = globalThis.fetch;
+  const prompts = [];
+  globalThis.fetch = async (_url, options) => {
+    const sent = JSON.parse(options.body);
+    assert.deepEqual(sent.tools, [{ google_search: {} }]);
+    prompts.push(sent.contents.at(-1).parts[0].text);
+    const answer = "URA guidance says the VAT registration threshold applies to annual taxable supplies.";
+    return Response.json({
+      candidates: [{
+        content: { parts: [{ text: answer }] },
+        groundingMetadata: {
+          groundingChunks: [
+            { web: { uri: "https://www.ura.go.ug/en/domestic-taxes/vat/", title: "URA VAT" } },
+            { web: { uri: "http://insecure.example/vat", title: "Insecure" } },
+          ],
+          groundingSupports: [{ segment: { endIndex: answer.length }, groundingChunkIndices: [0, 1] }],
+        },
+      }],
+    });
+  };
+  try {
+    const visitor = { ...env, PREMIUM_ACCESS_CHECK: async () => false }; // no Premium needed
+    const search = (message, kind, environment = visitor, options = {}) =>
+      handleRequest(request({ message, kind, providerConsent: false }, { path: "/search", ...options }), environment);
+
+    const guidance = await search("VAT registration threshold", "guidance");
+    const body = await guidance.json();
+    assert.equal(guidance.status, 200);
+    assert.equal(body.status, "ok");
+    assert.equal(body.kind, "guidance");
+    assert.match(body.summary, /VAT registration threshold/);
+    assert.ok(body.sources.length >= 1);
+    assert.ok(body.sources.every((s) => s.url.startsWith("https://")), "only https sources are returned");
+    assert.equal(guidance.headers.get("X-TaxComp-Answer-Source"), "web");
+    assert.equal(guidance.headers.get("X-TaxComp-Premium"), null);
+    assert.match(prompts[0], /authoritative public sources/);
+
+    const cases = await (await search("Uganda Revenue Authority v Steel Rolling Mills", "cases")).json();
+    assert.equal(cases.status, "ok");
+    assert.match(prompts[1], /Tax Appeals Tribunal/);
+
+    const offTopic = await (await search("best football boots to buy", "guidance")).json();
+    assert.equal(offTopic.status, "not-tax");
+    assert.equal(prompts.length, 2, "off-topic searches never reach Gemini");
+
+    const unconfigured = await (await search("PAYE bands", "guidance", { ...visitor, GEMINI_API_KEY: "" })).json();
+    assert.equal(unconfigured.status, "unavailable");
+    assert.match(unconfigured.message, /not configured/);
+
+    assert.equal((await search("VAT", "guidance", visitor, { origin: "https://evil.example" })).status, 403);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("live web research is Premium-only: other callers get local notes and never reach the provider", async () => {
   const originalFetch = globalThis.fetch;
   let providerCalls = 0;

@@ -3675,3 +3675,16 @@ td:first-child {
 @media (max-width: 720px) {
   .account-plans, .account-section .phase6-form { grid-template-columns: 1fr; }
 }
+
+/* Live web results under the site search boxes (web-search.js) */
+.web-search-note { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.web-search-panel { display: grid; gap: 10px; margin-top: 18px; padding: 18px 20px; border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 8px; background: var(--white); }
+.web-search-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.web-search-head h3 { margin: 0; font: 700 19px/1.2 var(--serif); }
+.web-search-badge { padding: 3px 9px; border-radius: 999px; background: var(--green-light); color: var(--green-dark); font-size: 11px; font-weight: 700; }
+.web-search-status, .web-search-summary { margin: 0; color: var(--ink); font-size: 14px; line-height: 1.6; max-width: 75ch; }
+.web-search-status { color: var(--muted); }
+.web-search-panel h4 { margin: 4px 0 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.web-search-sources { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13px; }
+.web-search-sources a { color: var(--green-dark); overflow-wrap: anywhere; }
+.web-search-caveat { margin: 0; color: var(--muted); font-size: 12px; }
