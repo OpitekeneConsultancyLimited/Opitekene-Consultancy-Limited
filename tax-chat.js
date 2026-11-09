@@ -556,7 +556,7 @@
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30_000);
+      const timeout = setTimeout(() => controller.abort(), 90_000); // live web research can take up to a minute
       // Signed-in Premium users send their account token so the Worker can
       // allow live web research (see account.js).
       let accessToken = null;

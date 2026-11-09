@@ -10,6 +10,7 @@ import { withDatabase } from "./db.mjs";
 import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
+import { callClaude } from "./claude-research.mjs";
 
 const { createTaxAdvisor } = advisorModule;
 const { createLegalSourceRegistry } = legalSourceModule;
@@ -541,6 +542,32 @@ async function callGemini(question, history, evidence, env) {
   }
 }
 
+function hasResearchProvider(env) {
+  return Boolean(env.ANTHROPIC_API_KEY || env.GEMINI_API_KEY);
+}
+
+/**
+ * Live web research: Claude (Opus 5.5 + web search) first, Gemini (Google
+ * Search grounding) as automatic backup. Same result shape as callGemini.
+ */
+async function callWebResearch(question, history, evidence, env, { effort = "medium" } = {}) {
+  const claude = await callClaude({
+    question,
+    history,
+    evidence,
+    systemInstruction: SYSTEM_INSTRUCTION,
+    env,
+    effort,
+    validate: (answer, sources) => validateCitations(answer, sources),
+    maxAnswerLength: MAX_ANSWER_LENGTH,
+  });
+  if (!claude.fallback) return claude;
+  if (!env.GEMINI_API_KEY) return claude;
+  const gemini = await callGemini(question, history, evidence, env);
+  if (!gemini.fallback) return { ...gemini, provider: "gemini" };
+  return claude.reason === "missing_api_key" ? gemini : { ...gemini, claudeReason: claude.reason };
+}
+
 async function loadLegalSourceRecords(env) {
   if (!env.UNANSWERED_QUESTIONS) return [];
   const { results } = await env.UNANSWERED_QUESTIONS.prepare(
@@ -612,7 +639,8 @@ async function handleWebSearch(body, query, env, corsHeaders) {
     return send({ status: "not-tax", message: "Web search covers Uganda tax topics. Try including the tax, for example VAT, PAYE or withholding tax." });
   }
   const knowledge = retrieveKnowledge(query);
-  const result = await callGemini(SEARCH_KINDS[kind](query), [], buildEvidence(knowledge), env);
+  // Short summaries: low effort keeps site searches quick and inexpensive.
+  const result = await callWebResearch(SEARCH_KINDS[kind](query), [], buildEvidence(knowledge), env, { effort: "low" });
   if (result.fallback) {
     return send({
       status: "unavailable",
@@ -640,14 +668,14 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
     const records = await loadLegalSourceRecords(env);
     const legalSourceRegistry = createLegalSourceRegistry(records);
     const caseLawRegistry = createCaseLawRegistry();
-    const aiProvider = env.GEMINI_API_KEY
+    const aiProvider = hasResearchProvider(env)
       ? {
         async generate(context) {
           const scopedQuestion = context.taxPeriod
             ? `${context.question}\n\nUser-selected tax period: FY ${context.taxPeriod}.`
             : context.question;
           const knowledge = retrieveKnowledge(scopedQuestion);
-          const result = await callGemini(scopedQuestion, [], buildEvidence(knowledge), env);
+          const result = await callWebResearch(scopedQuestion, [], buildEvidence(knowledge), env);
           if (result.fallback || !result.answer) {
             throw new Error("Grounded AI research is unavailable.");
           }
@@ -1404,7 +1432,7 @@ export async function handleRequest(request, env) {
   const recordRequested = body.recordUnanswered === true;
   const evidence = buildEvidence(knowledge);
   const result = body.providerConsent === true
-    ? await callGemini(
+    ? await callWebResearch(
       researchQuestion,
       getConversationHistory(body.history),
       evidence,
@@ -1429,7 +1457,7 @@ export async function handleRequest(request, env) {
     ? "premium-required"
     : result.reason === "provider_consent_required"
     ? "consent-required"
-    : result.reason === "missing_api_key" || !env.GEMINI_API_KEY
+    : result.reason === "missing_api_key" || !hasResearchProvider(env)
       ? "not-configured"
       : result.fallback ? "unavailable" : "used";
   metadata.sourceIndicators.push({
