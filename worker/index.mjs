@@ -593,6 +593,44 @@ function advisorModeFor(result) {
   return "registry-review-required";
 }
 
+const TAX_TOPIC = /\b(?:tax(?:es|ation|payer|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal|stamp duty|capital gains?|deduction|exempt(?:ion)?|levy|tin)\b/i;
+const CASE_TOPIC = /\b(?:case|cases|tribunal|tat|appeal|judgment|judgement|ruling|court|v\.?|vs\.?|versus)\b/i;
+const SEARCH_KINDS = Object.freeze({
+  guidance: (query) => `Search current, authoritative public sources (URA, Parliament of Uganda, ULII, Ministry of Finance, reputable firms) for this Uganda tax question and summarise what they say in 3 to 6 short paragraphs, citing each source: ${query}`,
+  cases: (query) => `Find published Ugandan tax decisions (Tax Appeals Tribunal, High Court, Court of Appeal, Supreme Court) relevant to: ${query}. For each case give the case name, court or tribunal, year and the tax point decided, citing the source. Say plainly if you find none.`,
+});
+
+/** Live web results for the site's search boxes (free for every visitor). */
+async function handleWebSearch(body, query, env, corsHeaders) {
+  const kind = body.kind === "cases" ? "cases" : "guidance";
+  const send = (data) => {
+    const response = jsonResponse({ kind, ...data }, 200, corsHeaders);
+    response.headers.set("X-TaxComp-Answer-Source", data.status === "ok" ? "web" : "none");
+    return response;
+  };
+  if (!TAX_TOPIC.test(query) && !(kind === "cases" && CASE_TOPIC.test(query))) {
+    return send({ status: "not-tax", message: "Web search covers Uganda tax topics. Try including the tax, for example VAT, PAYE or withholding tax." });
+  }
+  const knowledge = retrieveKnowledge(query);
+  const result = await callGemini(SEARCH_KINDS[kind](query), [], buildEvidence(knowledge), env);
+  if (result.fallback) {
+    return send({
+      status: "unavailable",
+      message: result.reason === "missing_api_key"
+        ? "Web search is not configured yet."
+        : "Web search is unavailable right now. The TaxComp results above are still available.",
+    });
+  }
+  return send({
+    status: "ok",
+    summary: result.answer,
+    sources: (Array.isArray(result.sources) ? result.sources : [])
+      .filter((source) => typeof source?.url === "string" && source.url.startsWith("https://"))
+      .slice(0, 8),
+    webGrounded: result.webGrounded === true,
+  });
+}
+
 async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders) {
   if (body.providerConsent !== undefined && typeof body.providerConsent !== "boolean") {
     return jsonResponse({ error: "Provider consent must be true or false." }, 400, corsHeaders);
@@ -1257,7 +1295,8 @@ export async function handleRequest(request, env) {
     }
   }
   const advisorRoute = requestUrl.pathname === "/advisor";
-  if (requestUrl.pathname !== "/chat" && !advisorRoute) {
+  const searchRoute = requestUrl.pathname === "/search";
+  if (requestUrl.pathname !== "/chat" && !advisorRoute && !searchRoute) {
     return jsonResponse({ error: "The requested chat endpoint was not found." }, 404);
   }
 
@@ -1312,6 +1351,11 @@ export async function handleRequest(request, env) {
       error: `Enter a question of 1 to ${MAX_QUESTION_LENGTH} characters.`,
     }, 400, corsHeaders);
   }
+
+  // Site search boxes: live web results for everyone (owner decision
+  // 2026-11-09), still behind the per-minute limiter above and limited to tax
+  // topics so the endpoint cannot be used as a free general web search.
+  if (searchRoute) return handleWebSearch(body, question, env, corsHeaders);
 
   if (body.taxPeriod !== undefined && body.taxPeriod !== null && typeof body.taxPeriod !== "string") {
     return jsonResponse({ error: "Tax period must be a financial year such as 2025/26." }, 400, corsHeaders);
