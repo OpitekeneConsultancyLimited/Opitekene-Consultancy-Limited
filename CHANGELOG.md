@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-11-08 - Candidate security remediation
+
+- RC4 CodeQL closed the two JavaScript findings but reported additional Python findings. Replaced path-derived MIME values with a static allowlist in RC5; RC7 CodeQL passed for both languages with zero open alerts.
+- Added candidate-branch validation and CodeQL workflows without changing the Pages deployment trigger.
+- Addressed the four RC3 CodeQL findings: cryptographic user IDs and bcrypt-only fail-closed password helpers in the legacy prototype, safe dashboard-script syntax checking, and validated MIME response headers in both Python launcher variants.
+- Local regression now passes: JavaScript/Worker 301/301, Python 17/17, focused security/API/analytics/subscription 28/28, migration/restore 9/9. RC7 candidate CI and CodeQL passed; RC8 contains evidence-only updates and reruns the same checks.
+- No production deployment, remote migration, analytics activation, or billing activation occurred.
+
+## 2026-11-07 - Production blocker verification
+
+- Added allowlisted aggregate analytics ingestion and tenant-scoped expiry deletion contracts, both disabled unless explicitly enabled; no production event source or retention job is wired.
+- Strengthened local migration verification for migrations 0004–0006 and added SQLite integrity/foreign-key checks to backup restoration tests.
+- Added security, backup/restore, migration, analytics, payment-sandbox, legal-rule, release-candidate and final blocker evidence documents.
+- Final local regression: JavaScript/Worker 299/299, Python 16/16; focused security/deployment/API/analytics/subscription tests 26/26; migration tests 9/9; Wrangler dry-run passed.
+- CodeQL, independent scans, at-rest encryption/key rotation, remote D1 staging/recovery and payment sandbox remain blocked. Production was not deployed or migrated; analytics and billing remain disabled.
+
+## 2026-11-07 - Production readiness foundations and reports
+
+- Added the additive Phase 9 migration for aggregate analytics and commercial metadata. It is not applied remotely.
+- Added configurable subscription-plan/entitlement helpers and a payment-provider contract; no provider, live billing, or API lifecycle is configured.
+- Added a CodeQL workflow; it has not run because the local changes have not been pushed.
+- Added Phase 8-12 implementation/readiness reports, database migration report, complete local test results, and updated deployment/recovery guide.
+- Reconciled the project progress taxonomy to the current Phase 8-12 scope; prior Phase 8-11 documents are now explicitly historical.
+- Full local tests passed (284 JavaScript/Worker, 14 Python). Worker dry-run succeeded; duplicate object keys reported by the bundler were removed. No deployment, production migration, analytics enablement, or billing activation was performed.
+
 ## 2026-11-07 - Phases 8-11 local foundations
 
 - Added a metadata-empty legislation title catalog and date-bounded historical source resolver. Unknown dates, URLs, provisions, and legal statuses are not invented; the resolver explicitly does not establish corpus completeness or filing approval.

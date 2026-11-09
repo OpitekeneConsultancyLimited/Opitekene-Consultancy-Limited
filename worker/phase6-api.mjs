@@ -181,7 +181,6 @@ function clientFromRow(row) {
     legalBusinessName: row.legalBusinessName,
     tin: row.tin,
     registrationNumber: row.registrationNumber,
-    registrationNumber: row.registrationNumber,
     entityType: row.entityType,
     taxpayerCategory: row.taxpayerCategory,
     status: row.status,

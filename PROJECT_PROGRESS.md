@@ -2,7 +2,9 @@
 
 Project: Opitekene TaxComp 2.0  
 Current scope: `TaxComp-Prototype/`  
-Updated: 2026-11-04
+Updated: 2026-11-07
+
+The current production-readiness command supersedes the earlier Phase 8-11 taxonomy below. Current mapping: Phase 8 security/reliability, Phase 9 database/production operations, Phase 10 analytics/monitoring, Phase 11 commercialization/launch, and Phase 12 legal-source verification/tax accuracy. The detailed reports named below are authoritative for these phases.
 
 ## Phase Status
 
@@ -14,19 +16,21 @@ Updated: 2026-11-04
 | 4. Multi-tax-head engine | Complete | The transaction analyser classifies scenario type, keeps tax heads separate, reports risks and missing facts, and avoids presenting a consolidated net payable. |
 | 5. AI Tax Advisor and Case-Law Intelligence | Complete with documented limitations | Tasks 1-12 are implemented and verified at the module/workflow level. No verified legal corpus is populated and the new Node advisor/report API is not deployed behind the static chat UI. |
 | 6. Business operations | In progress — local implementation tested; deployment/security gates blocked | D1-compatible schema and Worker APIs, local password/session auth, tenant/client scoping, client/compliance/document/scenario/report/engagement workflows, and browser screens are implemented. Remote migration, provider bindings, authenticated browser deployment, backup/restore, and security review are not verified; the operations gate is disabled. |
-| 7. Security and commercialisation | Not started | General product-wide roles, tenant controls, and subscription architecture remain outstanding; paid billing is not active. |
-| 8. Legal intelligence and tax accuracy | Started — catalog and historical-source resolver implemented; legal corpus remains unverified | Build the verified Ugandan tax knowledge system, legislation repository, government guidance records, case-law intelligence, and historical tax-period resolution without inventing legal content. |
-| 9. Secure deployment and production readiness | Started — deployment gate helper and fail-closed checks added | Harden deployment, authenticated browser/API integration, D1/R2/email provider configuration, backups, monitoring, and fail-closed security controls. |
-| 10. Scale, analytics and operations | Started — operations analytics service added behind a review gate | Add usage analytics, reporting, practice dashboards, and tenant-safe operational controls that remain within the verified legal and technical guardrails. |
-| 11. Commercial launch and governance | Started — authenticated approval gate implemented; billing and external approvals not configured | Prepare legal/commercial controls, billing, support workflows, and a launch gate that requires independent review before live production use. |
+| 7. Security and commercialisation (legacy roadmap item) | Superseded by current Phase 8 and Phase 11 scope | Track remaining controls and approvals in `PHASE8_IMPLEMENTATION_REPORT.md` and `PHASE11_IMPLEMENTATION_REPORT.md`; paid billing is not active. |
+| 8. Security and reliability | Partial; production acceptance blocked | Password/session/authorization foundations and fail-closed gates exist. Encryption/key rotation, production backup/restore, scans and independent security review remain outstanding. |
+| 9. Database and production operations | Partial; staging/production acceptance blocked | Local migrations and SQLite restore tests pass; remote migrations 0004-0006 remain pending. No remote migration was applied. |
+| 10. Analytics and monitoring | Partial; production analytics disabled | Operational summary, allowlisted aggregate ingestion/retention contract and unit tests exist. Production event wiring, scheduled retention, separate admin reporting and privacy approval remain outstanding. |
+| 11. Commercialization and launch | Partial; launch blocked | Subscription/entitlement helpers and fail-closed launch checklist exist. Provider integration, sandbox lifecycle, legal/support readiness and launch approvals remain outstanding. |
+| 12. Legal source verification and tax accuracy | Blocked pending qualified review | Metadata-only legal catalog and historical resolver exist; official source corpus and filing-approved mappings are not established. |
 
-### Phases 8-11 local implementation status
+### Current implementation status
 
-- **Phase 8:** A legislation title catalog and period resolver are implemented. Catalog entries intentionally have no invented dates, URLs, provisions, or verification status. The resolver reports matching registered sources and dated amendments, but marks corpus completeness as `not-established` and never approves filing. The authoritative legal text, verified amendment history, URA source ingestion, reviewed case corpus, and qualified reviewer approvals are still outstanding.
-- **Phase 9:** The Phase 6 API deployment gate now validates required security flags and core bindings before allowing requests. Production deployment, remote D1 migration, configured R2/email/scanner services, backup/restore evidence, and independent security/privacy sign-off remain external blockers.
-- **Phase 10:** Tenant-scoped dashboard counts feed a workload/review-queue summary. The analytics feature flag is explicitly false by default; enabling it still requires governance review. No telemetry export or cross-tenant analytics is enabled.
-- **Phase 11:** `/api/phase6/governance/readiness` returns a sanitized launch-readiness checklist to authorized administrators and records an audit event. All approval flags default to false. The endpoint does not activate billing; no payment provider or live subscription workflow exists.
-- Final local verification after these changes: JavaScript/Worker 280/280 passed and Python 12/12 passed. These tests do not satisfy external deployment, legal, privacy, security, or payment-provider acceptance gates.
+- **Phase 8:** PBKDF2 password hashing, secure-session/CSRF/lockout/RBAC foundations, security headers and deployment gates are present. At-rest encryption/key rotation and full backup/restore are not verified; independent security scanning/review remains pending.
+- **Phase 9:** Migration 0006 is additive. Local schema/restore tests pass, but remote migrations 0004-0006 are pending. Do not apply without staging evidence and explicit approval.
+- **Phase 10:** Operational analytics remain disabled; a privacy-minimized ingestion/retention contract is locally tested but not wired to API event sources or a scheduled job. Admin reporting and privacy approval remain outstanding.
+- **Phase 11:** Configurable plan/entitlement helpers and a provider interface are local foundations only; they are not integrated with billing APIs or persisted lifecycle.
+- **Phase 12:** No tax source is filing-approved without qualified review. Catalog completeness and legal accuracy remain unestablished.
+- Latest complete verification: JavaScript/Worker 301/301 and Python 17/17 passed; focused security/API suite 28/28 and migration/restore suite 9/9 passed. RC7 CI and CodeQL passed; CodeQL reports zero open alerts. External security, encryption, recovery, D1 staging, payments, legal review, and approvals remain outstanding.
 
 ## Phase 6 - Step 1 domain contracts
 
@@ -58,7 +62,7 @@ Updated: 2026-11-04
 - Added `PROJECT_AUDIT.md` with the selected project boundary, architecture, feature inventory, gaps, test baseline, and limitations.
 - Added `TAX_RULES_REGISTER.md`; existing registered rules remain pending primary-source verification and not approved for filing.
 - Added `CHANGELOG.md`.
-- Created and verified `../TaxComp-Prototype-phase1-backup.tar.gz` before adding audit documents. No Git branch could be created because Git metadata and the Git executable are unavailable in this environment.
+- Created and verified `../TaxComp-Prototype-phase1-backup.tar.gz` before adding audit documents. At that checkpoint no local Git branch could be created because Git metadata and the Git executable were unavailable; the review candidate was later committed through GitHub's Git Data API.
 - No application code, tax logic, database schema, or existing workflow was modified.
 
 ## Phase 2 Deliverables

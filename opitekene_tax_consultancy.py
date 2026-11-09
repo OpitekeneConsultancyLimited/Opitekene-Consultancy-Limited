@@ -1,24 +1,23 @@
-"""Run the Opitekene Tax Consultancy website from a single Python script without a project folder.
+"""Run the Opitekene Tax Solutions website from a single Python script without a project folder.
 
 Copy this file to another computer, open it in VS Code, and run:
     py opitekene_tax_consultancy.py
 
-The script downloads the public Opitekene Tax Consultancy site into memory and serves it locally.
+The script downloads the public Opitekene Tax Solutions site into memory and serves it locally.
 It does not create a project folder. Internet access is needed each
 time the script starts. Press Ctrl+C in the terminal to stop the server.
 """
 
-from functools import partial
+from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from threading import Timer
 from urllib.error import URLError
 from urllib.parse import unquote, urlsplit
 from urllib.request import Request, urlopen
 import argparse
 import json
-import mimetypes
 import re
 import stat
 import webbrowser
@@ -73,8 +72,20 @@ MOBILE_FIX_CSS = """
       padding: 10px 0 !important;
     }
 
+    /* Keep navigation usable on phones: one swipeable row instead of hiding it. */
     .main-nav {
-      display: none !important;
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 8px !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px !important;
+    }
+
+    .main-nav a {
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
     }
 
     .hero {
@@ -157,7 +168,7 @@ MOBILE_FIX_CSS = """
       box-sizing: border-box !important;
     }
 
-    input,
+    input:not([type="checkbox"]):not([type="radio"]),
     select,
     textarea,
     button {
@@ -166,17 +177,16 @@ MOBILE_FIX_CSS = """
       box-sizing: border-box !important;
     }
 
-    table,
-    thead,
-    tbody,
-    tr,
-    th,
-    td {
+    /* Tables keep their row/column layout and scroll sideways when too wide. */
+    table {
       display: block !important;
-      width: 100% !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
     }
 
     .worked-example-table-wrap {
+      max-width: 100% !important;
       overflow-x: auto !important;
     }
   }
@@ -313,59 +323,85 @@ def load_site(archive_data):
     return files
 
 
+# Splits HTML into markup (comments, <script>/<style> blocks, tags) and the text
+# between them. With a capturing group, re.split puts markup at odd indices.
+_MARKUP = re.compile(
+    r"(<!--.*?-->|<script\b.*?</script\s*>|<style\b.*?</style\s*>|<[^>]*>)",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+
+def replace_visible_text(html, old, new):
+    """Replace text that users see, never tag names, attributes, scripts or styles.
+
+    This keeps hooks such as <meta name="taxcomp-chat-endpoint"> and icon file
+    names intact, which the site's JavaScript and manifest depend on.
+    """
+    parts = _MARKUP.split(html)
+    for index in range(0, len(parts), 2):
+        parts[index] = parts[index].replace(old, new)
+    return "".join(parts)
+
+
+def set_meta(html, attribute, key, content):
+    """Set <meta {attribute}="{key}" content="..."> in place, or add it to <head>."""
+    tag = f'<meta {attribute}="{escape(key)}" content="{escape(content)}">'
+    pattern = re.compile(
+        rf"<meta\b[^>]*\s{attribute}\s*=\s*[\"']{re.escape(key)}[\"'][^>]*>",
+        flags=re.IGNORECASE,
+    )
+    html, count = pattern.subn(lambda _match: tag, html, count=1)
+    if count == 0:
+        html = html.replace("</head>", f"{tag}\n</head>", 1)
+    return html
+
+
 def apply_branding(site_files):
     if "index.html" not in site_files:
         return
 
-    html = site_files["index.html"].decode("utf-8", errors="replace")
-    html = re.sub(r"<title>.*?</title>", f"<title>{APP_NAME}</title>", html, flags=re.IGNORECASE | re.DOTALL)
-    html = html.replace("TaxComp", APP_NAME)
-    html = html.replace("taxcomp", "opitekene tax solutions")
-    html = html.replace("TaxComp Uganda", APP_NAME)
-    html = html.replace("opitekene tax solutions-192.png", "taxcomp-192.png")
-    html = html.replace("opitekene tax solutions-180.png", "taxcomp-180.png")
-    html = html.replace("taxcomp-192.png", "taxcomp-192.png")
-    html = html.replace("taxcomp-180.png", "taxcomp-180.png")
-    html = html.replace("<meta name=\"apple-mobile-web-app-title\" content=\"TaxComp\">", f'<meta name="apple-mobile-web-app-title" content="{APP_NAME}">')
-    html = html.replace('name="application-name" content="TaxComp"', f'name="application-name" content="{SEARCH_NAME}"')
-    html = html.replace('content="TaxComp Uganda | Tax calculators"', f'content="{APP_NAME} | Tax calculators"')
-
-    if "<meta name=\"description\"" in html:
-        html = re.sub(
-            r'<meta name="description" content="[^"]*">',
-            f'<meta name="description" content="{APP_NAME} offers tax guidance, calculators, advisory services, and compliance support for Ugandan businesses and taxpayers.">',
-            html,
-            count=1,
-            flags=re.IGNORECASE,
-        )
-    else:
-        html = html.replace("</head>", f'<meta name="description" content="{APP_NAME} offers tax guidance, calculators, advisory services, and compliance support for Ugandan businesses and taxpayers.">\n</head>', 1)
-
-    seo = (
-        f'<meta name="keywords" content="{SEARCH_NAME}, Opitekene Tax Solutions, Uganda tax advisory, tax calculator, tax consultancy, tax compliance">\n'
-        f'<meta property="og:title" content="{APP_NAME}">\n'
-        f'<meta property="og:site_name" content="{APP_NAME}">\n'
-        f'<meta property="og:description" content="{APP_NAME} offers practical tax guidance, calculators, and advisory support for Uganda.">\n'
-        f'<meta name="application-name" content="{SEARCH_NAME}">\n'
-        f'<meta name="robots" content="index, follow">\n'
+    description = (
+        f"{APP_NAME} offers tax guidance, calculators, advisory services, "
+        "and compliance support for Ugandan businesses and taxpayers."
     )
-    if "<meta name=\"keywords\"" not in html:
-        html = html.replace("</head>", f"{seo}</head>", 1)
+
+    html = site_files["index.html"].decode("utf-8", errors="replace")
+    html = re.sub(
+        r"<title>.*?</title>",
+        lambda _match: f"<title>{escape(APP_NAME)}</title>",
+        html,
+        count=1,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # Longest phrase first so "TaxComp Uganda" does not become "<name> Uganda".
+    html = replace_visible_text(html, "TaxComp Uganda", APP_NAME)
+    html = replace_visible_text(html, "TaxComp", APP_NAME)
+
+    for attribute, key, content in (
+        ("name", "description", description),
+        ("name", "application-name", SEARCH_NAME),
+        ("name", "apple-mobile-web-app-title", APP_NAME),
+        ("name", "keywords", f"{SEARCH_NAME}, {APP_NAME}, Uganda tax advisory, tax calculator, tax consultancy, tax compliance"),
+        ("name", "robots", "index, follow"),
+        ("property", "og:title", APP_NAME),
+        ("property", "og:site_name", APP_NAME),
+        ("property", "og:description", description),
+    ):
+        html = set_meta(html, attribute, key, content)
 
     site_files["index.html"] = html.encode("utf-8")
 
     if "manifest.webmanifest" in site_files:
-        manifest = json.loads(site_files["manifest.webmanifest"].decode("utf-8", errors="replace"))
-        manifest["name"] = APP_NAME
-        manifest["short_name"] = SEARCH_NAME
-        manifest["description"] = f"{APP_NAME} offers tax guidance, calculators, and advisory support for Ugandan taxpayers and businesses."
-        if "icons" in manifest:
-            for icon in manifest["icons"]:
-                if "taxcomp-192" in icon.get("src", "") or "taxcomp-180" in icon.get("src", ""):
-                    continue
-                if "name" in icon:
-                    icon["name"] = APP_NAME
-        site_files["manifest.webmanifest"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
+        try:
+            manifest = json.loads(site_files["manifest.webmanifest"].decode("utf-8", errors="replace"))
+        except ValueError:
+            print("Warning: manifest.webmanifest is not valid JSON; leaving it unchanged.")
+            return
+        if isinstance(manifest, dict):
+            manifest["name"] = APP_NAME
+            manifest["short_name"] = SEARCH_NAME
+            manifest["description"] = description
+            site_files["manifest.webmanifest"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
 
 
 def apply_mobile_fixes(site_files):
@@ -384,6 +420,41 @@ def apply_mobile_fixes(site_files):
     site_files["index.html"] = html.encode("utf-8")
 
 
+def response_content_type(path):
+    suffix = PurePosixPath(path).suffix.lower()
+    if suffix == ".webmanifest":
+        return "application/manifest+json"
+    if suffix in {".html", ".htm"}:
+        return "text/html"
+    if suffix == ".css":
+        return "text/css"
+    if suffix in {".js", ".mjs"}:
+        return "application/javascript"
+    if suffix == ".json":
+        return "application/json"
+    if suffix == ".xml":
+        return "application/xml"
+    if suffix == ".svg":
+        return "image/svg+xml"
+    if suffix == ".png":
+        return "image/png"
+    if suffix in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if suffix == ".gif":
+        return "image/gif"
+    if suffix == ".webp":
+        return "image/webp"
+    if suffix == ".ico":
+        return "image/x-icon"
+    if suffix == ".woff2":
+        return "font/woff2"
+    if suffix == ".woff":
+        return "font/woff"
+    if suffix == ".pdf":
+        return "application/pdf"
+    return "application/octet-stream"
+
+
 def make_handler(site_files):
     class TaxCompHandler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -393,26 +464,22 @@ def make_handler(site_files):
             self._serve(send_body=False)
 
         def _serve(self, send_body=True):
-            raw_path = unquote(urlsplit(self.path).path)
-            path = raw_path.lstrip("/") or "index.html"
+            path = unquote(urlsplit(self.path).path).lstrip("/")
+            # Decide on the directory index before PurePosixPath drops the trailing slash.
+            if path == "" or path.endswith("/"):
+                path += "index.html"
             requested_path = PurePosixPath(path)
             if requested_path.is_absolute() or ".." in requested_path.parts or "\\" in path:
                 self.send_error(404)
                 return
 
             normalized_path = requested_path.as_posix()
-            if normalized_path.endswith("/"):
-                normalized_path += "index.html"
             content = site_files.get(normalized_path)
-            if content is None and raw_path.endswith("/"):
-                content = site_files.get(normalized_path)
             if content is None:
                 self.send_error(404)
                 return
 
-            content_type = mimetypes.guess_type(normalized_path)[0] or "application/octet-stream"
-            if normalized_path.endswith(".webmanifest"):
-                content_type = "application/manifest+json"
+            content_type = response_content_type(normalized_path)
 
             self.send_response(200)
             self.send_header("Content-Type", f"{content_type}; charset=utf-8"
@@ -480,7 +547,7 @@ def main():
     except OSError as error:
         raise SystemExit(
             f"Could not start the local website on port {args.port}. "
-            f"Try again with: py {__file__.split('/')[-1]} --port 0"
+            f"Try again with: py {Path(__file__).name} --port 0"
         ) from error
 
 

@@ -674,7 +674,6 @@
       parties: "relatedparty",
       beneficial: "beneficial",
       ownership: "ownership",
-      procurement: "procurement",
       tender: "procurement",
       contracts: "contract",
       contract: "contract",

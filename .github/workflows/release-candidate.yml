@@ -1,0 +1,46 @@
+name: Release candidate validation
+
+on:
+  push:
+    branches:
+      - "release-candidate/**"
+  pull_request:
+    branches:
+      - "release-candidate/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-candidate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test JavaScript and Worker suites
+        run: node --test *.test.js worker/*.test.mjs
+
+      - name: Test Python suites
+        run: python -m unittest discover -s . -q
+
+      - name: Test migration and restore suite
+        run: python -m unittest test_phase6_migration -v
+
+      - name: Build Worker without deploying
+        run: npx --yes wrangler@4.158.0 deploy --dry-run

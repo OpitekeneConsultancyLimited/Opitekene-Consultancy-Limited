@@ -1,0 +1,49 @@
+{
+  "product": "Opitekene TaxComp 2.0",
+  "releaseCandidate": true,
+  "releaseStatus": "review candidate; not approved for production",
+  "productionBaseline": {
+    "repository": "OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited",
+    "commit": "6572ba8dbc693dc827bf3cb561f5656bbc41bc86",
+    "tree": "b84f7ae87890464b0747c474e4ef6409baabf3aa"
+  },
+  "candidate": {
+    "branch": "release-candidate/2026-11-07-production-gate",
+    "tag": "taxcomp-2.0.0-rc.8",
+    "supersedesTag": "taxcomp-2.0.0-rc.7",
+    "deploymentAuthorized": false,
+    "foundationCommit": "fe27d7231d7774da7448a252aa1599b83395ff2e",
+    "foundationTree": "05cfbc828ab7194e8d3454ee9301a9871ab93f12",
+    "tagIsSigned": false
+  },
+  "verification": {
+    "javascriptAndWorker": "301 passed, 0 failed",
+    "python": "17 passed, 0 failed",
+    "focusedSecurityApiAnalyticsSubscription": "28 passed, 0 failed",
+    "migrationAndRestore": "9 passed, 0 failed",
+    "workerDryRun": "passed"
+  },
+  "releaseGates": {
+    "sourceIntegrity": "candidate branch and source commit verified; tag is unsigned",
+    "atRestEncryptionAndKeyRotation": "blocked",
+    "candidateValidationWorkflow": "RC7 passed; candidate branch pushes are required to pass validation",
+    "candidateCodeQLWorkflow": "RC7 passed with zero open alerts; candidate branch pushes are required to pass CodeQL",
+    "independentSecurityScans": "blocked",
+    "stagingD1MigrationAndRollback": "blocked",
+    "providerBackupAndFullRestore": "blocked",
+    "paymentSandbox": "blocked",
+    "qualifiedLegalReview": "blocked",
+    "productionApproval": "not granted"
+  },
+  "safety": {
+    "productionDeploymentPerformed": false,
+    "remoteProductionMigrationsApplied": false,
+    "analyticsEnabled": false,
+    "liveBillingEnabled": false
+  },
+  "checksums": {
+    "file": "RELEASE_CHECKSUMS.txt",
+    "algorithm": "SHA-256",
+    "checksumFileExcludedFromItsOwnDigestList": true
+  }
+}
