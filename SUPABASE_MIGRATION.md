@@ -1,7 +1,20 @@
 # Moving TaxComp from Cloudflare D1 to Supabase
 
-Status: **Phase 1 (database) built and tested. Not yet switched on in production.**
+Status: **Phase 1 (database) built, tested and provisioned. Not yet switched on in production.**
 Phase 2 (document storage) and Phase 3 (Supabase Auth) come next.
+
+### Provisioned on 2026-11-09 (one-time setup steps 1–5 below are DONE)
+| Item | Value |
+|---|---|
+| Supabase project | `xbooviddjkikcbccfcnw` ("opitekenecons-lab's Project", eu-west-1, Postgres 17), org OPITEKENE CONSULTANCY LIMITED |
+| Migrations applied | `20261109000000_taxcomp_schema`, `20261109000100_audit_logs_append_only` (via `supabase db push`) |
+| Worker DB login | role `taxcomp_worker`. Its password and connection string are in `%USERPROFILE%\TaxComp-secrets\supabase-taxcomp-worker.txt` (outside OneDrive, owner-only). Move them to a password manager and delete the file. |
+| Verified | login through session pooler; `search_path=taxcomp`; 34 tables; cannot read `auth.*` or create tables; audit tables INSERT/SELECT only; adapter round trip OK |
+| Hyperdrive | `taxcomp-supabase`, id `1ec8106d082a4e309115ab818454fc8b` (already in `wrangler.toml`, commented out) |
+
+Re-running migrations by hand: always run **all** files in `supabase/migrations` in
+name order. Re-running only the first one re-grants privileges a later one revokes.
+Prefer `npx supabase@2.121.0 db push --linked`, which tracks what has been applied.
 
 ## How it works
 

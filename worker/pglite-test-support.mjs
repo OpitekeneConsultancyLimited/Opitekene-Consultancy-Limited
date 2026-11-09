@@ -1,14 +1,21 @@
 // Test-only helpers: a real Postgres engine (PGlite, in-process) with the
 // Supabase migration applied, exposed through the same D1-compatible adapter
 // the Worker uses in production. Not imported by the Worker bundle.
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { createPostgresDatabase } from "./db.mjs";
 
 const projectDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-export const migrationPath = path.join(projectDir, "supabase", "migrations", "20261109000000_taxcomp_schema.sql");
+export const migrationsDir = path.join(projectDir, "supabase", "migrations");
+export const migrationPath = path.join(migrationsDir, "20261109000000_taxcomp_schema.sql");
+
+/** All Supabase migrations in apply order (file names are timestamp-prefixed). */
+export async function migrationFiles() {
+  return (await readdir(migrationsDir)).filter((name) => name.endsWith(".sql")).sort()
+    .map((name) => path.join(migrationsDir, name));
+}
 
 export function createPgliteDriver(pg) {
   return {
@@ -31,7 +38,7 @@ const numberParsers = { 20: (value) => Number(value), 1700: (value) => Number(va
 export async function createMigratedDatabase() {
   const pg = new PGlite({ parsers: numberParsers });
   await pg.waitReady;
-  await pg.exec(await readFile(migrationPath, "utf8"));
+  for (const file of await migrationFiles()) await pg.exec(await readFile(file, "utf8"));
   await pg.exec("SET search_path TO taxcomp");
   return { pg, db: createPostgresDatabase(createPgliteDriver(pg)) };
 }

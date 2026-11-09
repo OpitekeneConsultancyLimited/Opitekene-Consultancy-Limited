@@ -25,12 +25,14 @@ PHASE11_PUBLIC_LAUNCH_APPROVED = "false"
 
 # Supabase Postgres through Cloudflare Hyperdrive. When this binding exists the
 # Worker uses Supabase for all data; remove it to fall back to the D1 binding
-# below. Create it with (see SUPABASE_MIGRATION.md):
+# below. Config "taxcomp-supabase" (created 2026-11-09) points at Supabase
+# project xbooviddjkikcbccfcnw as role taxcomp_worker. To switch production to
+# Supabase, uncomment the three lines below (see SUPABASE_MIGRATION.md, "Cut over").
+# It was created with:
 #   npx wrangler hyperdrive create taxcomp-supabase --connection-string="<Supabase session pooler URL>"
-# then uncomment and paste the returned id:
 # [[hyperdrive]]
 # binding = "HYPERDRIVE"
-# id = "<hyperdrive-config-id>"
+# id = "1ec8106d082a4e309115ab818454fc8b"
 
 # Legacy D1 database. Kept during the Supabase cutover for rollback.
 [[d1_databases]]

@@ -6,7 +6,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { translateSql, toD1Error, withDatabase } from "./db.mjs";
-import { createMigratedDatabase, migrationPath } from "./pglite-test-support.mjs";
+import { createMigratedDatabase, migrationFiles } from "./pglite-test-support.mjs";
 
 const workerDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -82,7 +82,9 @@ test("toD1Error maps Postgres constraint errors to SQLite wording without row va
 
 test("Supabase migration applies twice, enables RLS everywhere and keeps API roles out", async () => {
   const { pg } = await createMigratedDatabase();
-  await pg.exec(await readFile(migrationPath, "utf8")); // idempotent re-run
+  // Idempotent re-run of the whole sequence (re-running only the first file
+  // would re-grant privileges that later migrations revoke).
+  for (const file of await migrationFiles()) await pg.exec(await readFile(file, "utf8"));
   const tables = await pg.query("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'taxcomp' ORDER BY 1");
   assert.equal(tables.rows.length, 34, "all 34 tables from D1 migrations 0001-0006");
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
@@ -91,6 +93,15 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   const role = await pg.query("SELECT rolcanlogin, rolconfig FROM pg_roles WHERE rolname = 'taxcomp_worker'");
   assert.equal(role.rows[0].rolcanlogin, false, "the migration must not create a login/password");
   assert.deepEqual(role.rows[0].rolconfig, ["search_path=taxcomp"]);
+  const auditGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
+    FROM information_schema.role_table_grants
+    WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp' AND table_name LIKE '%audit%'
+    GROUP BY table_name ORDER BY table_name`);
+  assert.deepEqual(auditGrants.rows, [
+    { table_name: "efris_audit_log", privileges: "INSERT,SELECT" },
+    { table_name: "legal_source_audit", privileges: "INSERT,SELECT" },
+    { table_name: "phase6_audit_log", privileges: "INSERT,SELECT" },
+  ], "audit trails are append-only for the Worker role");
   await pg.close();
 });
 
