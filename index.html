@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f6f7f2">
+    <meta name="theme-color" content="#0a1f3c">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Opitekene TaxComp">
@@ -25,17 +25,35 @@
          before any other file loads (no flash of the site). */
       html:not([data-auth="in"]) body > :not(#auth-gate) { display: none !important; }
       html[data-auth="in"] #auth-gate { display: none !important; }
-      #auth-gate { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: #f6f7f2; color: #172820;
-        padding: 32px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
-      .auth-gate-card { width: min(100%, 460px); background: #fff; border: 1px solid #e4e9e2; border-radius: 12px; padding: 28px 24px; box-shadow: 0 10px 30px rgba(23, 40, 32, 0.08); }
-      .auth-gate-brand { margin: 0 0 6px; color: #176345; font: 700 13px/1.2 "Segoe UI", Arial, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
-      .auth-gate-card h1 { margin: 0 0 14px; font: 700 28px/1.15 Georgia, "Times New Roman", serif; }
-      .auth-gate-loading { margin: 0; color: #64736a; font: 400 14px/1.5 "Segoe UI", Arial, sans-serif; }
+      #auth-gate { min-height: 100vh; min-height: 100dvh; display: grid; align-items: center; box-sizing: border-box;
+        background: linear-gradient(135deg, #0a1f3c 0%, #12305a 58%, #0d4f5c 100%); color: #fff;
+        font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+        padding: 40px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+      .gate-shell { width: min(100%, 1080px); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 440px); gap: 56px; align-items: center; }
+      .gate-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 28px; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; color: #cfe0f2; }
+      .gate-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #14b8a6; color: #0a1f3c; font-weight: 800; font-size: 17px; }
+      .gate-intro h1 { margin: 0 0 16px; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 750; text-wrap: balance; }
+      .gate-lead { margin: 0 0 30px; max-width: 34em; color: #c5d3e4; font-size: 17px; line-height: 1.55; }
+      .gate-services { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .gate-services li { padding: 14px 16px; border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; background: rgba(255,255,255,0.05); }
+      .gate-services strong { display: block; margin-bottom: 4px; font-size: 14px; color: #fff; }
+      .gate-services span { font-size: 13px; line-height: 1.45; color: #b6c6da; }
+      .auth-gate-card { background: #fff; color: #0f1f38; border-radius: 16px; padding: 30px 28px; box-shadow: 0 24px 60px rgba(4, 14, 30, 0.35); }
+      .gate-card-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+      .gate-card-note { margin: 0 0 14px; color: #5a6a7e; font-size: 14px; line-height: 1.5; }
+      .auth-gate-loading { margin: 0; color: #5a6a7e; font-size: 14px; line-height: 1.5; }
       #auth-gate .phase6-form { grid-template-columns: 1fr; max-width: none; border-top: 0; padding-top: 12px; }
       #auth-gate .phase6-tabs { padding-top: 0; }
       #auth-gate .primary-button, #auth-gate .secondary-button { width: 100%; justify-content: center; }
+      @media (max-width: 860px) {
+        .gate-shell { grid-template-columns: 1fr; gap: 28px; }
+        .gate-services { grid-template-columns: 1fr; }
+        .gate-lead { margin-bottom: 20px; }
+      }
     </style>
-    <link rel="stylesheet" href="styles.css?v=auth-gate-1">
+    <link rel="stylesheet" href="styles.css?v=redesign-1">
+    <link rel="stylesheet" href="design.css?v=redesign-1">
+    <script src="site-router.js?v=redesign-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -59,33 +77,67 @@
   </head>
   <body>
     <div id="auth-gate" role="region" aria-labelledby="auth-gate-title">
-      <div class="auth-gate-card">
-        <p class="auth-gate-brand">Opitekene TaxComp</p>
-        <h1 id="auth-gate-title">Sign in to continue</h1>
-        <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
-        <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
+      <div class="gate-shell">
+        <div class="gate-intro">
+          <p class="gate-brand"><span class="gate-mark" aria-hidden="true">O</span> Opitekene Consultancy Limited · TaxComp</p>
+          <h1 id="auth-gate-title">Smarter Tax Management. Better Business Decisions.</h1>
+          <p class="gate-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
+          <ul class="gate-services" aria-label="What you get after signing in">
+            <li><strong>Tax Calculators</strong><span>Uganda FY 2026/27 estimates with every step shown.</span></li>
+            <li><strong>Tax Advisory &amp; Knowledge</strong><span>Source-linked guides, case notes and law updates.</span></li>
+            <li><strong>AI Tax Assistant</strong><span>Ask Uganda tax questions and check the cited sources.</span></li>
+            <li><strong>Business Workspace</strong><span>Clients, compliance, documents and reports for firms.</span></li>
+          </ul>
+        </div>
+        <div class="auth-gate-card">
+          <h2 class="gate-card-title">Welcome</h2>
+          <p class="gate-card-note">Sign in, or create an account to continue.</p>
+          <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
+          <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
+        </div>
       </div>
     </div>
-    <header class="site-header">
-      <a class="brand" href="#" aria-label="Opitekene TaxComp home">
+    <header class="site-header-bar">
+      <div class="site-header">
+      <a class="brand" href="#home" aria-label="Opitekene TaxComp home">
         <span class="brand-mark" aria-hidden="true">O</span>
-        <span>Opitekene <span class="brand-country">TaxComp</span></span>
+        <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="#estimator">Tax solutions</a>
-        <a href="#multi-tax-analysis">Multi-tax analysis</a>
-        <a href="#international-tax">International tax</a>
-        <a href="#advisory">Knowledge centre</a>
-        <a href="#phase6-workspace">Practice workspace</a>
-        <a href="#account">Account</a>
-        <a href="#law-updates">Tax updates</a>
-        <a href="#contact">Contact</a>
+      <button class="site-nav-toggle" id="site-nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span class="site-nav-toggle-bars" aria-hidden="true"></span><span class="visually-hidden">Menu</span>
+      </button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="#home" data-nav-view="home">Home</a>
+        <div class="nav-menu" data-menu>
+          <button type="button" class="nav-menu-toggle" data-menu-toggle data-nav-view="tools" aria-expanded="false" aria-controls="menu-tools">Tax Tools<span class="nav-caret" aria-hidden="true"></span></button>
+          <div class="nav-menu-panel" id="menu-tools">
+            <a href="#calc-individual">Income Tax</a>
+            <a href="#calc-paye">PAYE Calculator</a>
+            <a href="#calc-vat">VAT Calculator</a>
+            <a href="#calc-withholding">Withholding Tax</a>
+            <a href="#calc-rental">Rental Income Tax</a>
+            <a href="#tools">Other Tax Calculators</a>
+          </div>
+        </div>
+        <div class="nav-menu" data-menu>
+          <button type="button" class="nav-menu-toggle" data-menu-toggle data-nav-view="knowledge" aria-expanded="false" aria-controls="menu-knowledge">Tax Knowledge<span class="nav-caret" aria-hidden="true"></span></button>
+          <div class="nav-menu-panel" id="menu-knowledge">
+            <a href="#kb-guides">Tax Guides</a>
+            <a href="#kb-laws">Tax Laws and Regulations</a>
+            <a href="#kb-cases">Tax Case Law</a>
+            <a href="#kb-updates">Tax Updates</a>
+            <a href="#kb-compliance">Compliance Resources</a>
+          </div>
+        </div>
+        <a href="#assistant" data-nav-view="assistant">AI Tax Assistant</a>
+        <a href="#workspace" data-nav-view="workspace">Business Workspace</a>
+        <a href="#about" data-nav-view="about">About Us</a>
       </nav>
-      <a class="header-link" href="#contact">
-        Book a consultation
-        <span aria-hidden="true">↗</span>
-      </a>
-      <button class="header-link install-app-button" id="install-app" data-install-app type="button" hidden>Install app</button>
+      <div class="header-actions">
+        <button class="header-link install-app-button" id="install-app" data-install-app type="button" hidden>Install app</button>
+        <a class="header-account" href="#ws-settings">My account</a>
+      </div>
+      </div>
     </header>
     <p class="install-app-help" id="install-help" role="status" hidden></p>
     <aside class="mobile-install-banner" id="mobile-install-banner" aria-label="Install TaxComp on your phone" hidden>
@@ -97,97 +149,151 @@
     </aside>
 
     <main>
-      <section class="phase6-section" id="phase6-workspace" aria-labelledby="phase6-title">
-        <div class="phase6-heading">
-          <div>
-            <p class="eyebrow section-eyebrow">PRIVATE PRACTICE WORKSPACE</p>
-            <h2 id="phase6-title">Tax practice operations</h2>
-            <p>Client-linked records are served only through the authenticated Phase 6 API. Tax and legal status remains subject to source verification and professional review.</p>
-          </div>
-          <span class="phase6-status" id="phase6-status" role="status">Checking service configuration</span>
-        </div>
-        <div id="phase6-root" aria-live="polite"></div>
-      </section>
-
-      <section class="hero" aria-labelledby="page-title">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-dot"></span> UGANDA TAX SOLUTIONS</p>
-          <h1 id="page-title">Your Taxes.<br>Our Expertise.<br><span>Better Decisions.</span></h1>
-          <p class="hero-description">
-            Empowering individuals and businesses with practical tax estimates,
-            professional advice, and compliance support.
-          </p>
-          <p class="hero-tagline">Where Technology Meets Trusted Finance.</p>
-          <div class="hero-product-actions" aria-label="Popular tax services">
-            <a class="hero-product-action primary" href="#estimator">
-              <strong>Calculate my tax</strong>
-              <span>Explore tax estimates</span>
-            </a>
-            <a class="hero-product-action" href="#tax-chat">
-              <strong>Ask TaxComp AI</strong>
-              <span>Get source-linked guidance</span>
-            </a>
-            <a class="hero-product-action" href="#audit-health">
-              <strong>Check tax health</strong>
-              <span>Review a compliance checklist</span>
-            </a>
-            <a class="hero-product-action" href="#contact">
-              <strong>Talk to a consultant</strong>
-              <span>Book professional support</span>
-            </a>
-            <button class="hero-product-action" id="install-app-hero" data-install-app type="button">
-              <strong>Install TaxComp</strong>
-              <span>Free app for your phone or computer</span>
-            </button>
+      <section class="home-hero" id="home" data-view="home" aria-labelledby="page-title">
+        <div class="home-hero-inner">
+          <p class="kicker">Opitekene Consultancy Limited · Uganda</p>
+          <h1 id="page-title">Smarter Tax Management. <span>Better Business Decisions.</span></h1>
+          <p class="home-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
+          <div class="home-actions">
+            <a class="btn btn-primary" href="#tools">Explore Tax Tools</a>
+            <a class="btn btn-secondary" href="#assistant">Ask TaxComp AI</a>
           </div>
           <div class="trust-note">
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M10 2.5 3.75 5v4.2c0 3.7 2.65 7.15 6.25 8.3 3.6-1.15 6.25-4.6 6.25-8.3V5L10 2.5Z"></path>
               <path d="m7.2 9.9 1.8 1.8 3.8-4"></path>
             </svg>
-            Calculator figures stay in this browser. If AI chat is connected, messages are sent to Gemini through Cloudflare; don't share confidential details.
+            Calculator figures stay in this browser. AI questions go through Cloudflare to Anthropic Claude (Google Gemini as backup) only when you send them; don't share confidential details.
           </div>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="art-orbit orbit-one"></div>
-          <div class="art-orbit orbit-two"></div>
-          <div class="art-card">
-            <span class="art-card-label">YOUR ESTIMATE</span>
-            <span class="art-card-amount">UGX <strong>—</strong></span>
-            <span class="art-card-rule"></span>
-            <span class="art-card-caption">A little more clarity goes a long way.</span>
-          </div>
-          <span class="art-spark spark-one">✳</span>
-          <span class="art-spark spark-two">✳</span>
         </div>
       </section>
 
-      <section class="info-section" id="install-guide" aria-labelledby="install-guide-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow section-eyebrow">FREE APP · OFFLINE ACCESS</p>
-            <h2 id="install-guide-title">Install TaxComp on your device.</h2>
-          </div>
+      <section class="page-block" data-view="home" aria-labelledby="services-title">
+        <div class="block-head">
+          <p class="kicker">Services</p>
+          <h2 id="services-title">Everything for Uganda tax, in one place.</h2>
         </div>
-        <p>TaxComp is a free installable web app. Open this site once while online, then install it from your browser. The calculators and app shell can work offline after their first successful load; AI chat and external tax sources still need internet.</p>
-        <div class="install-guide-grid">
-          <article>
-            <h3>Android</h3>
-            <p>Open this page in Chrome, tap the three-dot menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
-          </article>
-          <article>
-            <h3>iPhone or iPad</h3>
-            <p>Open this page in Safari, tap <strong>Share</strong>, scroll down, and choose <strong>Add to Home Screen</strong>.</p>
-          </article>
-          <article>
-            <h3>Windows or Mac</h3>
-            <p>Open this page in Chrome or Edge, open the browser menu, and choose <strong>Install app</strong>.</p>
-          </article>
+        <div class="service-grid">
+          <a class="service-card" href="#tools"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span><h3>Tax Calculators</h3><p>PAYE, income tax, VAT, withholding, rental and more for FY 2026/27, with the working shown.</p><span class="service-link">Open tax tools</span></a>
+          <a class="service-card" href="#knowledge"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><h3>Tax Advisory and Knowledge</h3><p>Guides, laws and regulations, case law and updates, each linked to its source.</p><span class="service-link">Browse knowledge</span></a>
+          <a class="service-card" href="#assistant"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><h3>AI Tax Assistant</h3><p>Ask in plain language. Answers say what is verified and cite where it comes from.</p><span class="service-link">Ask a question</span></a>
+          <a class="service-card" href="#workspace"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><h3>Business Management Workspace</h3><p>For firms: clients, compliance deadlines, documents and reports in one private workspace.</p><span class="service-link">Open workspace</span></a>
         </div>
-        <p class="install-download-note">No separate APK or app-store download is required. This app is installed securely from the official TaxComp website.</p>
       </section>
 
-      <section class="estimator-section" id="estimator" aria-labelledby="estimator-title">
+      <section class="page-block why-block" data-view="home" aria-labelledby="why-title">
+        <div class="block-head">
+          <p class="kicker">Why Opitekene</p>
+          <h2 id="why-title">Tax guidance you can check.</h2>
+        </div>
+        <ul class="why-grid">
+          <li><strong>Built for Uganda</strong><span>Calculators follow the FY 2026/27 rules, including the amendments effective 1 July 2026.</span></li>
+          <li><strong>Transparent working</strong><span>Every estimate shows the rates, credits and assumptions behind it.</span></li>
+          <li><strong>Sources you can verify</strong><span>Guidance and AI answers link to URA, the law and published judgments.</span></li>
+          <li><strong>Private by default</strong><span>Calculator figures stay in your browser. Live web research runs only when you opt in.</span></li>
+        </ul>
+      </section>
+
+      <section class="home-cta" data-view="home" aria-labelledby="cta-title">
+        <h2 id="cta-title">Take control of your tax and financial management.</h2>
+        <p>Start with a calculator, ask the assistant, or talk to a consultant.</p>
+        <div class="home-actions">
+          <a class="btn btn-primary" href="#tools">Explore Tax Tools</a>
+          <a class="btn btn-on-dark" href="#contact">Talk to a consultant</a>
+          <button class="btn btn-on-dark" id="install-app-hero" data-install-app type="button">Install the app</button>
+        </div>
+      </section>
+
+      <section class="tools-catalogue page-block" id="tools" data-view="tools" aria-labelledby="tools-title">
+        <div class="page-head">
+          <p class="kicker">Tax Tools</p>
+          <h1 id="tools-title">Uganda Tax Calculators</h1>
+          <p>Estimates for FY 2026/27. Each result shows its working and assumptions.</p>
+        </div>
+        <div class="catalogue-controls">
+          <label class="visually-hidden" for="tool-search">Search calculators</label>
+          <input class="catalogue-search" id="tool-search" type="search" placeholder="Search calculators, e.g. salary, rent, imports" autocomplete="off">
+          <div class="chip-row" role="group" aria-label="Filter calculators by category">
+            <button type="button" class="chip" data-tool-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="chip" data-tool-filter="individuals" aria-pressed="false">Individuals &amp; employment</button>
+            <button type="button" class="chip" data-tool-filter="business" aria-pressed="false">Business</button>
+            <button type="button" class="chip" data-tool-filter="indirect" aria-pressed="false">VAT &amp; customs</button>
+            <button type="button" class="chip" data-tool-filter="property" aria-pressed="false">Assets &amp; property</button>
+            <button type="button" class="chip" data-tool-filter="international" aria-pressed="false">International</button>
+          </div>
+        </div>
+        <div class="tool-grid">
+          <article class="tool-card" data-tool-card="individuals" data-keywords="income salary personal resident">
+            <h3>Income Tax</h3>
+            <p>Individual income tax for the year of income.</p>
+            <a class="btn btn-small" href="#calc-individual">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="individuals business" data-keywords="salary employer employee nssf payroll wages">
+            <h3>PAYE Calculator</h3>
+            <p>Monthly PAYE on employment income, with NSSF shown separately.</p>
+            <a class="btn btn-small" href="#calc-paye">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="business" data-keywords="corporate corporation profit">
+            <h3>Company Income Tax</h3>
+            <p>Income tax on a company's chargeable income.</p>
+            <a class="btn btn-small" href="#calc-company">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="indirect business" data-keywords="value added output input registration">
+            <h3>VAT Calculator</h3>
+            <p>Output VAT, input credit and registration checks.</p>
+            <a class="btn btn-small" href="#calc-vat">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="individuals property" data-keywords="rent landlord lease property">
+            <h3>Rental Income Tax</h3>
+            <p>Annual estimate of tax on rental income.</p>
+            <a class="btn btn-small" href="#calc-rental">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="business" data-keywords="wht supplier payment contractor">
+            <h3>Withholding Tax</h3>
+            <p>Tax to withhold on payments to suppliers and other payees.</p>
+            <a class="btn btn-small" href="#calc-withholding">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="business" data-keywords="small business turnover">
+            <h3>Presumptive Tax</h3>
+            <p>Turnover-based tax for eligible small businesses.</p>
+            <a class="btn btn-small" href="#calc-presumptive">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="indirect international" data-keywords="import export duty customs tariff hs eac">
+            <h3>Imports &amp; Exports</h3>
+            <p>Duties and taxes using rates you confirm from the HS classification.</p>
+            <a class="btn btn-small" href="#calc-customs">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="property business" data-keywords="wear tear capital allowance depreciation asset class">
+            <h3>Wear &amp; Tear</h3>
+            <p>Capital allowances by asset class.</p>
+            <a class="btn btn-small" href="#calc-capital-allowances">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="property business" data-keywords="industrial building deduction factory">
+            <h3>Industrial Building</h3>
+            <p>Deductions for qualifying industrial buildings.</p>
+            <a class="btn btn-small" href="#calc-industrial-building">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="property" data-keywords="capital gains disposal sale asset">
+            <h3>Asset Disposal</h3>
+            <p>Gains on the disposal of business assets.</p>
+            <a class="btn btn-small" href="#calc-capital-gains">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="business" data-keywords="transaction multiple heads">
+            <h3>Multi-tax Analysis</h3>
+            <p>Assess one transaction across tax heads.</p>
+            <a class="btn btn-small" href="#multi-tax-analysis">Open Calculator</a>
+          </article>
+          <article class="tool-card" data-tool-card="international" data-keywords="cross-border treaty non-resident transfer pricing">
+            <h3>International Tax</h3>
+            <p>Cross-border issues for people and businesses operating in or with Uganda.</p>
+            <a class="btn btn-small" href="#international-tax">Open Calculator</a>
+          </article>
+        </div>
+        <p class="catalogue-empty" id="tool-search-empty" hidden>No calculator matches that search. Try a broader word, or <a href="#assistant">ask the assistant</a>.</p>
+      </section>
+
+      <section class="estimator-section" id="estimator" data-view="tools" aria-labelledby="estimator-title">
+        <a class="back-link" data-back="estimator" href="#tools">← All calculators</a>
         <div class="section-heading">
           <div>
             <p class="eyebrow section-eyebrow">TAX CALCULATORS</p>
@@ -1018,7 +1124,8 @@
         </div>
       </section>
 
-      <section class="multi-tax-section" id="multi-tax-analysis" aria-labelledby="multi-tax-title">
+      <section class="multi-tax-section" id="multi-tax-analysis" data-view="tools" aria-labelledby="multi-tax-title">
+        <a class="back-link" data-back="multi-tax-analysis" href="#tools">← All calculators</a>
         <div class="multi-tax-heading">
           <div>
             <p class="eyebrow section-eyebrow">EARLY ACCESS · PRELIMINARY REVIEW</p>
@@ -1271,7 +1378,8 @@
         </section>
       </section>
 
-      <section class="international-tax-section" id="international-tax" aria-labelledby="international-tax-title">
+      <section class="international-tax-section" id="international-tax" data-view="tools" aria-labelledby="international-tax-title">
+        <a class="back-link" data-back="international-tax" href="#tools">← All calculators</a>
         <div class="advisory-heading">
           <div>
             <p class="eyebrow section-eyebrow">CROSS-BORDER TAX</p>
@@ -1335,81 +1443,23 @@
         </p>
       </section>
 
-      <section class="worked-examples-section" id="tax-worked-examples" aria-labelledby="tax-worked-examples-title">
-        <div class="advisory-heading">
-          <div>
-            <p class="eyebrow section-eyebrow">HISTORICAL WORKED EXAMPLES</p>
-            <h2 id="tax-worked-examples-title">Uganda income tax solutions · 2024.</h2>
-            <p>Review the supplied CSI Bank income-tax computation and Burugo withholding-tax schedule.</p>
-          </div>
+      <section class="page-block knowledge-head" id="knowledge" data-view="knowledge" aria-labelledby="knowledge-title">
+        <div class="page-head">
+          <p class="kicker">Tax Knowledge</p>
+          <h1 id="knowledge-title">Uganda tax knowledge centre</h1>
+          <p>Guides, laws, case notes, updates and compliance checklists. Search the guides below, or filter the library.</p>
         </div>
-        <div class="worked-examples-caveat" role="note">
-          These examples use figures, classifications and tax treatments supplied for year of income 2024 under the stated 2023 Revision. TaxComp checks the arithmetic only; it has not independently verified the legal treatment, the source records or the statute cited. This historical example is separate from the FY 2026/27 calculators and must not be used as current-year filing advice.
+        <div class="chip-row" role="group" aria-label="Filter the knowledge library">
+            <button type="button" class="chip" data-kb-filter="all" aria-pressed="true">Everything</button>
+            <button type="button" class="chip" data-kb-filter="guides" aria-pressed="false">Tax guides</button>
+            <button type="button" class="chip" data-kb-filter="laws" aria-pressed="false">Laws and regulations</button>
+            <button type="button" class="chip" data-kb-filter="cases" aria-pressed="false">Case law</button>
+            <button type="button" class="chip" data-kb-filter="updates" aria-pressed="false">Tax updates</button>
+            <button type="button" class="chip" data-kb-filter="compliance" aria-pressed="false">Compliance resources</button>
         </div>
-        <p id="worked-example-metadata" class="worked-example-metadata"></p>
-        <article class="worked-example-card" id="worked-example-csi-bank"></article>
-        <article class="worked-example-card" id="worked-example-burugo"></article>
-        <p class="worked-examples-sources">
-          For current requirements, consult the <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority</a> and a qualified Ugandan tax professional.
-        </p>
       </section>
 
-      <section class="audit-health-section" id="audit-health" aria-labelledby="audit-health-title">
-        <div class="advisory-heading">
-          <div>
-            <p class="eyebrow section-eyebrow">BUSINESS TAX CONTROLS</p>
-            <h2 id="audit-health-title">Prepare for a tax audit. Check your tax health.</h2>
-            <p>Work through practical records and control prompts, then focus on the follow-ups that need attention.</p>
-          </div>
-        </div>
-
-        <div class="audit-health-caveat" role="note">
-          This educational checklist is not a tax filing, audit opinion, compliance certificate or legal advice. Tax obligations and deadlines depend on the facts and current law. Verify a URA notice and its deadlines directly with URA or a qualified adviser.
-        </div>
-
-        <div class="audit-health-privacy" role="note">
-          Your checklist statuses and optional period are saved in this browser on this device only. No accounting records, company name or answers are uploaded. Avoid entering confidential details; use clear progress to remove saved answers from this browser.
-        </div>
-
-        <div class="audit-health-workspace">
-          <div class="audit-health-controls">
-            <div class="field">
-              <label for="audit-health-mode">Choose a workspace</label>
-              <select id="audit-health-mode">
-                <option value="audit">Audit readiness</option>
-                <option value="health">Tax health check</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="audit-health-period">Tax period (optional)</label>
-              <input class="text-input" id="audit-health-period" type="text" maxlength="80" placeholder="e.g. FY 2025/26" autocomplete="off">
-            </div>
-            <div class="audit-health-buttons">
-              <button id="audit-health-download" type="button">Download report</button>
-              <button id="audit-health-print" type="button">Print report</button>
-              <button id="audit-health-reset" class="audit-health-reset" type="button">Clear progress</button>
-            </div>
-          </div>
-
-          <p id="audit-health-mode-description" class="audit-health-mode-description"></p>
-          <p id="audit-health-save-status" class="audit-health-save-status" role="status"></p>
-          <p id="audit-health-notice" class="audit-health-notice" role="alert" hidden></p>
-
-          <div id="audit-health-summary" class="audit-health-summary" aria-live="polite"></div>
-          <div id="audit-health-actions" class="audit-health-actions" aria-live="polite"></div>
-          <div id="audit-health-checklist" class="audit-health-checklist"></div>
-          <pre id="audit-health-print-report" class="audit-health-print-report" hidden></pre>
-        </div>
-
-        <p class="audit-health-sources">
-          Reference sources:
-          <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority (official tax information)</a> ·
-          <a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff resources</a> ·
-          <a href="tax-law-notes.md">TaxComp calculation assumptions and source notes</a>
-        </p>
-      </section>
-
-      <section class="advisory-section" id="advisory" aria-labelledby="advisory-title">
+      <section class="advisory-section" id="advisory" data-view="knowledge" data-kb="guides" aria-labelledby="advisory-title">
         <div class="advisory-heading">
           <div>
             <p class="eyebrow section-eyebrow">UGANDA TAX GUIDANCE</p>
@@ -1465,12 +1515,31 @@
         </div>
       </section>
 
-      <section class="tax-chat-section" id="tax-chat" aria-labelledby="tax-chat-title">
+      <section class="worked-examples-section" id="tax-worked-examples" data-view="knowledge" data-kb="guides" aria-labelledby="tax-worked-examples-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">HISTORICAL WORKED EXAMPLES</p>
+            <h2 id="tax-worked-examples-title">Uganda income tax solutions · 2024.</h2>
+            <p>Review the supplied CSI Bank income-tax computation and Burugo withholding-tax schedule.</p>
+          </div>
+        </div>
+        <div class="worked-examples-caveat" role="note">
+          These examples use figures, classifications and tax treatments supplied for year of income 2024 under the stated 2023 Revision. TaxComp checks the arithmetic only; it has not independently verified the legal treatment, the source records or the statute cited. This historical example is separate from the FY 2026/27 calculators and must not be used as current-year filing advice.
+        </div>
+        <p id="worked-example-metadata" class="worked-example-metadata"></p>
+        <article class="worked-example-card" id="worked-example-csi-bank"></article>
+        <article class="worked-example-card" id="worked-example-burugo"></article>
+        <p class="worked-examples-sources">
+          For current requirements, consult the <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority</a> and a qualified Ugandan tax professional.
+        </p>
+      </section>
+
+      <section class="tax-chat-section" id="tax-chat" data-view="assistant" aria-labelledby="tax-chat-title">
         <div class="advisory-heading">
           <div>
             <p class="eyebrow section-eyebrow">TAXCOMP CHAT</p>
             <h2 id="tax-chat-title">Ask a tax question.</h2>
-            <p>Ask about Uganda taxes, reviewed guidance or case summaries. If Google Search grounding is available, the AI can cite current public web sources and open a related calculator; otherwise, answers use TaxComp local notes with clear verification labels.</p>
+            <p>Ask about Uganda taxes, reviewed guidance or case summaries. With live web research (Premium), the AI can cite current public web sources and open a related calculator; otherwise, answers use TaxComp local notes with clear verification labels.</p>
           </div>
           <div class="tax-chat-heading-actions">
             <button class="tax-chat-tool" id="tax-chat-copy" type="button">Copy conversation</button>
@@ -1539,7 +1608,7 @@
         <p class="tax-chat-status" id="tax-chat-status" aria-live="polite"></p>
       </section>
 
-      <section class="case-law-section" id="tax-cases" aria-labelledby="tax-cases-title">
+      <section class="case-law-section" id="tax-cases" data-view="knowledge" data-kb="cases" aria-labelledby="tax-cases-title">
         <div class="advisory-heading">
           <div>
             <p class="eyebrow section-eyebrow">UGANDA CASE LAW</p>
@@ -1577,7 +1646,7 @@
         </p>
       </section>
 
-      <section class="law-updates" id="law-updates" aria-labelledby="law-updates-title">
+      <section class="law-updates" id="law-updates" data-view="knowledge" data-kb="updates" aria-labelledby="law-updates-title">
         <div class="law-updates-heading">
           <p class="eyebrow section-eyebrow">WHAT CHANGED</p>
           <h2 id="law-updates-title">FY 2026/27 updates</h2>
@@ -1592,7 +1661,21 @@
         </div>
       </section>
 
-      <section class="other-heads" aria-labelledby="other-heads-title">
+      <section class="page-block laws-section" id="tax-laws" data-view="knowledge" data-kb="laws" aria-labelledby="tax-laws-title">
+        <div class="block-head">
+          <p class="kicker">Laws and regulations</p>
+          <h2 id="tax-laws-title">Where the rules come from.</h2>
+          <p>TaxComp summarises; the law itself is published by the bodies below. Check the current text and effective dates before relying on any rule.</p>
+        </div>
+        <ul class="link-list">
+          <li><a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority <span aria-hidden="true">↗</span></a><span>Official tax information, forms and public notices.</span></li>
+          <li><a href="https://ulii.org/en/judgments/UGTAT/" target="_blank" rel="noopener noreferrer">Tax Appeals Tribunal decisions (ULII) <span aria-hidden="true">↗</span></a><span>Published tribunal judgments.</span></li>
+          <li><a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff <span aria-hidden="true">↗</span></a><span>Customs tariff resources for imports and exports.</span></li>
+          <li><a href="tax-law-notes.md">TaxComp calculation assumptions and source notes</a><span>How each calculator applies the FY 2026/27 rules.</span></li>
+        </ul>
+      </section>
+
+      <section class="other-heads" id="other-heads" data-view="knowledge" data-kb="laws" aria-labelledby="other-heads-title">
         <div>
           <p class="eyebrow section-eyebrow">ALSO PLAN FOR</p>
           <h2 id="other-heads-title">Not every tax has one simple rate.</h2>
@@ -1607,7 +1690,112 @@
         </ul>
       </section>
 
-      <section class="phase6-section account-section" id="account" aria-labelledby="account-title">
+      <section class="audit-health-section" id="audit-health" data-view="knowledge" data-kb="compliance" aria-labelledby="audit-health-title">
+        <div class="advisory-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">BUSINESS TAX CONTROLS</p>
+            <h2 id="audit-health-title">Prepare for a tax audit. Check your tax health.</h2>
+            <p>Work through practical records and control prompts, then focus on the follow-ups that need attention.</p>
+          </div>
+        </div>
+
+        <div class="audit-health-caveat" role="note">
+          This educational checklist is not a tax filing, audit opinion, compliance certificate or legal advice. Tax obligations and deadlines depend on the facts and current law. Verify a URA notice and its deadlines directly with URA or a qualified adviser.
+        </div>
+
+        <div class="audit-health-privacy" role="note">
+          Your checklist statuses and optional period are saved in this browser on this device only. No accounting records, company name or answers are uploaded. Avoid entering confidential details; use clear progress to remove saved answers from this browser.
+        </div>
+
+        <div class="audit-health-workspace">
+          <div class="audit-health-controls">
+            <div class="field">
+              <label for="audit-health-mode">Choose a workspace</label>
+              <select id="audit-health-mode">
+                <option value="audit">Audit readiness</option>
+                <option value="health">Tax health check</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="audit-health-period">Tax period (optional)</label>
+              <input class="text-input" id="audit-health-period" type="text" maxlength="80" placeholder="e.g. FY 2025/26" autocomplete="off">
+            </div>
+            <div class="audit-health-buttons">
+              <button id="audit-health-download" type="button">Download report</button>
+              <button id="audit-health-print" type="button">Print report</button>
+              <button id="audit-health-reset" class="audit-health-reset" type="button">Clear progress</button>
+            </div>
+          </div>
+
+          <p id="audit-health-mode-description" class="audit-health-mode-description"></p>
+          <p id="audit-health-save-status" class="audit-health-save-status" role="status"></p>
+          <p id="audit-health-notice" class="audit-health-notice" role="alert" hidden></p>
+
+          <div id="audit-health-summary" class="audit-health-summary" aria-live="polite"></div>
+          <div id="audit-health-actions" class="audit-health-actions" aria-live="polite"></div>
+          <div id="audit-health-checklist" class="audit-health-checklist"></div>
+          <pre id="audit-health-print-report" class="audit-health-print-report" hidden></pre>
+        </div>
+
+        <p class="audit-health-sources">
+          Reference sources:
+          <a href="https://www.ura.go.ug/" target="_blank" rel="noopener noreferrer">Uganda Revenue Authority (official tax information)</a> ·
+          <a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff resources</a> ·
+          <a href="tax-law-notes.md">TaxComp calculation assumptions and source notes</a>
+        </p>
+      </section>
+
+      <section class="workspace-view" id="workspace" data-view="workspace" aria-label="Business workspace">
+        <aside class="ws-sidebar" aria-label="Workspace sections">
+          <p class="ws-sidebar-title">Business Workspace</p>
+          <nav class="ws-nav">
+            <a href="#ws-overview" data-pane-link="overview">Overview</a>
+            <a href="#ws-assets" data-pane-link="assets">Business assets</a>
+            <a href="#ws-reports" data-pane-link="reports">Reports</a>
+            <a href="#ws-records" data-pane-link="records">Financial records</a>
+            <a href="#ws-settings" data-pane-link="settings">Settings</a>
+          </nav>
+        </aside>
+        <div class="ws-main">
+          <div class="ws-pane" data-pane="overview">
+            <section class="phase6-section" id="phase6-workspace" aria-labelledby="phase6-title">
+        <div class="phase6-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">PRIVATE PRACTICE WORKSPACE</p>
+            <h2 id="phase6-title">Tax practice operations</h2>
+            <p>Client-linked records are served only through the authenticated Phase 6 API. Tax and legal status remains subject to source verification and professional review.</p>
+          </div>
+          <span class="phase6-status" id="phase6-status" role="status">Checking service configuration</span>
+        </div>
+        <div id="phase6-root" aria-live="polite"></div>
+      </section>
+          </div>
+          <section class="ws-pane" data-pane="assets" aria-labelledby="ws-assets-title" hidden>
+            <div class="block-head"><h2 id="ws-assets-title">Business assets</h2></div>
+            <p class="ws-empty">Asset records are not stored in TaxComp yet. Use these calculators to work out allowances and gains for your business assets; figures stay in this browser.</p>
+            <div class="ws-links">
+              <a class="btn btn-secondary" href="#calc-capital-allowances">Wear &amp; tear by asset class</a>
+              <a class="btn btn-secondary" href="#calc-industrial-building">Industrial building deduction</a>
+              <a class="btn btn-secondary" href="#calc-capital-gains">Asset disposal</a>
+            </div>
+          </section>
+          <section class="ws-pane" data-pane="reports" aria-labelledby="ws-reports-title" hidden>
+            <div class="block-head"><h2 id="ws-reports-title">Reports</h2></div>
+            <p class="ws-empty">Firm workspaces generate review-required client reports under <a href="#ws-overview">Overview → Reports</a>. You can also download:</p>
+            <div class="ws-links">
+              <a class="btn btn-secondary" href="#audit-health">Audit readiness report</a>
+              <a class="btn btn-secondary" href="#tax-chat">AI research report</a>
+            </div>
+          </section>
+          <section class="ws-pane" data-pane="records" aria-labelledby="ws-records-title" hidden>
+            <div class="block-head"><h2 id="ws-records-title">Financial records</h2></div>
+            <p class="ws-empty">Firm workspaces keep client documents, compliance filings and engagements under <a href="#ws-overview">Overview</a> (Documents, Compliance, Engagements). Individual accounts don't store financial records.</p>
+            <div class="ws-links">
+              <a class="btn btn-secondary" href="#audit-health">Records checklist</a>
+            </div>
+          </section>
+          <div class="ws-pane" data-pane="settings" hidden>
+            <section class="phase6-section account-section" id="account" aria-labelledby="account-title">
         <div class="phase6-heading">
           <div>
             <p class="eyebrow section-eyebrow">ACCOUNT AND SUBSCRIPTIONS</p>
@@ -1618,7 +1806,19 @@
         </div>
         <div id="account-root" aria-live="polite"></div>
       </section>
-      <section class="payment-section" id="payments" aria-labelledby="payments-title">
+          </div>
+        </div>
+      </section>
+
+      <section class="page-block about-intro" id="about" data-view="about" aria-labelledby="about-title">
+        <div class="page-head">
+          <p class="kicker">About Us</p>
+          <h1 id="about-title">Opitekene Consultancy Limited</h1>
+          <p>A Kampala tax consultancy. TaxComp is our digital platform for Uganda tax calculations, compliance guidance and practice management, backed by consultants you can talk to.</p>
+        </div>
+      </section>
+
+      <section class="payment-section" id="payments" data-view="about" aria-labelledby="payments-title">
         <div class="payment-heading">
           <p class="eyebrow section-eyebrow">MANUAL MOBILE-MONEY PAYMENT</p>
           <h2 id="payments-title">Pay for a service.</h2>
@@ -1652,7 +1852,7 @@
         <p class="payment-note">After paying, retain the transaction reference and contact the business through your agreed contact channel with the service you’re requesting. Never share your mobile-money PIN or one-time code. Monthly plans require manual renewal; no recurring charge is set up.</p>
       </section>
 
-      <section class="info-section" id="how-it-works" aria-labelledby="how-title">
+      <section class="info-section" id="how-it-works" data-view="about" aria-labelledby="how-title">
         <div class="info-intro">
           <p class="eyebrow section-eyebrow">SIMPLE BY DESIGN</p>
           <h2 id="how-title">Useful tax estimates.<br>Clear assumptions.</h2>
@@ -1676,7 +1876,50 @@
         </div>
       </section>
 
-      <section class="disclaimer" aria-labelledby="disclaimer-title">
+      <section class="info-section" id="install-guide" data-view="about" aria-labelledby="install-guide-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">FREE APP · OFFLINE ACCESS</p>
+            <h2 id="install-guide-title">Install TaxComp on your device.</h2>
+          </div>
+        </div>
+        <p>TaxComp is a free installable web app. Open this site once while online, then install it from your browser. The calculators and app shell can work offline after their first successful load; AI chat and external tax sources still need internet.</p>
+        <div class="install-guide-grid">
+          <article>
+            <h3>Android</h3>
+            <p>Open this page in Chrome, tap the three-dot menu, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+          </article>
+          <article>
+            <h3>iPhone or iPad</h3>
+            <p>Open this page in Safari, tap <strong>Share</strong>, scroll down, and choose <strong>Add to Home Screen</strong>.</p>
+          </article>
+          <article>
+            <h3>Windows or Mac</h3>
+            <p>Open this page in Chrome or Edge, open the browser menu, and choose <strong>Install app</strong>.</p>
+          </article>
+        </div>
+        <p class="install-download-note">No separate APK or app-store download is required. This app is installed securely from the official TaxComp website.</p>
+      </section>
+
+      <section class="page-block legal-section" id="privacy" data-view="about" aria-labelledby="privacy-title">
+        <h2 id="privacy-title">Privacy policy</h2>
+        <ul class="plain-list">
+          <li>Calculator figures are worked out in your browser and are not uploaded.</li>
+          <li>The audit and tax-health checklist saves your answers in this browser only.</li>
+          <li>Your account (email and subscription) is held in our Supabase database; payments are processed by Flutterwave, and TaxComp does not see card or Mobile Money PINs.</li>
+          <li>AI questions are sent through Cloudflare to Anthropic Claude (Google Gemini as backup). Live web research runs only when you opt in. Chat history is not saved.</li>
+          <li>If you agree, a question TaxComp could not answer is saved for research, visible only to administrators, and deleted after 90 days.</li>
+          <li>Firm workspace records are stored in the firm's private workspace and are visible only to that firm's members.</li>
+        </ul>
+        <p>Questions or deletion requests: <a href="#contact">contact us</a>.</p>
+      </section>
+
+      <section class="page-block legal-section" id="terms" data-view="about" aria-labelledby="terms-title">
+        <h2 id="terms-title">Terms of service</h2>
+        <p>Full terms of service are being prepared. Until they are published, TaxComp is provided as an educational estimating and guidance tool, as described in the disclaimer below. Subscriptions are monthly and are not renewed automatically.</p>
+      </section>
+
+      <section class="disclaimer" id="disclaimer" data-view="about" aria-labelledby="disclaimer-title">
         <span class="disclaimer-mark" aria-hidden="true">i</span>
         <div>
           <h2 id="disclaimer-title">A helpful guide, not a tax filing.</h2>
@@ -1698,13 +1941,25 @@
       </section>
     </main>
 
-    <footer class="site-footer">
-      <a class="brand footer-brand" href="#" aria-label="TaxComp Uganda home">
-        <span class="brand-mark" aria-hidden="true">T</span>
-        <span>taxcomp<span class="brand-country">.ug</span></span>
-      </a>
-      <span>Developed by Opitekene Consultancy Limited.</span>
-      <span>Uganda · FY 2026/27</span>
+    <footer class="site-footer-bar">
+      <div class="site-footer">
+        <div class="footer-brand-block">
+          <a class="brand footer-brand" href="#home" aria-label="Opitekene TaxComp home">
+            <span class="brand-mark" aria-hidden="true">O</span>
+            <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
+          </a>
+          <p>Uganda tax tools and advice · FY 2026/27</p>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="#about">About</a>
+          <a href="#tools">Services</a>
+          <a href="#contact">Contact</a>
+          <a href="#privacy">Privacy policy</a>
+          <a href="#terms">Terms of service</a>
+          <a href="#disclaimer">Disclaimer</a>
+        </nav>
+        <p class="footer-copy">© <span id="footer-year">2026</span> Opitekene Consultancy Limited. All rights reserved.</p>
+      </div>
     </footer>
   </body>
 </html>

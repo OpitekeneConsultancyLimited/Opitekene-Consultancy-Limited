@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-09 - Site redesign: navy, white and teal; six page views
+
+- New look: navy, white and teal palette, one sans-serif type scale, a single content width, and quieter notice boxes. `design.css` sits on top of `styles.css`; `scripts/recolor-css.mjs` moved the old greens to navy and teal at the same lightness, so contrast is unchanged.
+- The sign-in screen is now a branded landing page: headline, the four services, and the sign-in card. Everything else still stays behind sign-in.
+- The one long page became six views (`site-router.js`):
+  - Home: hero, four service cards, Why Opitekene, call to action.
+  - Tax Tools: a searchable, filterable catalogue. Each tool opens on its own.
+  - Tax Knowledge: guides, laws and regulations, case law, updates and compliance, with filters.
+  - AI Tax Assistant.
+  - Business Workspace: sidebar with Overview, Business assets, Reports, Financial records and Settings.
+  - About Us: contact, payments, install guide, privacy policy, terms placeholder, disclaimer.
+- New header with dropdown menus and a phone menu; new footer.
+- Old anchors (`#estimator`, `#account`, `#contact`, …) and Supabase sign-in link fragments still work.
+- Unchanged: every calculator, formula and rate, the AI, accounts, billing and workspace code. No script lost an element; `scripts/check-dom-contract.mjs` checks this and now runs in `npm test` (`site-views.test.js`).
+- Verified in Microsoft Edge:
+  - All 11 calculator tabs give identical results before and after.
+  - Navigation, filters, chat (mocked), workspace panes and legacy links work.
+  - No sideways scrolling on a 390 px phone.
+  - No console errors.
+- Tests: JavaScript/Worker 349/349, Python 17/17. Service worker cache moved to v28.
+
 ## 2026-11-09 - Supabase: database, storage and authentication
 
 - Phase 1, database: Supabase Postgres through Cloudflare Hyperdrive, using a D1-compatible adapter (`worker/db.mjs`). Schema in the private `taxcomp` schema with RLS on, a least-privilege `taxcomp_worker` role and append-only audit trails. D1 stays the fallback while `[[hyperdrive]]` is not bound.
