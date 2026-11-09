@@ -539,6 +539,79 @@ main > [data-view]:not(.home-hero) {
 .faq-item summary:focus-visible { outline: 3px solid var(--teal-400); outline-offset: -3px; }
 .faq-item p { margin: 0; padding: 0 20px 18px; color: var(--muted); font-size: 14px; }
 
+/* ---------- signed-out landing page (#auth-gate) ---------- */
+#auth-gate { background: var(--paper); color: var(--ink); font-family: var(--sans); }
+#auth-gate [id] { scroll-margin-top: calc(var(--header-h) + 8px); }
+.lp-wrap { width: var(--page); margin-left: auto; margin-right: auto; }
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: saturate(1.4) blur(8px);
+}
+.lp-header-inner { display: flex; align-items: center; gap: 20px; height: var(--header-h); }
+.lp-nav { display: flex; gap: 4px; margin: 0 auto; }
+.lp-nav a {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--slate-700);
+  font-size: 14px;
+  font-weight: 550;
+  text-decoration: none;
+}
+.lp-nav a:hover { background: var(--slate-100); color: var(--navy-900); }
+.lp-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.lp-nav + .lp-header-actions { margin-left: 0; }
+.lp-link-button,
+.footer-link-button {
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  color: var(--navy-900);
+  font: 600 14px var(--sans);
+  cursor: pointer;
+}
+.lp-link-button:hover { color: var(--teal-700); }
+.btn-compact { min-height: 38px; padding: 0 16px; font-size: 14px; }
+.lp-hero .hero-split { padding-block: 64px 72px; }
+.lp-hero .auth-gate-card {
+  padding: 28px 26px;
+  border-radius: 18px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgba(4, 14, 30, 0.35);
+}
+.gate-card-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.gate-card-note,
+.auth-gate-loading { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.lp-band { background: #fff; border-block: 1px solid var(--line); }
+.lp-band .steps-block,
+.lp-band .faq-block { border-top: 0; }
+.feature-grid div.feature-cell:hover { background: #fff; }
+.lp-cta { margin-top: 56px !important; margin-bottom: 64px !important; text-align: center; }
+.lp-cta h2 { margin-inline: auto; }
+.lp-cta .home-actions { justify-content: center; }
+.lp-footer { margin-top: 0; }
+.site-footer-bar.lp-footer .site-footer { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
+.footer-link-button { padding: 0; color: #cbd5e1; font-weight: 400; text-align: left; }
+.footer-link-button:hover { color: #fff; text-decoration: underline; }
+
+@media (max-width: 860px) {
+  .lp-nav { display: none; }
+  .site-footer-bar.lp-footer .site-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.lp-header-actions .lp-link-button,
+.lp-header-actions .btn-compact { white-space: nowrap; }
+@media (max-width: 420px) {
+  .lp-header-inner { gap: 8px; }
+  .lp-header .brand-text { font-size: 15px; }
+  .lp-header-actions { gap: 4px; }
+  .lp-link-button { padding: 8px 6px; font-size: 13px; }
+  .lp-header-actions .btn-compact { min-height: 34px; padding: 0 12px; font-size: 13px; }
+}
+
 /* ---------- tax tools catalogue ---------- */
 .tools-catalogue { padding-bottom: 24px; }
 .catalogue-controls { display: grid; gap: 14px; margin: 8px 0 24px; }

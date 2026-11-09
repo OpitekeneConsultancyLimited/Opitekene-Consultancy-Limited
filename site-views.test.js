@@ -36,6 +36,6 @@ test("navigation covers the six sections of the brief", () => {
 
 test("the router never opens the sign-in wall and leaves auth fragments alone", () => {
   const router = fs.readFileSync(path.join(__dirname, "site-router.js"), "utf8");
-  assert.ok(!/dataset\.auth/.test(router), "only account.js may change data-auth");
+  assert.ok(!/dataset\.auth\s*=|setAttribute\(\s*["']data-auth["']/.test(router), "only account.js may change data-auth");
   assert.match(router, /hash\.includes\("="\) \|\| hash\.includes\("\?"\)/);
 });

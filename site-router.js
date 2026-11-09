@@ -239,9 +239,32 @@
     if (window.ugandaTax) update(); else window.addEventListener("DOMContentLoaded", update);
   }
 
+  // Signed-out landing page: "Sign in" / "Get started" buttons bring the
+  // sign-in card into view and pick the matching tab that account.js drew.
+  const AUTH_TABS = { signup: "Create account", signin: "Sign in", reset: "Forgot password" };
+  function wireAuthButtons() {
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-auth-mode]");
+      if (!button) return;
+      const card = document.getElementById("lp-signin");
+      const gateRoot = document.getElementById("auth-gate-root");
+      if (!card || !gateRoot) return;
+      const label = AUTH_TABS[button.dataset.authMode];
+      const tab = [...gateRoot.querySelectorAll(".phase6-tab")].find((node) => node.textContent.trim() === label);
+      if (tab && tab.getAttribute("aria-selected") !== "true") tab.click();
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      // account.js re-renders on a tab click; focus the new form's first field.
+      setTimeout(() => {
+        const input = gateRoot.querySelector("input");
+        if (input) input.focus({ preventScroll: true });
+      }, 50);
+    });
+  }
+
   function start() {
     setToolFocus("tools");
     wirePayePreview();
+    wireAuthButtons();
     wireHeader();
     wireControls();
     wireCatalogue();

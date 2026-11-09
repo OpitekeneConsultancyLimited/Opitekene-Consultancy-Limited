@@ -3,7 +3,12 @@
 ## 2026-11-09 - Site redesign: navy, white and teal; six page views
 
 - New look: navy, white and teal palette, one sans-serif type scale, a single content width, and quieter notice boxes. `design.css` sits on top of `styles.css`; `scripts/recolor-css.mjs` moved the old greens to navy and teal at the same lightness, so contrast is unchanged.
-- The sign-in screen is now a branded landing page: headline, the four services, and the sign-in card. Everything else still stays behind sign-in.
+- Signed-out visitors now see a landing page organised like the owner's sample:
+  - Top bar: Features, How it works, Plans, FAQ, plus Sign in and Get started.
+  - Split hero: the pitch and three trust points on the left, the sign-in card on the right.
+  - Then a 2×2 features grid, three steps, the real plans, the FAQ, a call-to-action band and a column footer.
+  - "Sign in" and "Get started" buttons open the matching tab on the sign-in card.
+  - The tools, AI assistant and workspace still stay behind sign-in.
 - The one long page became six views (`site-router.js`):
   - Home, laid out like a product landing page:
     - Split hero: the pitch on the left, three trust points, and a live "Quick PAYE check" card on the right. The card calls the real `calculatePaye`, so its figures match the full calculator.

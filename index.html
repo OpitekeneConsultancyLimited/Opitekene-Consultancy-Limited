@@ -22,38 +22,17 @@
     <style id="auth-gate-style">
       /* Sign-in first: the whole site stays hidden until account.js confirms a
          signed-in session and sets <html data-auth="in">. Inline so it applies
-         before any other file loads (no flash of the site). */
+         before any other file loads (no flash of the site). The signed-out
+         landing page (#auth-gate) is styled in design.css. */
       html:not([data-auth="in"]) body > :not(#auth-gate) { display: none !important; }
       html[data-auth="in"] #auth-gate { display: none !important; }
-      #auth-gate { min-height: 100vh; min-height: 100dvh; display: grid; align-items: center; box-sizing: border-box;
-        background: linear-gradient(135deg, #0a1f3c 0%, #12305a 58%, #0d4f5c 100%); color: #fff;
-        font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
-        padding: 40px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
-      .gate-shell { width: min(100%, 1080px); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 440px); gap: 56px; align-items: center; }
-      .gate-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 28px; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; color: #cfe0f2; }
-      .gate-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #14b8a6; color: #0a1f3c; font-weight: 800; font-size: 17px; }
-      .gate-intro h1 { margin: 0 0 16px; font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 750; text-wrap: balance; }
-      .gate-lead { margin: 0 0 30px; max-width: 34em; color: #c5d3e4; font-size: 17px; line-height: 1.55; }
-      .gate-services { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-      .gate-services li { padding: 14px 16px; border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; background: rgba(255,255,255,0.05); }
-      .gate-services strong { display: block; margin-bottom: 4px; font-size: 14px; color: #fff; }
-      .gate-services span { font-size: 13px; line-height: 1.45; color: #b6c6da; }
-      .auth-gate-card { background: #fff; color: #0f1f38; border-radius: 16px; padding: 30px 28px; box-shadow: 0 24px 60px rgba(4, 14, 30, 0.35); }
-      .gate-card-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-      .gate-card-note { margin: 0 0 14px; color: #5a6a7e; font-size: 14px; line-height: 1.5; }
-      .auth-gate-loading { margin: 0; color: #5a6a7e; font-size: 14px; line-height: 1.5; }
       #auth-gate .phase6-form { grid-template-columns: 1fr; max-width: none; border-top: 0; padding-top: 12px; }
       #auth-gate .phase6-tabs { padding-top: 0; }
       #auth-gate .primary-button, #auth-gate .secondary-button { width: 100%; justify-content: center; }
-      @media (max-width: 860px) {
-        .gate-shell { grid-template-columns: 1fr; gap: 28px; }
-        .gate-services { grid-template-columns: 1fr; }
-        .gate-lead { margin-bottom: 20px; }
-      }
     </style>
-    <link rel="stylesheet" href="styles.css?v=redesign-1">
-    <link rel="stylesheet" href="design.css?v=redesign-1">
-    <script src="site-router.js?v=redesign-1" defer></script>
+    <link rel="stylesheet" href="styles.css?v=landing-1">
+    <link rel="stylesheet" href="design.css?v=landing-1">
+    <script src="site-router.js?v=landing-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -72,30 +51,177 @@
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
     <script src="phase6-app.js?v=supabase-auth-1" defer></script>
-    <script src="account.js?v=auth-gate-1" defer></script>
+    <script src="account.js?v=landing-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
     <div id="auth-gate" role="region" aria-labelledby="auth-gate-title">
-      <div class="gate-shell">
-        <div class="gate-intro">
-          <p class="gate-brand"><span class="gate-mark" aria-hidden="true">O</span> Opitekene Consultancy Limited · TaxComp</p>
-          <h1 id="auth-gate-title">Smarter Tax Management. Better Business Decisions.</h1>
-          <p class="gate-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
-          <ul class="gate-services" aria-label="What you get after signing in">
-            <li><strong>Tax Calculators</strong><span>Uganda FY 2026/27 estimates with every step shown.</span></li>
-            <li><strong>Tax Advisory &amp; Knowledge</strong><span>Source-linked guides, case notes and law updates.</span></li>
-            <li><strong>AI Tax Assistant</strong><span>Ask Uganda tax questions and check the cited sources.</span></li>
-            <li><strong>Business Workspace</strong><span>Clients, compliance, documents and reports for firms.</span></li>
-          </ul>
+      <header class="lp-header">
+        <div class="lp-wrap lp-header-inner">
+          <a class="brand" href="#auth-gate" aria-label="Opitekene TaxComp">
+            <span class="brand-mark" aria-hidden="true">O</span>
+            <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
+          </a>
+          <nav class="lp-nav" aria-label="Page sections">
+            <a href="#lp-features">Features</a>
+            <a href="#lp-how">How it works</a>
+            <a href="#lp-plans">Plans</a>
+            <a href="#lp-faq">FAQ</a>
+          </nav>
+          <div class="lp-header-actions">
+            <button type="button" class="lp-link-button" data-auth-mode="signin">Sign in</button>
+            <button type="button" class="btn btn-primary btn-compact" data-auth-mode="signup">Get started</button>
+          </div>
         </div>
-        <div class="auth-gate-card">
-          <h2 class="gate-card-title">Welcome</h2>
-          <p class="gate-card-note">Sign in, or create an account to continue.</p>
-          <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
-          <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
+      </header>
+
+      <section class="home-hero lp-hero" aria-labelledby="auth-gate-title">
+        <div class="lp-wrap hero-split">
+          <div class="hero-pitch">
+            <p class="hero-pill">Uganda · FY 2026/27 rules</p>
+            <h1 id="auth-gate-title">Smarter Tax Management. <span>Better Business Decisions.</span></h1>
+            <p class="home-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
+            <div class="home-actions">
+              <button type="button" class="btn btn-primary" data-auth-mode="signup">Get started free</button>
+              <button type="button" class="btn btn-secondary" data-auth-mode="signin">Sign in</button>
+            </div>
+            <ul class="hero-points">
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span><strong>No accounting skills needed</strong>Each calculator asks only for what it needs.</span></li>
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/></svg></span><span><strong>Works on any phone</strong>Install it; calculators work offline.</span></li>
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span><strong>Private by default</strong>Calculator figures stay in your browser.</span></li>
+            </ul>
+          </div>
+          <div class="auth-gate-card" id="lp-signin">
+            <h2 class="gate-card-title">Welcome</h2>
+            <p class="gate-card-note">Create a free account, or sign in to continue.</p>
+            <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
+            <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="page-block lp-wrap" id="lp-features" aria-labelledby="lp-features-title">
+        <div class="block-head">
+          <h2 id="lp-features-title">Your tax work, in plain numbers</h2>
+          <p>Stop piecing together rates, rules and spreadsheets. Everything you need for Uganda tax is in one account.</p>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-cell"><span class="feature-icon tone-teal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span><span><strong>Tax Calculators</strong>PAYE, income tax, VAT, withholding, rental and more for FY 2026/27, with the working shown.</span></div>
+          <div class="feature-cell"><span class="feature-icon tone-navy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><span><strong>Tax Advisory and Knowledge</strong>Guides, laws and regulations, case law and updates, each linked to its source.</span></div>
+          <div class="feature-cell"><span class="feature-icon tone-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><span><strong>AI Tax Assistant</strong>Ask in plain language. Answers say what is verified and cite where it comes from.</span></div>
+          <div class="feature-cell"><span class="feature-icon tone-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><span><strong>Business Management Workspace</strong>For firms: clients, compliance deadlines, documents and reports in one private workspace.</span></div>
+        </div>
+      </section>
+
+      <section class="lp-band" id="lp-how" aria-labelledby="lp-how-title">
+        <div class="page-block lp-wrap steps-block">
+          <div class="block-head">
+            <h2 id="lp-how-title">Up and running in three steps</h2>
+            <p>No training and no spreadsheets. If you know your figures, you can check your tax.</p>
+          </div>
+          <ol class="steps">
+            <li><span class="step-num">1</span><strong>Create your free account</strong><span>Sign up with your email and confirm it. That's all it takes.</span></li>
+            <li><span class="step-num">2</span><strong>Choose a tool and enter figures</strong><span>Pick a calculator, or ask the assistant a question in plain language.</span></li>
+            <li><span class="step-num">3</span><strong>See where you stand</strong><span>Every result shows its rates, credits and assumptions, with sources you can check.</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="page-block lp-wrap plans-block" id="lp-plans" aria-labelledby="lp-plans-title">
+        <div class="block-head center">
+          <h2 id="lp-plans-title">Plans that grow with you</h2>
+          <p>Start free. Upgrade month by month when you need more; nothing renews automatically.</p>
+        </div>
+        <div class="plan-grid">
+            <article class="plan-card">
+              <div class="plan-top"><h3>Account</h3><span class="plan-badge">No card needed</span></div>
+              <p class="plan-price">Free</p>
+              <p class="plan-text">For anyone checking their own tax.</p>
+              <ul class="plan-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>All tax calculators</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Knowledge centre: guides, case law, updates</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI assistant using TaxComp's reviewed notes</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Audit-readiness checklist</span></li>
+              </ul>
+              <button type="button" class="btn btn-secondary plan-cta" data-auth-mode="signup">Create free account</button>
+            </article>
+            <article class="plan-card is-featured">
+              <div class="plan-top"><h3>Individual Premium</h3><span class="plan-badge">Live research</span></div>
+              <p class="plan-price">UGX 100,000 <span>/ month</span></p>
+              <p class="plan-text">For professionals who need current sources.</p>
+              <ul class="plan-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Account</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI tax advisor with live, source-linked web research</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Current public sources cited in each answer</span></li>
+              </ul>
+              <button type="button" class="btn btn-primary plan-cta" data-auth-mode="signup">Get started</button>
+            </article>
+            <article class="plan-card">
+              <div class="plan-top"><h3>Firm</h3></div>
+              <p class="plan-price">UGX 500,000 <span>/ month</span></p>
+              <p class="plan-text">For tax practices serving clients.</p>
+              <ul class="plan-list">
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Individual Premium</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Private practice workspace for the firm</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Clients, compliance, documents and reports</span></li>
+                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Invite your staff with roles</span></li>
+              </ul>
+              <button type="button" class="btn btn-secondary plan-cta" data-auth-mode="signup">Get started</button>
+            </article>
+        </div>
+        <p class="plans-note">Create your account first, then upgrade from My account. Pay with MTN or Airtel Mobile Money or a card through Flutterwave.</p>
+      </section>
+
+      <section class="lp-band" id="lp-faq" aria-labelledby="lp-faq-title">
+        <div class="page-block lp-wrap faq-block">
+          <div class="faq-intro">
+            <h2 id="lp-faq-title">Questions people ask</h2>
+            <p>Still unsure? Create a free account and try a calculator. It takes two minutes.</p>
+          </div>
+          <div class="faq-list">
+            <details class="faq-item"><summary>Do I need to know accounting?</summary><p>No. Each calculator asks only for the figures it needs and explains every line of the result in plain language.</p></details>
+            <details class="faq-item"><summary>Is this tax advice?</summary><p>No. TaxComp gives educational estimates and source-linked guidance. Check official sources, or speak to a qualified Ugandan tax adviser, before filing, paying or taking a legal position. Opitekene consultants are available when you need one.</p></details>
+            <details class="faq-item"><summary>Which tax year do the calculators use?</summary><p>FY 2026/27, including the amendments that generally took effect on 1 July 2026.</p></details>
+            <details class="faq-item"><summary>What does the free account include?</summary><p>All the tax calculators, the knowledge centre, the audit-readiness checklist and the AI assistant using TaxComp's reviewed notes. Live web research and the firm workspace are paid monthly plans.</p></details>
+            <details class="faq-item"><summary>Where do my figures go?</summary><p>Calculator figures are worked out in your browser and are not uploaded. Questions you send to the AI assistant go through Cloudflare to the AI provider; live web research runs only when you opt in.</p></details>
+            <details class="faq-item"><summary>Can I use it on my phone?</summary><p>Yes. Open the site in your phone's browser and install it as an app. The calculators work offline after their first load.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <section class="lp-wrap home-cta lp-cta" aria-labelledby="lp-cta-title">
+        <h2 id="lp-cta-title">Take control of your tax and financial management.</h2>
+        <p>Create your free account in two minutes. No card required.</p>
+        <div class="home-actions">
+          <button type="button" class="btn btn-primary" data-auth-mode="signup">Get started free</button>
+        </div>
+      </section>
+
+      <footer class="site-footer-bar lp-footer">
+        <div class="site-footer">
+          <div class="footer-brand-block">
+            <span class="brand footer-brand">
+              <span class="brand-mark" aria-hidden="true">O</span>
+              <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
+            </span>
+            <p>Uganda tax calculations, guidance and practice tools from Opitekene Consultancy Limited, Kampala.</p>
+          </div>
+          <nav class="footer-col" aria-label="Product">
+            <p class="footer-col-title">Product</p>
+            <a href="#lp-features">Features</a>
+            <a href="#lp-how">How it works</a>
+            <a href="#lp-plans">Plans</a>
+            <a href="#lp-faq">FAQ</a>
+          </nav>
+          <nav class="footer-col" aria-label="Account">
+            <p class="footer-col-title">Account</p>
+            <button type="button" class="footer-link-button" data-auth-mode="signup">Create an account</button>
+            <button type="button" class="footer-link-button" data-auth-mode="signin">Sign in</button>
+            <button type="button" class="footer-link-button" data-auth-mode="reset">Forgot password</button>
+          </nav>
+          <p class="footer-copy">© 2026 Opitekene Consultancy Limited. Educational estimates and guidance, not a tax filing or legal advice.</p>
+        </div>
+      </footer>
     </div>
     <header class="site-header-bar">
       <div class="site-header">
