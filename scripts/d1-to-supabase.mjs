@@ -9,7 +9,7 @@
 // migration. Inserts use ON CONFLICT DO NOTHING, so re-running is safe.
 // Expired unanswered questions are skipped (the Worker's cron would delete them).
 import { execFileSync } from "node:child_process";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
@@ -83,12 +83,21 @@ export function buildImportSql(rowsByTable, { now = new Date() } = {}) {
   return { sql: lines.join("\n"), summary, skipped, unknownTables };
 }
 
+// Runs npx without a shell so SQL arguments are passed verbatim (cmd.exe would
+// otherwise treat characters such as < > | & in the query as operators).
+function runNpx(args, options) {
+  const npxCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
+  if (process.platform === "win32" && existsSync(npxCli)) {
+    return execFileSync(process.execPath, [npxCli, ...args], options);
+  }
+  return execFileSync("npx", args, options);
+}
+
 function wranglerQuery(sql, { remote }) {
   const args = ["--yes", "wrangler@4.158.0", "d1", "execute", D1_DATABASE, remote ? "--remote" : "--local", "--json", "--command", sql];
-  const output = execFileSync("npx", args, {
+  const output = runNpx(args, {
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
-    shell: process.platform === "win32",
     stdio: ["ignore", "pipe", "inherit"],
   });
   const parsed = JSON.parse(output);
@@ -101,7 +110,7 @@ async function main() {
   const remote = !process.argv.includes("--local");
   console.error(`Reading ${remote ? "REMOTE (production)" : "local"} D1 database ${D1_DATABASE}...`);
   const tables = wranglerQuery(
-    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name <> 'd1_migrations' ORDER BY name",
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' AND name != 'd1_migrations' ORDER BY name",
     { remote },
   ).map((row) => row.name);
   const rowsByTable = {};
