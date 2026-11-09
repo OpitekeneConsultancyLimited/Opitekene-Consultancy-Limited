@@ -11,7 +11,7 @@
       name="description"
       content="Explore Uganda FY 2026/27 tax estimates, source-linked guidance and Ugandan tax case summaries."
     >
-    <meta name="taxcomp-chat-endpoint" content="">
+    <meta name="taxcomp-chat-endpoint" content="https://taxcomp-uganda-chat.omaratomdenis1.workers.dev/chat">
     <meta name="taxcomp-phase6-api" content="">
     <meta name="taxcomp-supabase-url" content="https://xbooviddjkikcbccfcnw.supabase.co">
     <meta name="taxcomp-supabase-anon-key" content="sb_publishable_IdpY6dnVzJXUl05vqTlHmg_Xta-oZRF">
@@ -19,7 +19,7 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
     <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
-    <link rel="stylesheet" href="styles.css?v=multi-tax-analysis-1">
+    <link rel="stylesheet" href="styles.css?v=accounts-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -32,12 +32,13 @@
     <script src="app.js?v=phase3-calculators-1" defer></script>
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
-    <script src="tax-chat.js?v=tax-chat-sources-1" defer></script>
+    <script src="tax-chat.js?v=premium-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
     <script src="phase6-app.js?v=supabase-auth-1" defer></script>
+    <script src="account.js?v=accounts-1" defer></script>
   </head>
   <body>
     <header class="site-header">
@@ -51,6 +52,7 @@
         <a href="#international-tax">International tax</a>
         <a href="#advisory">Knowledge centre</a>
         <a href="#phase6-workspace">Practice workspace</a>
+        <a href="#account">Account</a>
         <a href="#law-updates">Tax updates</a>
         <a href="#contact">Contact</a>
       </nav>
@@ -1479,7 +1481,7 @@
             </div>
             <label class="tax-chat-record-consent" for="tax-chat-provider-consent">
               <input id="tax-chat-provider-consent" type="checkbox">
-              I consent to send this question to the configured AI provider for an untrusted draft. Client facts are not shared by the advisor unless separately provided.
+              Use live web research (Premium): I consent to send this question to the configured AI provider for an untrusted draft. Client facts are not shared by the advisor unless separately provided. <a href="#account">Get Premium</a>
             </label>
             <section class="tax-advisor-review" id="tax-advisor-review" aria-live="polite" hidden>
               <h3>Question review</h3>
@@ -1580,11 +1582,22 @@
         </ul>
       </section>
 
+      <section class="phase6-section account-section" id="account" aria-labelledby="account-title">
+        <div class="phase6-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">ACCOUNT AND SUBSCRIPTIONS</p>
+            <h2 id="account-title">Your TaxComp account</h2>
+            <p>Create an account, then pay monthly with MTN or Airtel Mobile Money or a card. Individual Premium unlocks the AI tax advisor with live, source-linked web research. Firm gives your practice a private workspace for clients, compliance and reports, plus Premium.</p>
+          </div>
+          <span class="phase6-status" id="account-status" role="status">Loading</span>
+        </div>
+        <div id="account-root" aria-live="polite"></div>
+      </section>
       <section class="payment-section" id="payments" aria-labelledby="payments-title">
         <div class="payment-heading">
           <p class="eyebrow section-eyebrow">MANUAL MOBILE-MONEY PAYMENT</p>
           <h2 id="payments-title">Pay for a service.</h2>
-          <p>Send payment to one of the numbers below, then keep your transaction ID. Services are arranged and confirmed manually; this site does not verify payments or unlock paid services automatically.</p>
+          <p>Send payment to one of the numbers below, then keep your transaction ID. These services are arranged and confirmed manually. Monthly subscriptions (Premium research and Firm workspaces) are paid online in your <a href="#account">account</a> instead.</p>
         </div>
         <div class="payment-options">
           <article class="payment-card">

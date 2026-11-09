@@ -29,6 +29,9 @@ export const TABLE_ORDER = Object.freeze([
   "phase6_analysis_proposals", "phase6_scenarios", "phase6_scenario_documents",
   "phase6_scenario_versions", "phase6_reports", "phase6_report_versions", "phase6_audit_log",
   "phase10_usage_daily", "phase11_subscriptions", "phase11_payment_events", "phase11_invoices",
+  // Billing (Supabase-only). billing_plans is reference data seeded by the
+  // migration; the others are restored after it.
+  "billing_plans", "billing_accounts", "billing_subscriptions", "billing_payments",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

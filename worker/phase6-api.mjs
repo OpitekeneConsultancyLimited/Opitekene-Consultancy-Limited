@@ -1633,6 +1633,16 @@ export async function handlePhase6Request(request, env) {
         organizations: session.memberships,
       }, 403, corsHeaders);
     }
+    // Firm workspaces created through a paid subscription are suspended while
+    // that subscription is not active (renewing restores access immediately).
+    const billing = await env.UNANSWERED_QUESTIONS.prepare(
+      `SELECT o.billing_subscription_id AS subscriptionId, s.status, s.current_period_end AS periodEnd
+         FROM phase6_organizations o LEFT JOIN billing_subscriptions s ON s.id = o.billing_subscription_id
+        WHERE o.id = ? LIMIT 1`,
+    ).bind(principal.organizationId).first();
+    if (billing?.subscriptionId && !(billing.status === "active" && billing.periodEnd > new Date().toISOString())) {
+      return response({ error: "This firm's subscription has lapsed. Renew it from your TaxComp account to restore access." }, 402, corsHeaders);
+    }
     if (path === `${API_PREFIX}/governance/readiness` && request.method === "GET") {
       if (!hasPermission(principal.role, "read", "users")) {
         return response({ error: "Forbidden." }, 403, corsHeaders);

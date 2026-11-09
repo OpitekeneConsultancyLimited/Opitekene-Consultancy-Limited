@@ -27,8 +27,8 @@ workspace; they cover a paid public launch.
 | DB-2 | Rollback/recovery and concurrency | **PARTLY CLOSED** | Recovery proven by the BCP-2 drill; cross-tenant isolation and authorization tested end to end on Postgres; Worker rollback target `7c86d391`. Open: concurrent-load test on staging. |
 | ANA-1 | Analytics ingestion and retention | **BLOCKED** | Unchanged: no production event source or scheduled retention task; flag false. |
 | ANA-2 | Analytics RBAC and privacy approval | **BLOCKED** | Unchanged. |
-| PAY-1 | Provider selection, sandbox and lifecycle | **BLOCKED** | Unchanged; no billing implemented. |
-| PAY-2 | Invoices/refunds and live billing approval | **BLOCKED** | Unchanged. |
+| PAY-1 | Provider selection, sandbox and lifecycle | **BUILT, AWAITING PROVIDER KEYS** | 2026-11-09: Flutterwave chosen (UGX, Mobile Money and cards). Built: Supabase Auth accounts, hosted checkout, server-side verification of every transaction, authenticated idempotent webhook, monthly periods that stack, Firm workspace creation and lapse suspension (`worker/billing.mjs`, tests `worker/billing.test.mjs`). Open: Flutterwave KYC, webhook and secrets, and an end-to-end sandbox payment (`BILLING.md`). |
+| PAY-2 | Invoices/refunds and live billing approval | **OWNER OVERRIDE: GO LIVE** | On 2026-11-09 the owner chose to take live payments as soon as the Flutterwave live key is set, ahead of formal legal/commercial sign-off. Refunds are done in the Flutterwave dashboard. Open: VAT/EFRIS e-invoicing of subscription receipts, terms of service and refund policy pages. |
 | LEG-1 | Uganda primary legal sources and provisions | **BLOCKED** | Unchanged: `LEGAL_REVIEW_REGISTER.md`, 43 rules lacking an official source and a qualified reviewer. |
 | LEG-2 | Tax-year and computation approval | **AWAITING EXTERNAL APPROVAL** | Unchanged. |
 | AUTH-1 | Supabase Auth configuration | **OPEN (owner action)** | Set Site URL and Redirect URL to the site; configure custom SMTP before inviting staff; set `SUPABASE_SERVICE_ROLE_KEY` (service_role JWT) and `PHASE6_BOOTSTRAP_SECRET` as Worker secrets. See `SUPABASE_MIGRATION.md`. |

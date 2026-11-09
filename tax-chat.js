@@ -436,6 +436,17 @@
           article.append(details);
         }
 
+        if (metadata.premiumRequired) {
+          const upsell = document.createElement("p");
+          upsell.className = "tax-chat-premium";
+          upsell.append("Live web research is part of TaxComp Premium, so this answer uses local notes. ");
+          const link = document.createElement("a");
+          link.href = "#account";
+          link.textContent = "Get Premium";
+          upsell.append(link);
+          article.append(upsell);
+        }
+
         if (metadata.verificationRequired) {
           const consultation = document.createElement("p");
           consultation.className = "tax-chat-consultation";
@@ -546,13 +557,19 @@
 
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30_000);
+      // Signed-in Premium users send their account token so the Worker can
+      // allow live web research (see account.js).
+      let accessToken = null;
+      try { accessToken = await root.TaxCompAccount?.getAccessToken?.(); } catch { accessToken = null; }
+      const requestHeaders = { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) };
+      const premiumRequiredBy = (response) => response.headers.get("X-TaxComp-Premium") === "required";
       try {
         const advisorUrl = new URL(endpoint, root.location.href);
         advisorUrl.pathname = advisorUrl.pathname.replace(/\/chat\/?$/, "/advisor");
         try {
           const advisorResponse = await fetch(advisorUrl.href, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: requestHeaders,
             body: JSON.stringify({
               message: question,
               taxPeriod: taxPeriod || null,
@@ -572,6 +589,7 @@
               webGrounded: false,
               sourceIndicators: Array.isArray(advisorData.sourceIndicators) ? advisorData.sourceIndicators : [],
               legalReferences: Array.isArray(advisorData.legalReferences) ? advisorData.legalReferences : [],
+              premiumRequired: premiumRequiredBy(advisorResponse),
             };
           }
         } catch (error) {
@@ -580,7 +598,7 @@
 
         const response = await fetch(endpoint, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: requestHeaders,
           body: JSON.stringify({
             message: question,
             taxPeriod: taxPeriod || null,
@@ -618,6 +636,7 @@
           questionRecordId: typeof data.questionRecordId === "string"
             ? data.questionRecordId
             : null,
+          premiumRequired: premiumRequiredBy(response),
         };
       } finally {
         clearTimeout(timeout);
