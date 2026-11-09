@@ -1,7 +1,13 @@
 # Moving TaxComp from Cloudflare D1 to Supabase
 
-Status (2026-11-09): **all three phases are built, tested and provisioned in Supabase.**
-They are not live until the remaining deploy steps below are done.
+Status (2026-11-09): **production runs on Supabase.**
+* Code merged to `main` (PR #2); GitHub Pages deployed.
+* Preview Worker `taxcomp-prototype-preview-chat` is on Supabase (version `b6f2bf4b`).
+* Production Worker `taxcomp-uganda-chat` is on Supabase via Hyperdrive (version `c787b592`).
+  Verified live: chat answers, foreign origins get 403, and a consented question
+  was saved into `taxcomp.unanswered_questions` with consent and expiry, then deleted.
+* Still open: steps 2–4 below (the service key secret, Auth URL settings, SMTP). Only the
+  dormant Phase 6 workspace needs them. Steps 1, 5 and 6 are done.
 
 | Phase | What | State |
 |---|---|---|
