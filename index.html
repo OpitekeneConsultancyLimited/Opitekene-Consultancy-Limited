@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-auth="pending">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,7 +19,23 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/taxcomp-192.png">
     <link rel="apple-touch-icon" href="./icons/taxcomp-180.png">
-    <link rel="stylesheet" href="styles.css?v=web-search-1">
+    <style id="auth-gate-style">
+      /* Sign-in first: the whole site stays hidden until account.js confirms a
+         signed-in session and sets <html data-auth="in">. Inline so it applies
+         before any other file loads (no flash of the site). */
+      html:not([data-auth="in"]) body > :not(#auth-gate) { display: none !important; }
+      html[data-auth="in"] #auth-gate { display: none !important; }
+      #auth-gate { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; background: #f6f7f2; color: #172820;
+        padding: 32px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); box-sizing: border-box; }
+      .auth-gate-card { width: min(100%, 460px); background: #fff; border: 1px solid #e4e9e2; border-radius: 12px; padding: 28px 24px; box-shadow: 0 10px 30px rgba(23, 40, 32, 0.08); }
+      .auth-gate-brand { margin: 0 0 6px; color: #176345; font: 700 13px/1.2 "Segoe UI", Arial, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+      .auth-gate-card h1 { margin: 0 0 14px; font: 700 28px/1.15 Georgia, "Times New Roman", serif; }
+      .auth-gate-loading { margin: 0; color: #64736a; font: 400 14px/1.5 "Segoe UI", Arial, sans-serif; }
+      #auth-gate .phase6-form { grid-template-columns: 1fr; max-width: none; border-top: 0; padding-top: 12px; }
+      #auth-gate .phase6-tabs { padding-top: 0; }
+      #auth-gate .primary-button, #auth-gate .secondary-button { width: 100%; justify-content: center; }
+    </style>
+    <link rel="stylesheet" href="styles.css?v=auth-gate-1">
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -38,10 +54,18 @@
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
     <script src="phase6-app.js?v=supabase-auth-1" defer></script>
-    <script src="account.js?v=accounts-1" defer></script>
+    <script src="account.js?v=auth-gate-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
+    <div id="auth-gate" role="region" aria-labelledby="auth-gate-title">
+      <div class="auth-gate-card">
+        <p class="auth-gate-brand">Opitekene TaxComp</p>
+        <h1 id="auth-gate-title">Sign in to continue</h1>
+        <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
+        <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
+      </div>
+    </div>
     <header class="site-header">
       <a class="brand" href="#" aria-label="Opitekene TaxComp home">
         <span class="brand-mark" aria-hidden="true">O</span>

@@ -136,7 +136,7 @@
           options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}#account` },
         });
         if (error) throw new Error(error.message);
-        if (result.session) { session = result.session; await loadAccount(); setMessage("Account created. Choose a plan below.", "success"); }
+        if (result.session) { session = result.session; await loadAccount(); setMessage("Account created. Welcome to TaxComp.", "success"); window.scrollTo(0, 0); }
         else { mode = "signin"; setMessage("Check your email and open the confirmation link, then sign in here.", "success"); }
       }));
     } else if (mode === "signin") {
@@ -153,6 +153,7 @@
         message = "";
         await loadAccount();
         render();
+        window.scrollTo(0, 0);
       }));
     } else {
       wrap.append(busyForm(el("form", { className: "phase6-form", id: "account-reset-form" }, [
@@ -261,17 +262,34 @@
     return wrap;
   }
 
+  // Sign-in screen (#auth-gate in index.html): the site is hidden by CSS until
+  // <html data-auth="in">. While signed out, the forms render only in the gate,
+  // so the (hidden) Account section never duplicates their ids.
+  const gateRoot = document.querySelector("#auth-gate-root");
+
   function render() {
+    const signedIn = Boolean(supabase && session && !passwordSetup);
+    document.documentElement.dataset.auth = signedIn ? "in" : "out";
+    const alertFor = () => message ? el("p", { className: "phase6-alert", "data-kind": messageKind, role: "status", text: message }) : null;
+
+    if (gateRoot) {
+      gateRoot.replaceChildren();
+      if (!signedIn) {
+        const notice = alertFor();
+        if (notice) gateRoot.append(notice);
+        if (!supabase) {
+          gateRoot.append(el("p", { className: "phase6-alert", "data-kind": "error", text: "Sign-in is temporarily unavailable. Check your connection and reload the page." }));
+        } else {
+          gateRoot.append(passwordSetup ? passwordView() : signedOutView());
+        }
+      }
+    }
+
     if (!root) return;
     root.replaceChildren();
-    if (message) root.append(el("p", { className: "phase6-alert", "data-kind": messageKind, role: "status", text: message }));
-    if (!supabase) {
-      setStatus("Not available yet");
-      root.append(el("p", { className: "phase6-alert", text: "Accounts are not available on this page yet." }));
-      return;
-    }
-    if (passwordSetup) { setStatus("Choose a password"); root.append(passwordView()); return; }
-    if (!session) { setStatus("Not signed in"); root.append(signedOutView()); return; }
+    if (!signedIn) { setStatus("Not signed in"); return; }
+    const notice = alertFor();
+    if (notice) root.append(notice);
     setStatus(account?.premium ? "Premium active" : "Signed in");
     root.append(signedInView());
   }
@@ -316,16 +334,22 @@
     }
     passwordSetup = linkType === "recovery";
     supabase.auth.onAuthStateChange((event, next) => {
+      const wasSignedIn = Boolean(session);
       session = next;
       if (event === "PASSWORD_RECOVERY") passwordSetup = true;
       if (event === "SIGNED_OUT") { account = null; notify(); }
       render();
+      // Signed in from an email link or another tab: load plans, open the site at the top.
+      if (event === "SIGNED_IN" && !wasSignedIn) {
+        window.scrollTo(0, 0);
+        loadAccount().then(render);
+      }
     });
     session = (await supabase.auth.getSession()).data.session;
     await loadAccount();
     render();
     if (session) await completeCheckout();
-    if (linkType === "signup" && session) setMessage("Email confirmed. Choose a plan below.", "success");
+    if (linkType === "signup" && session) setMessage("Email confirmed. Welcome to TaxComp.", "success");
   }
 
   start();
