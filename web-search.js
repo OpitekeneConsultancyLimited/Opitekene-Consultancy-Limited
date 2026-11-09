@@ -45,7 +45,7 @@
     if (!form || !input || !anchor) return;
     form.append(el("p", {
       className: "web-search-note",
-      text: "Searches also look up current public web sources through Google Gemini. Do not enter names, TINs or other personal details.",
+      text: "Searches also look up current public web sources through an AI provider (Anthropic Claude, or Google Gemini as backup). Do not enter names, TINs or other personal details.",
     }));
     const panel = el("section", { className: "web-search-panel", "aria-live": "polite", "aria-label": `${label}: web results`, hidden: "" });
     anchor.after(panel);
@@ -58,7 +58,7 @@
         el("span", { className: "web-search-badge", text: state === "loading" ? "Searching…" : state === "ok" ? "Live sources" : "No web results" }),
       ]));
       if (state === "loading") {
-        panel.append(el("p", { className: "web-search-status", text: "Searching current public sources. TaxComp's own results are shown above." }));
+        panel.append(el("p", { className: "web-search-status", text: "Searching current public sources. This can take up to a minute; TaxComp's own results are shown above." }));
         return;
       }
       if (state !== "ok") {
@@ -86,7 +86,7 @@
       controller?.abort();
       const mine = new AbortController();
       controller = mine;
-      const timeout = setTimeout(() => mine.abort(), 35_000);
+      const timeout = setTimeout(() => mine.abort(), 90_000); // live web research can take up to a minute
       render("loading");
       try {
         const response = await fetch(searchUrl, {
