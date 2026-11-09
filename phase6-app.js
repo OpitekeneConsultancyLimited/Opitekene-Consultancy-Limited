@@ -6,8 +6,18 @@
   const endpointMeta = document.querySelector('meta[name="taxcomp-phase6-api"]');
   if (!root || !status || !endpointMeta) return;
 
+  // Identity is Supabase Auth (supabase-js, loaded only when the workspace is
+  // configured). The API receives the Supabase access token as a Bearer token;
+  // no cookies or CSRF tokens are used.
+  const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm";
+  const supabaseUrl = (document.querySelector('meta[name="taxcomp-supabase-url"]')?.content || "").trim();
+  const supabaseKey = (document.querySelector('meta[name="taxcomp-supabase-anon-key"]')?.content || "").trim();
   let apiBase = endpointMeta.content.trim().replace(/\/+$/, "");
-  let csrfToken = "";
+  let supabase = null;
+  let identity = null; // { userId, email } from /auth/me
+  let organizations = [];
+  let organizationId = "";
+  let passwordSetupRequired = false;
   let principal = null;
   let activeTab = "dashboard";
   let selectedClientId = "";
@@ -125,15 +135,23 @@
     return number;
   }
 
-  async function api(path, { method = "GET", body, formData = null, auth = true } = {}) {
+  async function authHeaders(extra = {}) {
+    const headers = { ...extra };
+    const { data } = supabase ? await supabase.auth.getSession() : { data: {} };
+    const token = data?.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (organizationId) headers["X-Organization-Id"] = organizationId;
+    return headers;
+  }
+
+  async function api(path, { method = "GET", body, formData = null, headers: extraHeaders = {} } = {}) {
     if (!apiBase) throw new Error("Phase 6 API endpoint is not configured.");
-    const headers = {};
+    const headers = await authHeaders(extraHeaders);
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    if (auth && csrfToken && method !== "GET") headers["X-CSRF-Token"] = csrfToken;
     const response = await fetch(`${apiBase}${path}`, {
       method,
       headers,
-      credentials: "include",
+      credentials: "omit",
       cache: "no-store",
       body: formData || (body === undefined ? undefined : JSON.stringify(body)),
     });
@@ -145,7 +163,7 @@
   }
 
   async function download(path, filename) {
-    const response = await fetch(`${apiBase}${path}`, { credentials: "include", cache: "no-store" });
+    const response = await fetch(`${apiBase}${path}`, { headers: await authHeaders(), credentials: "omit", cache: "no-store" });
     if (!response.ok) {
       let detail = `Download failed (${response.status}).`;
       try { detail = (await response.json()).error || detail; } catch { /* non-JSON error */ }
@@ -159,70 +177,129 @@
     URL.revokeObjectURL(objectUrl);
   }
 
-  function authPanel() {
+  /** Refreshes identity, organizations and principal from the API. */
+  async function loadIdentity() {
+    identity = null;
+    principal = null;
+    organizations = [];
+    const { data } = await supabase.auth.getSession();
+    if (!data?.session) return;
+    const me = await api("/auth/me");
+    identity = me.user;
+    organizations = me.organizations || [];
+    if (!organizationId && organizations.length === 1) organizationId = organizations[0].organizationId;
+    if (organizationId && !organizations.some((item) => item.organizationId === organizationId)) organizationId = "";
+    if (me.principal && me.principal.organizationId === organizationId) {
+      principal = me.principal;
+    } else if (organizationId) {
+      principal = (await api("/auth/me")).principal; // re-ask with X-Organization-Id
+    }
+  }
+
+  function passwordPolicy(password) {
+    if (password.length < 12 || !/[a-z]/i.test(password) || !/\d/.test(password)) {
+      throw new Error("Use at least 12 characters, including a letter and a number.");
+    }
+  }
+
+  function signInPanel() {
     const panel = element("div", { className: "phase6-auth-panel" });
     panel.append(element("h3", { text: "Sign in to the practice workspace" }));
-    panel.append(element("p", { className: "phase6-empty", text: "Client records are not stored in this browser. Sign-in requires the configured Phase 6 API." }));
+    panel.append(element("p", { className: "phase6-empty", text: "Client records are not stored in this browser. Accounts are managed by Supabase Auth; access is granted by your practice administrator." }));
     panel.append(form([
-      buildField("Organization ID", "organizationId", "text", { required: true, maxlength: 120 }),
       buildField("Email", "email", "email", { required: true, maxlength: 254 }),
       buildField("Password", "password", "password", { required: true, maxlength: 128 }),
     ], "Sign in", async (data) => {
-      const result = await api("/auth/login", {
-        method: "POST",
-        auth: false,
-        body: { organizationId: value(data, "organizationId"), email: value(data, "email"), password: value(data, "password") },
-      });
-      csrfToken = result.csrfToken;
-      principal = result.principal;
+      const { error } = await supabase.auth.signInWithPassword({ email: value(data, "email"), password: value(data, "password") });
+      if (error) throw new Error("Sign-in failed. Check your email and password.");
       selectedClientId = "";
+      organizationId = "";
+      await loadIdentity();
       message = "Signed in. Data shown below is loaded from the authorized API.";
       messageKind = "success";
       await render();
     }));
 
     const resetPanel = element("details");
-    resetPanel.append(element("summary", { text: "Request a password reset" }));
+    resetPanel.append(element("summary", { text: "Forgot your password?" }));
     resetPanel.append(form([
       buildField("Account email", "email", "email", { required: true, maxlength: 254 }),
     ], "Send reset link", async (data) => {
-      await api("/auth/password-reset/request", { method: "POST", auth: false, body: { email: value(data, "email") } });
-      setMessage("If the account exists and email delivery is configured, a reset link will be sent.", "success");
+      await supabase.auth.resetPasswordForEmail(value(data, "email"), { redirectTo: window.location.origin + window.location.pathname });
+      setMessage("If the account exists, a password reset link has been emailed.", "success");
     }, "phase6-form"));
     panel.append(resetPanel);
-
-    const bootstrapPanel = element("details");
-    bootstrapPanel.append(element("summary", { text: "Set up the first practice administrator" }));
-    bootstrapPanel.append(element("p", { className: "phase6-empty", text: "One-time setup requires the server-side bootstrap secret. Do not use this form unless you administer the Worker." }));
-    bootstrapPanel.append(form([
-      buildField("Practice name", "organizationName", "text", { required: true, maxlength: 160 }),
-      buildField("Administrator email", "email", "email", { required: true, maxlength: 254 }),
-      buildField("Initial password", "password", "password", { required: true, maxlength: 128 }),
-      buildField("One-time bootstrap secret", "bootstrapSecret", "password", { required: true, maxlength: 256 }),
-    ], "Create practice", async (data) => {
-      const secret = value(data, "bootstrapSecret");
-      const result = await fetch(`${apiBase}/auth/bootstrap`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-Phase6-Bootstrap": secret },
-        body: JSON.stringify({
-          organizationName: value(data, "organizationName"),
-          email: value(data, "email"),
-          password: value(data, "password"),
-        }),
-      });
-      const payload = await result.json();
-      if (!result.ok) throw new Error(payload.error || `Setup failed (${result.status}).`);
-      const organizationId = payload.organization.organizationId;
-      message = `Practice created. Organization ID: ${organizationId}. Sign in with the administrator account.`;
-      messageKind = "success";
-      render();
-      const input = root.querySelector('[name="organizationId"]');
-      if (input) input.value = organizationId;
-    }));
-    panel.append(bootstrapPanel);
     return panel;
+  }
+
+  function setPasswordPanel() {
+    const panel = element("div", { className: "phase6-auth-panel" });
+    panel.append(element("h3", { text: "Choose your password" }));
+    panel.append(form([
+      buildField("New password", "password", "password", { required: true, maxlength: 128 }),
+    ], "Save password", async (data) => {
+      const password = value(data, "password");
+      passwordPolicy(password);
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw new Error(error.message || "Could not save the password.");
+      passwordSetupRequired = false;
+      await loadIdentity();
+      message = "Password saved.";
+      messageKind = "success";
+      await render();
+    }));
+    return panel;
+  }
+
+  function organizationPanel() {
+    const panel = element("div", { className: "phase6-auth-panel" });
+    panel.append(element("p", { text: `Signed in as ${identity?.email || "your account"}.` }));
+    if (organizations.length) {
+      panel.append(element("h3", { text: "Choose an organization" }));
+      panel.append(element("div", { className: "phase6-actions" }, organizations.map((item) => actionButton(
+        `${item.organizationName} (${item.role})`,
+        async () => {
+          organizationId = item.organizationId;
+          await loadIdentity();
+          await render();
+        },
+      ))));
+    } else {
+      panel.append(element("p", { className: "phase6-alert", text: "Your account has no active practice membership yet. Ask a practice administrator to invite you." }));
+      const bootstrapPanel = element("details");
+      bootstrapPanel.append(element("summary", { text: "Set up the first practice (one time)" }));
+      bootstrapPanel.append(element("p", { className: "phase6-empty", text: "Creates the first practice with you as system administrator. Requires the server-side bootstrap secret; do not use this unless you administer the Worker." }));
+      bootstrapPanel.append(form([
+        buildField("Practice name", "organizationName", "text", { required: true, maxlength: 160 }),
+        buildField("One-time bootstrap secret", "bootstrapSecret", "password", { required: true, maxlength: 256 }),
+      ], "Create practice", async (data) => {
+        const result = await api("/auth/bootstrap", {
+          method: "POST",
+          headers: { "X-Phase6-Bootstrap": value(data, "bootstrapSecret") },
+          body: { organizationName: value(data, "organizationName") },
+        });
+        organizationId = result.organization.organizationId;
+        await loadIdentity();
+        message = "Practice created. You are its system administrator.";
+        messageKind = "success";
+        await render();
+      }));
+      panel.append(bootstrapPanel);
+    }
+    panel.append(actionButton("Sign out", signOut));
+    return panel;
+  }
+
+  async function signOut() {
+    await supabase?.auth.signOut();
+    identity = null;
+    principal = null;
+    organizations = [];
+    organizationId = "";
+    selectedClientId = "";
+    message = "Signed out.";
+    messageKind = "success";
+    render();
   }
 
   function tableForClients(clients) {
@@ -585,7 +662,7 @@
   async function usersView(container) {
     const data = await api("/users");
     container.append(element("div", { className: "phase6-view-heading" }, element("h3", { text: "Users and assignments" })));
-    container.append(element("p", { className: "phase6-alert", text: "Invitations require the configured email delivery service. New users remain pending until they set a password through the emailed one-time link." }));
+    container.append(element("p", { className: "phase6-alert", text: "Supabase Auth emails new people an invitation link to choose their password. People who already have an account are added without another email." }));
     container.append(form([
       buildField("Email", "email", "email", { required: true, maxlength: 254 }),
       buildField("Role", "role", "select", { choices: [
@@ -594,12 +671,14 @@
       ] }),
       buildField("Assigned client IDs (comma-separated)", "clientIds", "text", { maxlength: 2000, wide: true }),
     ], "Invite user", async (data) => {
-      await api("/users", { method: "POST", body: {
+      const result = await api("/users", { method: "POST", body: {
         email: value(data, "email"),
         role: value(data, "role"),
         clientIds: value(data, "clientIds").split(",").map((id) => id.trim()).filter(Boolean),
       } });
-      setMessage("Invitation sent; account remains pending until the invite link is used.", "success");
+      setMessage(result.user?.invitationEmailSent
+        ? "Invitation emailed. They can sign in after choosing a password from the link."
+        : "Existing account added to this practice.", "success");
     }));
     container.append(table(["Email", "Role", "Status", "Joined", "Client access", "Actions"], (data.users || []).map((item) => {
       const roleChoices = [
@@ -655,9 +734,23 @@
       root.append(element("p", { className: "phase6-alert", text: "The Phase 6 API endpoint is not configured. This workspace has no mock or browser-local client data. Configure the HTTPS API endpoint and server-side identity/storage bindings before use." }));
       return;
     }
-    status.textContent = principal ? `Signed in · ${principal.role}` : "Sign-in required";
+    if (!supabase) {
+      status.textContent = "Sign-in not configured";
+      root.append(element("p", { className: "phase6-alert", text: "Supabase Auth is not configured for this site (taxcomp-supabase-url / taxcomp-supabase-anon-key)." }));
+      return;
+    }
+    if (passwordSetupRequired) {
+      status.textContent = "Choose a password";
+      root.append(setPasswordPanel());
+      return;
+    }
+    status.textContent = principal ? `Signed in · ${principal.role}` : identity ? "Choose an organization" : "Sign-in required";
+    if (!identity) {
+      root.append(signInPanel());
+      return;
+    }
     if (!principal) {
-      root.append(authPanel());
+      root.append(organizationPanel());
       return;
     }
     const tabs = [
@@ -666,17 +759,16 @@
       ["reports", "Reports"], ["users", "Users"],
     ];
     const workspace = element("div", { className: "phase6-workspace-panel" });
+    const organizationName = organizations.find((item) => item.organizationId === principal.organizationId)?.organizationName || principal.organizationId;
     const top = element("div", { className: "phase6-view-heading" }, [
-      element("p", { text: `${principal.email} · Organization ${principal.organizationId}` }),
-      actionButton("Sign out", async () => {
-        await api("/auth/logout", { method: "POST", body: {} });
+      element("p", { text: `${principal.email} · ${organizationName}` }),
+      ...(organizations.length > 1 ? [actionButton("Switch organization", async () => {
+        organizationId = "";
         principal = null;
-        csrfToken = "";
         selectedClientId = "";
-        message = "Signed out.";
-        messageKind = "success";
-        render();
-      }),
+        await render();
+      })] : []),
+      actionButton("Sign out", signOut),
     ]);
     workspace.append(top);
     workspace.append(element("nav", { className: "phase6-tabs", "aria-label": "Practice workspace" }, tabs.map(([id, label]) => element("button", {
@@ -712,22 +804,44 @@
     }
   }
 
-  const url = new URL(window.location.href);
-  const resetToken = url.searchParams.get("phase6Reset");
-  configureEndpoint();
-  if (resetToken) {
-    url.searchParams.delete("phase6Reset");
-    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
-    if (apiBase) {
-      root.append(form([
-        buildField("New password", "password", "password", { required: true, maxlength: 128 }),
-      ], "Set password", async (data) => {
-        await api("/auth/password-reset/confirm", { method: "POST", auth: false, body: { token: resetToken, password: value(data, "password") } });
-        setMessage("Password updated. Sign in with your new password.", "success");
-      }, "phase6-auth-panel"));
-      status.textContent = "Set account password";
-    } else {
-      render();
+  function validSupabaseConfig() {
+    try {
+      const parsed = new URL(supabaseUrl);
+      return parsed.protocol === "https:" && supabaseKey.length >= 20;
+    } catch {
+      return false;
     }
-  } else render();
+  }
+
+  async function start() {
+    configureEndpoint();
+    if (!apiBase || !validSupabaseConfig()) return render();
+    // Invitation and recovery links land here with the session in the URL
+    // fragment; read the link type before supabase-js consumes and clears it.
+    const linkType = new URLSearchParams(window.location.hash.slice(1)).get("type");
+    try {
+      const { createClient } = await import(SUPABASE_JS_URL);
+      supabase = createClient(supabaseUrl, supabaseKey, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.sessionStorage },
+      });
+    } catch {
+      setMessage("Could not load the sign-in library. Check your connection and reload.", "error");
+      return render();
+    }
+    passwordSetupRequired = linkType === "invite" || linkType === "recovery";
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        passwordSetupRequired = true;
+        render();
+      }
+    });
+    try {
+      await loadIdentity();
+    } catch (error) {
+      setMessage(error.message || "Could not load your account.", "error");
+    }
+    await render();
+  }
+
+  start();
 })();

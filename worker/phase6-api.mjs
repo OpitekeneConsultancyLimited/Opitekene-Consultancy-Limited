@@ -11,14 +11,11 @@ import reportModule from "../tax-research-report.js";
 import legalSourceModule from "../legal-source-registry.js";
 import caseLawModule from "../case-law-registry.js";
 import {
-  clearSessionCookie,
   createPhase6AuthService,
-  hashPassword,
   hasPermission,
   phase6AuthConstants,
-  readSessionCookie,
-  sessionCookie,
 } from "./phase6-auth.mjs";
+import { createSupabaseAdmin, createSupabaseTokenVerifier, isServiceRoleKey, normalizeSupabaseUrl } from "./supabase-auth.mjs";
 import { validateDeploymentReadiness } from "./deployment-security.mjs";
 import { createOperationsAnalyticsService } from "./operations-analytics.mjs";
 import { getCommercialLaunchReadiness } from "./commercial-governance.mjs";
@@ -70,11 +67,12 @@ function response(data, status, corsHeaders, extraHeaders = {}) {
 function corsFor(request, env) {
   const origin = request.headers.get("Origin");
   if (!origin || origin !== env.ALLOWED_ORIGIN) return null;
+  // Supabase access tokens are sent as Authorization: Bearer; no cookies, so no
+  // credentialed CORS and no CSRF token.
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token, X-Phase6-Bootstrap",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Organization-Id, X-Phase6-Bootstrap",
     "Access-Control-Max-Age": "600",
   };
 }
@@ -113,47 +111,20 @@ function requestLimiter(request, env, keyPrefix) {
   });
 }
 
-function makeMailer(env) {
-  if (env.PHASE6_EMAIL_SERVICE && typeof env.PHASE6_EMAIL_SERVICE.fetch === "function" &&
-      typeof env.PHASE6_EMAIL_API_KEY === "string" && env.PHASE6_EMAIL_API_KEY.length >= 24 &&
-      typeof env.PHASE6_EMAIL_ENDPOINT === "string" && env.PHASE6_EMAIL_ENDPOINT.startsWith("https://") &&
-      typeof env.PHASE6_APP_ORIGIN === "string" && env.PHASE6_APP_ORIGIN.startsWith("https://")) {
-    return {
-      async sendPasswordReset({ email, token, expiresAt }) {
-        const resetUrl = new URL("/", env.PHASE6_APP_ORIGIN);
-        resetUrl.searchParams.set("phase6Reset", token);
-        const result = await env.PHASE6_EMAIL_SERVICE.fetch(env.PHASE6_EMAIL_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.PHASE6_EMAIL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ to: email, resetUrl: resetUrl.toString(), expiresAt }),
-        });
-        if (!result.ok) throw new Error("Email delivery failed.");
-      },
-    };
-  }
-  if (env.PHASE6_TEST_MAILER && typeof env.PHASE6_TEST_MAILER.sendPasswordReset === "function") {
-    return env.PHASE6_TEST_MAILER;
-  }
-  return null;
+// SUPABASE_FETCH is a test seam (a fake Supabase); production uses global fetch.
+function supabaseFetch(env) {
+  return typeof env.SUPABASE_FETCH === "function" ? env.SUPABASE_FETCH : globalThis.fetch;
 }
 
 function makeAuth(env) {
+  const fetchImpl = supabaseFetch(env);
   return createPhase6AuthService({
     db: env.UNANSWERED_QUESTIONS,
-    mailer: makeMailer(env),
+    verifier: createSupabaseTokenVerifier({ supabaseUrl: env.SUPABASE_URL, fetchImpl }),
+    admin: isServiceRoleKey(env.SUPABASE_SERVICE_ROLE_KEY)
+      ? createSupabaseAdmin({ supabaseUrl: env.SUPABASE_URL, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY, fetchImpl })
+      : null,
   });
-}
-
-async function authenticate(request, auth) {
-  const token = readSessionCookie(request);
-  return token ? auth.authenticate(token) : null;
-}
-
-async function checkCsrf(request, auth, session) {
-  return auth.verifyCsrf(session, request.headers.get("X-CSRF-Token"));
 }
 
 async function audit(db, principal, action, resourceType, resourceId, details = {}) {
@@ -310,18 +281,16 @@ async function handleUsers(request, env, auth, principal, path) {
   }
   if (request.method === "POST" && path === `${API_PREFIX}/users`) {
     if (!hasPermission(principal.role, "create", "users")) return response({ error: "Forbidden." }, 403, corsFor(request, env));
-    const mailer = makeMailer(env);
-    if (!mailer) return response({ error: "Invitation delivery is not configured." }, 503, corsFor(request, env));
+    if (!isServiceRoleKey(env.SUPABASE_SERVICE_ROLE_KEY)) {
+      return response({ error: "Invitation delivery is not configured." }, 503, corsFor(request, env));
+    }
     const body = await jsonBody(request);
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new TypeError("A user record is required.");
     if (!roleCanAssign(principal.role, body.role)) return response({ error: "Role assignment is not permitted." }, 403, corsFor(request, env));
     if (!Array.isArray(body.clientIds ?? [])) throw new TypeError("clientIds must be an array.");
-    const userId = crypto.randomUUID();
     const email = String(body.email || "").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new RangeError("A valid email is required.");
     const timestamp = new Date().toISOString();
-    const placeholderPassword = `${crypto.randomUUID()}-A1`;
-    const passwordHash = await hashPassword(placeholderPassword);
     const clientIds = [...new Set(body.clientIds ?? [])];
     if (clientIds.some((id) => typeof id !== "string" || !id.trim() || id.length > 120)) throw new RangeError("Every client assignment must have a valid ID.");
     if (clientIds.length && !("system-admin" === principal.role || "practice-admin" === principal.role)) {
@@ -334,9 +303,24 @@ async function handleUsers(request, env, auth, principal, path) {
       ).bind(principal.organizationId, ...clientIds).all();
       if (results.length !== clientIds.length) return response({ error: "One or more clients are unavailable." }, 404, corsFor(request, env));
     }
+    let invitation;
+    try {
+      // Supabase sends the invitation email (new address) or we link the
+      // existing Supabase account; either way we get its user id.
+      invitation = await auth.inviteUser(email, { redirectTo: env.PHASE6_APP_ORIGIN });
+    } catch (error) {
+      if (error instanceof RangeError) throw error;
+      console.error("Phase 6 invitation failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
+      return response({ error: "Invitation delivery failed." }, 503, corsFor(request, env));
+    }
+    const { userId } = invitation;
+    const existingMembership = await db.prepare(
+      "SELECT 1 AS present FROM phase6_memberships WHERE organization_id = ? AND user_id = ? LIMIT 1",
+    ).bind(principal.organizationId, userId).first();
+    if (existingMembership) return response({ error: "This person is already a member of the organization." }, 409, corsFor(request, env));
     const statements = [
-      db.prepare("INSERT INTO phase6_users (id, email, password_hash, status, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?)")
-        .bind(userId, email, passwordHash, timestamp, timestamp),
+      db.prepare("INSERT INTO phase6_users (id, email, status, created_at, updated_at) VALUES (?, ?, 'active', ?, ?) ON CONFLICT (id) DO NOTHING")
+        .bind(userId, email, timestamp, timestamp),
       db.prepare("INSERT INTO phase6_memberships (organization_id, user_id, role, created_at) VALUES (?, ?, ?, ?)")
         .bind(principal.organizationId, userId, body.role, timestamp),
       ...clientIds.map((clientId) => db.prepare(
@@ -344,12 +328,10 @@ async function handleUsers(request, env, auth, principal, path) {
       ).bind(principal.organizationId, userId, clientId, principal.userId, timestamp)),
     ];
     await db.batch(statements);
-    const invitation = await auth.requestPasswordReset(email, { reportDelivery: true });
-    await audit(db, principal, "user.invited", "user", userId, { role: body.role, assignedClientCount: clientIds.length });
-    if (!invitation.delivered) {
-      return response({ error: "Invitation delivery failed; the account remains pending." }, 503, corsFor(request, env));
-    }
-    return response({ user: { userId, email, role: body.role, status: "pending" } }, 201, corsFor(request, env));
+    await audit(db, principal, "user.invited", "user", userId, { role: body.role, assignedClientCount: clientIds.length, emailSent: invitation.invited });
+    return response({
+      user: { userId, email, role: body.role, status: invitation.invited ? "invited" : "active", invitationEmailSent: invitation.invited },
+    }, 201, corsFor(request, env));
   }
   const userMatch = path.match(/^\/api\/phase6\/users\/([a-z0-9._-]{1,120})$/i);
   const assignmentMatch = path.match(/^\/api\/phase6\/users\/([a-z0-9._-]{1,120})\/clients$/i);
@@ -405,10 +387,9 @@ async function handleUsers(request, env, auth, principal, path) {
     }
     const now = new Date().toISOString();
     const statements = [
+      // Deactivation is immediate: every request re-checks the membership.
       db.prepare("UPDATE phase6_memberships SET role = ?, status = ? WHERE organization_id = ? AND user_id = ?")
         .bind(nextRole, nextStatus, principal.organizationId, targetUserId),
-      ...(nextStatus === "inactive" ? [db.prepare("UPDATE phase6_sessions SET revoked_at = ? WHERE organization_id = ? AND user_id = ? AND revoked_at IS NULL")
-        .bind(now, principal.organizationId, targetUserId)] : []),
       db.prepare("INSERT INTO phase6_audit_log (id, organization_id, actor_user_id, action, resource_type, resource_id, details_json, occurred_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(crypto.randomUUID(), principal.organizationId, principal.userId, "user.membership-updated", "user", targetUserId,
           JSON.stringify({ role: nextRole, status: nextStatus }), now),
@@ -1604,41 +1585,54 @@ export async function handlePhase6Request(request, env) {
   if (!limit) return response({ error: "Rate limiter is not configured." }, 503, corsHeaders);
   if (!limit.success) return response({ error: "Too many requests." }, 429, corsHeaders);
 
+  if (!normalizeSupabaseUrl(env.SUPABASE_URL)) {
+    return response({ error: "Supabase Auth is not configured (SUPABASE_URL)." }, 503, corsHeaders);
+  }
+  // Supabase Auth identities need the Supabase schema (worker/db.mjs sets this
+  // when the HYPERDRIVE binding is present); the legacy D1 schema is not used.
+  if (env.DATABASE_PROVIDER !== "supabase") {
+    return response({ error: "Phase 6 requires the Supabase database (HYPERDRIVE binding)." }, 503, corsHeaders);
+  }
   const auth = makeAuth(env);
   const path = url.pathname;
   try {
+    // Passwords, resets and sign-in are handled by Supabase Auth in the browser.
+    if ([`${API_PREFIX}/auth/login`, `${API_PREFIX}/auth/password-reset/request`, `${API_PREFIX}/auth/password-reset/confirm`].includes(path)) {
+      return response({ error: "Sign in and reset passwords with Supabase Auth; this endpoint was retired." }, 410, corsHeaders);
+    }
+
+    const session = await auth.authenticate(request);
+    if (!session) return response({ error: "Authentication required." }, 401, corsHeaders);
+
     if (path === `${API_PREFIX}/auth/bootstrap` && request.method === "POST") {
       const body = await jsonBody(request);
       const organization = await auth.bootstrap({
         secret: request.headers.get("X-Phase6-Bootstrap"),
         expectedSecret: env.PHASE6_BOOTSTRAP_SECRET,
         organizationName: body.organizationName,
-        email: body.email,
-        password: body.password,
+        identity: session.identity,
       });
       return response({ organization }, 201, corsHeaders);
     }
-    if (path === `${API_PREFIX}/auth/login` && request.method === "POST") {
-      const body = await jsonBody(request);
-      const session = await auth.login(body);
-      return response({ principal: session.principal, csrfToken: session.csrfToken, expiresAt: session.expiresAt }, 200, corsHeaders, {
-        "Set-Cookie": sessionCookie(session.sessionToken),
-      });
+    if (path === `${API_PREFIX}/auth/me` && request.method === "GET") {
+      return response({
+        user: { userId: session.identity.userId, email: session.identity.email },
+        principal: session.principal,
+        organizations: session.memberships,
+        expiresAt: session.expiresAt,
+      }, 200, corsHeaders);
     }
-    if (path === `${API_PREFIX}/auth/password-reset/request` && request.method === "POST") {
-      const body = await jsonBody(request);
-      return response(await auth.requestPasswordReset(body.email), 202, corsHeaders);
+    if (path === `${API_PREFIX}/auth/logout` && request.method === "POST") {
+      // Stateless: the browser discards its Supabase session (supabase.auth.signOut()).
+      return response({ loggedOut: true }, 200, corsHeaders);
     }
-    if (path === `${API_PREFIX}/auth/password-reset/confirm` && request.method === "POST") {
-      const body = await jsonBody(request);
-      if (!await auth.resetPassword(body.token, body.password)) return response({ error: "Reset token is invalid or expired." }, 400, corsHeaders);
-      return response({ reset: true }, 200, corsHeaders);
-    }
-
-    const session = await authenticate(request, auth);
-    if (!session) return response({ error: "Authentication required." }, 401, corsHeaders);
     const principal = session.principal;
-    if (path === `${API_PREFIX}/auth/me` && request.method === "GET") return response({ principal, expiresAt: session.expiresAt }, 200, corsHeaders);
+    if (!principal) {
+      return response({
+        error: session.memberships.length ? "Choose an organization (X-Organization-Id)." : "No active organization membership.",
+        organizations: session.memberships,
+      }, 403, corsHeaders);
+    }
     if (path === `${API_PREFIX}/governance/readiness` && request.method === "GET") {
       if (!hasPermission(principal.role, "read", "users")) {
         return response({ error: "Forbidden." }, 403, corsHeaders);
@@ -1648,14 +1642,6 @@ export async function handlePhase6Request(request, env) {
         status: readiness.status,
       });
       return response({ readiness }, 200, corsHeaders);
-    }
-    if (path === `${API_PREFIX}/auth/logout` && request.method === "POST") {
-      if (!await checkCsrf(request, auth, session)) return response({ error: "CSRF validation failed." }, 403, corsHeaders);
-      await auth.logout(session);
-      return response({ loggedOut: true }, 200, corsHeaders, { "Set-Cookie": clearSessionCookie() });
-    }
-    if (request.method !== "GET") {
-      if (!await checkCsrf(request, auth, session)) return response({ error: "CSRF validation failed." }, 403, corsHeaders);
     }
     const userResult = await handleUsers(request, env, auth, principal, path);
     if (userResult) return userResult;
@@ -1674,7 +1660,7 @@ export async function handlePhase6Request(request, env) {
     if (error instanceof RangeError || error instanceof TypeError || error instanceof SyntaxError) {
       return response({ error: error.message }, 400, corsHeaders);
     }
-    if (/unique|constraint/i.test(error instanceof Error ? error.message : "")) {
+    if (/unique|constraint|already exists|already be complete/i.test(error instanceof Error ? error.message : "")) {
       return response({ error: "The record conflicts with existing data." }, 409, corsHeaders);
     }
     if (/Invalid credentials|Bootstrap authorization failed/.test(error instanceof Error ? error.message : "")) {

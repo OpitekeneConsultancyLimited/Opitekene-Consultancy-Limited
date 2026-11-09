@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Test all application and Worker suites
         run: node --test *.test.js worker/*.test.mjs
 

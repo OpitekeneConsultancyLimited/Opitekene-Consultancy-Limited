@@ -8,14 +8,15 @@ export const requiredPhase6SecurityFlags = Object.freeze([
 export const requiredDeploymentBindings = Object.freeze([
   "ALLOWED_ORIGIN",
   "UNANSWERED_QUESTIONS",
+  "SUPABASE_URL", // Supabase Auth identity for Phase 6
 ]);
 
+// Invitation and password emails are sent by Supabase Auth, and client
+// documents live in Supabase Storage, both using SUPABASE_SERVICE_ROLE_KEY.
 export const optionalProductionBindings = Object.freeze([
   "PHASE6_BOOTSTRAP_SECRET",
   "PHASE6_APP_ORIGIN",
-  "PHASE6_EMAIL_SERVICE",
-  "PHASE6_EMAIL_ENDPOINT",
-  "PHASE6_EMAIL_API_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
   "PHASE6_DOCUMENTS",
   "PHASE6_MALWARE_SCANNER",
 ]);
@@ -40,6 +41,9 @@ export function validateDeploymentReadiness(env = {}) {
   if (!env.UNANSWERED_QUESTIONS) {
     missingBindings.push("UNANSWERED_QUESTIONS");
   }
+  if (!isHttpsOrigin(env.SUPABASE_URL)) {
+    missingBindings.push("SUPABASE_URL");
+  }
   if (typeof env.PHASE6_APP_ORIGIN === "string" && !isHttpsOrigin(env.PHASE6_APP_ORIGIN)) {
     missingBindings.push("PHASE6_APP_ORIGIN");
   }
@@ -49,9 +53,8 @@ export function validateDeploymentReadiness(env = {}) {
       return typeof env[name] !== "string" || env[name].length < 16;
     }
     if (name === "PHASE6_APP_ORIGIN") return !isHttpsOrigin(env[name]);
-    if (name === "PHASE6_EMAIL_SERVICE") return typeof env[name]?.fetch !== "function";
-    if (name === "PHASE6_EMAIL_ENDPOINT") return !isHttpsOrigin(env[name]);
-    if (name === "PHASE6_EMAIL_API_KEY") return typeof env[name] !== "string" || env[name].length < 24;
+    // service_role JWT (Storage rejects sb_secret_ keys; see supabase-auth.mjs).
+    if (name === "SUPABASE_SERVICE_ROLE_KEY") return typeof env[name] !== "string" || !/^eyJ[\w-]+\.[\w-]+\.[\w-]+$/.test(env[name]);
     if (name === "PHASE6_DOCUMENTS") {
       return typeof env[name]?.put !== "function" ||
         typeof env[name]?.get !== "function" ||

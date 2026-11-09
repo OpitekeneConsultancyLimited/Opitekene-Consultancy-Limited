@@ -33,6 +33,9 @@ test("Phase 6 API is routed through authentication at the Worker entry point", a
     PHASE6_SECURITY_REVIEWED: "true",
     PHASE6_DATA_AT_REST_REVIEWED: "true",
     PHASE6_BACKUP_RESTORE_VERIFIED: "true",
+    SUPABASE_URL: "https://project.supabase.example.invalid",
+    DATABASE_PROVIDER: "supabase",
+    SUPABASE_FETCH: () => { throw new Error("A request without a token must not contact Supabase."); },
     UNANSWERED_QUESTIONS: {
       prepare: () => { throw new Error("Unauthenticated request must not query the database."); },
       batch: async () => { throw new Error("Unauthenticated request must not write the database."); },
