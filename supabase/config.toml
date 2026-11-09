@@ -1,0 +1,27 @@
+# Supabase project settings managed from this repository.
+# Only the properties declared here are pushed (`npx supabase@2.121.0 config push`);
+# everything else stays as set in the Supabase dashboard.
+project_id = "taxcomp"
+
+[auth]
+# Where Supabase sends people after email confirmation, password reset and
+# invitation links. Links to any other address are refused.
+site_url = "https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/"
+additional_redirect_urls = ["https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/"]
+
+# Custom SMTP for sign-up confirmations, password resets and invitations.
+# Supabase's built-in sender only allows a few emails per hour.
+# 1. Create an SMTP sender (e.g. Resend, Brevo or Gmail with an app password).
+# 2. Fill in host/port/user/sender below and remove the leading "# ".
+# 3. Push with the password supplied as an environment variable, never written here:
+#      $env:SUPABASE_SMTP_PASS = Read-Host -AsSecureString "SMTP password" | ConvertFrom-SecureString -AsPlainText
+#      npx supabase@2.121.0 config push
+#      Remove-Item Env:SUPABASE_SMTP_PASS
+# [auth.email.smtp]
+# enabled = true
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(SUPABASE_SMTP_PASS)"
+# admin_email = "opitekenecons@gmail.com"
+# sender_name = "Opitekene TaxComp"
