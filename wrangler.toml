@@ -26,16 +26,14 @@ PHASE11_BILLING_PROVIDER_CONFIGURED = "false"
 PHASE11_SUPPORT_PROCESS_READY = "false"
 PHASE11_PUBLIC_LAUNCH_APPROVED = "false"
 
-# Supabase Postgres through Cloudflare Hyperdrive. When this binding exists the
-# Worker uses Supabase for all data; remove it to fall back to the D1 binding
-# below. Config "taxcomp-supabase" (created 2026-11-09) points at Supabase
-# project xbooviddjkikcbccfcnw as role taxcomp_worker. To switch production to
-# Supabase, uncomment the three lines below (see SUPABASE_MIGRATION.md, "Cut over").
-# It was created with:
-#   npx wrangler hyperdrive create taxcomp-supabase --connection-string="<Supabase session pooler URL>"
-# [[hyperdrive]]
-# binding = "HYPERDRIVE"
-# id = "1ec8106d082a4e309115ab818454fc8b"
+# Supabase Postgres through Cloudflare Hyperdrive: LIVE in production since
+# 2026-11-09 (version c787b592). Remove this block and redeploy (or
+# `wrangler rollback 7c86d391-0856-4b18-b238-8f8b6f8d5264`) to fall back to D1.
+# Config "taxcomp-supabase" points at Supabase project xbooviddjkikcbccfcnw as
+# role taxcomp_worker (see SUPABASE_MIGRATION.md).
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "1ec8106d082a4e309115ab818454fc8b"
 
 # Legacy D1 database. Kept during the Supabase cutover for rollback.
 [[d1_databases]]

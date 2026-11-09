@@ -8,7 +8,7 @@
 - Fixes: a duplicate client TIN, or a repeated bootstrap, returned 500 instead of 409. The D1 export script failed on Windows because cmd.exe treated `<>` in SQL as a redirect.
 - Tests: Phase 6 API, auth and end-to-end suites now run on real Postgres (PGlite) with real ES256 tokens and a fake Supabase HTTP API, replacing the hand-written D1 fake. Every static Worker query is compile-checked against the Supabase schema. JavaScript/Worker 322/322, Python 17/17.
 - Verified against the live Supabase project: Worker role privileges, real signing keys, and a Storage round trip.
-- No production Worker deployment occurred; see `SUPABASE_MIGRATION.md` for the remaining steps.
+- Cutover: merged to `main` (PR #2). The preview Worker (version `b6f2bf4b`) and then the production Worker (version `c787b592`) were deployed with Hyperdrive, so production data now lives in Supabase. Production D1 held no data, so nothing needed copying. A live consented-question write was verified in Supabase and deleted. Rollback target: `7c86d391`. Still open: the Worker service-key secret, Supabase Auth URL settings and SMTP, all needed only for the dormant Phase 6 workspace.
 
 ## 2026-11-08 - Candidate security remediation
 
