@@ -1,0 +1,15 @@
+{
+  "name": "taxcomp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TaxComp Uganda site and Cloudflare Worker",
+  "scripts": {
+    "test": "node --test *.test.js worker/*.test.mjs"
+  },
+  "dependencies": {
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.12"
+  }
+}

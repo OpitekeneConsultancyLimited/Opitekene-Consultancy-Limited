@@ -6,6 +6,7 @@ import caseLawModule from "../case-law-registry.js";
 import reportModule from "../tax-research-report.js";
 import legalWorkflowModule from "../legal-source-workflow.js";
 import { handlePhase6Request } from "./phase6-api.mjs";
+import { withDatabase } from "./db.mjs";
 
 const { createTaxAdvisor } = advisorModule;
 const { createLegalSourceRegistry } = legalSourceModule;
@@ -1403,10 +1404,14 @@ export async function handleRequest(request, env) {
   return response;
 }
 
+// With a HYPERDRIVE binding the database is Supabase Postgres (worker/db.mjs);
+// without one the D1 binding is used unchanged.
 export default {
-  fetch: handleRequest,
+  fetch(request, env, context) {
+    return withDatabase(env, context, (scopedEnv) => handleRequest(request, scopedEnv));
+  },
   scheduled(_event, env, context) {
-    context.waitUntil(cleanupExpiredQuestions(env));
+    context.waitUntil(withDatabase(env, context, (scopedEnv) => cleanupExpiredQuestions(scopedEnv)));
   },
 };
 

@@ -1674,7 +1674,7 @@ export async function handlePhase6Request(request, env) {
     if (error instanceof RangeError || error instanceof TypeError || error instanceof SyntaxError) {
       return response({ error: error.message }, 400, corsHeaders);
     }
-    if (/unique|constraint/i.test(error instanceof Error ? error.message : "")) {
+    if (/unique|constraint|already exists/i.test(error instanceof Error ? error.message : "")) {
       return response({ error: "The record conflicts with existing data." }, 409, corsHeaders);
     }
     if (/Invalid credentials|Bootstrap authorization failed/.test(error instanceof Error ? error.message : "")) {

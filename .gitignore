@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+__pycache__/
+*.pyc
+.dev.vars
+.env
+.env.*
+supabase/d1-data-import.sql

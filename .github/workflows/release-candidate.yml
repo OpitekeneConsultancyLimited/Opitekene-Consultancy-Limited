@@ -33,7 +33,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Test JavaScript and Worker suites
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Test JavaScript and Worker suites (includes Supabase/Postgres suites via PGlite)
         run: node --test *.test.js worker/*.test.mjs
 
       - name: Test Python suites
