@@ -208,8 +208,40 @@
     if (search) search.addEventListener("input", apply);
   }
 
+  // Home preview card: a live PAYE figure from the real calculator
+  // (window.ugandaTax.calculatePaye, tax-calculator.js). No tax maths here.
+  function wirePayePreview() {
+    const form = document.getElementById("paye-preview");
+    const input = document.getElementById("paye-preview-salary");
+    if (!form || !input) return;
+    const out = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
+    const ugx = (n) => `UGX ${Math.round(n).toLocaleString("en-UG")}`;
+    function update() {
+      const engine = window.ugandaTax;
+      const salary = Number(input.value);
+      if (!engine || typeof engine.calculatePaye !== "function" || !Number.isFinite(salary) || salary < 0) {
+        ["paye-preview-tax", "paye-preview-nssf", "paye-preview-net"].forEach((id) => out(id, "—"));
+        return;
+      }
+      try {
+        const result = engine.calculatePaye(salary, true);
+        out("paye-preview-tax", ugx(result.monthlyTax));
+        out("paye-preview-nssf", ugx(result.monthlyEmployeeNssf));
+        out("paye-preview-net", ugx(salary - result.monthlyTax - result.monthlyEmployeeNssf));
+      } catch {
+        ["paye-preview-tax", "paye-preview-nssf", "paye-preview-net"].forEach((id) => out(id, "—"));
+      }
+    }
+    form.addEventListener("submit", (event) => event.preventDefault());
+    input.addEventListener("input", update);
+    // site-router.js loads before tax-calculator.js; DOMContentLoaded fires
+    // after every deferred script has run.
+    if (window.ugandaTax) update(); else window.addEventListener("DOMContentLoaded", update);
+  }
+
   function start() {
     setToolFocus("tools");
+    wirePayePreview();
     wireHeader();
     wireControls();
     wireCatalogue();

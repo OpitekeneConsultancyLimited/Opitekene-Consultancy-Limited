@@ -5,13 +5,16 @@
 - New look: navy, white and teal palette, one sans-serif type scale, a single content width, and quieter notice boxes. `design.css` sits on top of `styles.css`; `scripts/recolor-css.mjs` moved the old greens to navy and teal at the same lightness, so contrast is unchanged.
 - The sign-in screen is now a branded landing page: headline, the four services, and the sign-in card. Everything else still stays behind sign-in.
 - The one long page became six views (`site-router.js`):
-  - Home: hero, four service cards, Why Opitekene, call to action.
+  - Home, laid out like a product landing page:
+    - Split hero: the pitch on the left, three trust points, and a live "Quick PAYE check" card on the right. The card calls the real `calculatePaye`, so its figures match the full calculator.
+    - Then a 2×2 services grid, three steps, Why Opitekene, the three real plans (Free account, Individual Premium, Firm), a two-column FAQ, and the call to action.
+    - "How it works" moved here from About, so it isn't repeated.
   - Tax Tools: a searchable, filterable catalogue. Each tool opens on its own.
   - Tax Knowledge: guides, laws and regulations, case law, updates and compliance, with filters.
   - AI Tax Assistant.
   - Business Workspace: sidebar with Overview, Business assets, Reports, Financial records and Settings.
   - About Us: contact, payments, install guide, privacy policy, terms placeholder, disclaimer.
-- New header with dropdown menus and a phone menu; new footer.
+- New header with dropdown menus and a phone menu. New footer with link columns: Tax Tools, Knowledge, Company, Legal.
 - Old anchors (`#estimator`, `#account`, `#contact`, …) and Supabase sign-in link fragments still work.
 - Unchanged: every calculator, formula and rate, the AI, accounts, billing and workspace code. No script lost an element; `scripts/check-dom-contract.mjs` checks this and now runs in `npm test` (`site-views.test.js`).
 - Verified in Microsoft Edge:
@@ -19,7 +22,7 @@
   - Navigation, filters, chat (mocked), workspace panes and legacy links work.
   - No sideways scrolling on a 390 px phone.
   - No console errors.
-- Tests: JavaScript/Worker 349/349, Python 17/17. Service worker cache moved to v28.
+- Tests: JavaScript/Worker 347/347, Python 17/17. Service worker cache moved to v28.
 
 ## 2026-11-09 - Supabase: database, storage and authentication
 

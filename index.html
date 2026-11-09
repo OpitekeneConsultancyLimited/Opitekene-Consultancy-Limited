@@ -150,35 +150,69 @@
 
     <main>
       <section class="home-hero" id="home" data-view="home" aria-labelledby="page-title">
-        <div class="home-hero-inner">
-          <p class="kicker">Opitekene Consultancy Limited · Uganda</p>
-          <h1 id="page-title">Smarter Tax Management. <span>Better Business Decisions.</span></h1>
-          <p class="home-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
-          <div class="home-actions">
-            <a class="btn btn-primary" href="#tools">Explore Tax Tools</a>
-            <a class="btn btn-secondary" href="#assistant">Ask TaxComp AI</a>
+        <div class="home-hero-inner hero-split">
+          <div class="hero-pitch">
+            <p class="hero-pill">Uganda · FY 2026/27 rules</p>
+            <h1 id="page-title">Smarter Tax Management. <span>Better Business Decisions.</span></h1>
+            <p class="home-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
+            <div class="home-actions">
+              <a class="btn btn-primary" href="#tools">Explore Tax Tools</a>
+              <a class="btn btn-secondary" href="#assistant">Ask TaxComp AI</a>
+            </div>
+            <ul class="hero-points">
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><span><strong>No accounting skills needed</strong>Each calculator asks only for what it needs.</span></li>
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/></svg></span><span><strong>Works on any phone</strong>Install it; calculators work offline.</span></li>
+              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span><strong>Real consultants on hand</strong>Book an Opitekene consultation when you need one.</span></li>
+            </ul>
           </div>
-          <div class="trust-note">
+          <form class="preview-card" id="paye-preview" aria-labelledby="paye-preview-title">
+            <div class="preview-head">
+              <span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span>
+              <div><h2 id="paye-preview-title">Quick PAYE check</h2><p>Live from the PAYE calculator</p></div>
+            </div>
+            <label for="paye-preview-salary">Monthly taxable salary (UGX)</label>
+            <input id="paye-preview-salary" type="number" inputmode="numeric" min="0" step="1000" value="2000000">
+            <dl class="preview-stats" aria-live="polite">
+              <div><dt>PAYE per month</dt><dd id="paye-preview-tax">—</dd></div>
+              <div><dt>Employee NSSF</dt><dd id="paye-preview-nssf">—</dd></div>
+              <div class="preview-stat-wide"><dt>Take-home after PAYE and NSSF</dt><dd id="paye-preview-net">—</dd></div>
+            </dl>
+            <p class="preview-note" id="paye-preview-note">Resident employee, one employer, no other income. Estimate only.</p>
+            <a class="btn btn-small preview-link" href="#calc-paye">See the full working →</a>
+          </form>
+        </div>
+        <div class="hero-trust"><div class="trust-note">
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="M10 2.5 3.75 5v4.2c0 3.7 2.65 7.15 6.25 8.3 3.6-1.15 6.25-4.6 6.25-8.3V5L10 2.5Z"></path>
               <path d="m7.2 9.9 1.8 1.8 3.8-4"></path>
             </svg>
             Calculator figures stay in this browser. AI questions go through Cloudflare to Anthropic Claude (Google Gemini as backup) only when you send them; don't share confidential details.
-          </div>
-        </div>
+          </div></div>
       </section>
 
       <section class="page-block" data-view="home" aria-labelledby="services-title">
         <div class="block-head">
-          <p class="kicker">Services</p>
           <h2 id="services-title">Everything for Uganda tax, in one place.</h2>
+          <p>Four services, one account. Pick what you need today; the rest is there when you need it.</p>
         </div>
-        <div class="service-grid">
-          <a class="service-card" href="#tools"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span><h3>Tax Calculators</h3><p>PAYE, income tax, VAT, withholding, rental and more for FY 2026/27, with the working shown.</p><span class="service-link">Open tax tools</span></a>
-          <a class="service-card" href="#knowledge"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><h3>Tax Advisory and Knowledge</h3><p>Guides, laws and regulations, case law and updates, each linked to its source.</p><span class="service-link">Browse knowledge</span></a>
-          <a class="service-card" href="#assistant"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><h3>AI Tax Assistant</h3><p>Ask in plain language. Answers say what is verified and cite where it comes from.</p><span class="service-link">Ask a question</span></a>
-          <a class="service-card" href="#workspace"><span class="service-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><h3>Business Management Workspace</h3><p>For firms: clients, compliance deadlines, documents and reports in one private workspace.</p><span class="service-link">Open workspace</span></a>
+        <div class="feature-grid">
+          <a class="feature-cell" href="#tools"><span class="feature-icon tone-teal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span><span><strong>Tax Calculators</strong>PAYE, income tax, VAT, withholding, rental and more, with the working shown.</span></a>
+          <a class="feature-cell" href="#knowledge"><span class="feature-icon tone-navy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><span><strong>Tax Advisory and Knowledge</strong>Guides, laws and regulations, case law and updates, each linked to its source.</span></a>
+          <a class="feature-cell" href="#assistant"><span class="feature-icon tone-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><span><strong>AI Tax Assistant</strong>Ask in plain language. Answers say what is verified and cite where it comes from.</span></a>
+          <a class="feature-cell" href="#workspace"><span class="feature-icon tone-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><span><strong>Business Management Workspace</strong>For firms: clients, compliance deadlines, documents and reports in one private workspace.</span></a>
         </div>
+      </section>
+
+      <section class="page-block steps-block" id="how-it-works" data-view="home" aria-labelledby="how-title">
+        <div class="block-head">
+          <h2 id="how-title">Your estimate in three steps</h2>
+          <p>No spreadsheets. If you know your figures, you can check your tax.</p>
+        </div>
+        <ol class="steps">
+          <li><span class="step-num">1</span><strong>Choose a tax head</strong><span>Individual income, PAYE, company, VAT, rental, withholding, presumptive and more.</span></li>
+          <li><span class="step-num">2</span><strong>Enter the right figures</strong><span>Each calculator asks only for the amounts it needs.</span></li>
+          <li><span class="step-num">3</span><strong>Review the breakdown</strong><span>See the rates, credits and assumptions behind every figure, with sources.</span></li>
+        </ol>
       </section>
 
       <section class="page-block why-block" data-view="home" aria-labelledby="why-title">
@@ -192,6 +226,66 @@
           <li><strong>Sources you can verify</strong><span>Guidance and AI answers link to URA, the law and published judgments.</span></li>
           <li><strong>Private by default</strong><span>Calculator figures stay in your browser. Live web research runs only when you opt in.</span></li>
         </ul>
+      </section>
+
+      <section class="page-block plans-block" id="plans" data-view="home" aria-labelledby="plans-title">
+        <div class="block-head center">
+          <h2 id="plans-title">Plans that grow with you</h2>
+          <p>Your account is free. Upgrade month by month; nothing renews automatically.</p>
+        </div>
+        <div class="plan-grid">
+          <article class="plan-card">
+            <div class="plan-top"><h3>Account</h3><span class="plan-badge">Your plan</span></div>
+            <p class="plan-price">Free</p>
+            <p class="plan-text">For anyone checking their own tax.</p>
+            <ul class="plan-list">
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>All tax calculators</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Knowledge centre: guides, case law, updates</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI assistant using TaxComp's reviewed notes</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Audit-readiness checklist</span></li>
+            </ul>
+            <a class="btn btn-secondary plan-cta" href="#tools">Open tax tools</a>
+          </article>
+          <article class="plan-card is-featured">
+            <div class="plan-top"><h3>Individual Premium</h3><span class="plan-badge">Live research</span></div>
+            <p class="plan-price">UGX 100,000 <span>/ month</span></p>
+            <p class="plan-text">For professionals who need current sources.</p>
+            <ul class="plan-list">
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Account</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI tax advisor with live, source-linked web research</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Current public sources cited in each answer</span></li>
+            </ul>
+            <a class="btn btn-primary plan-cta" href="#ws-settings">Upgrade in My account</a>
+          </article>
+          <article class="plan-card">
+            <div class="plan-top"><h3>Firm</h3></div>
+            <p class="plan-price">UGX 500,000 <span>/ month</span></p>
+            <p class="plan-text">For tax practices serving clients.</p>
+            <ul class="plan-list">
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Individual Premium</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Private practice workspace for the firm</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Clients, compliance, documents and reports</span></li>
+              <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Invite your staff with roles</span></li>
+            </ul>
+            <a class="btn btn-secondary plan-cta" href="#ws-settings">Set up a firm</a>
+          </article>
+        </div>
+        <p class="plans-note">Pay with MTN or Airtel Mobile Money or a card through Flutterwave. Each payment covers one month.</p>
+      </section>
+
+      <section class="page-block faq-block" id="faq" data-view="home" aria-labelledby="faq-title">
+        <div class="faq-intro">
+          <h2 id="faq-title">Questions people ask</h2>
+          <p>Still unsure? Try a calculator, or <a href="#contact">talk to a consultant</a>.</p>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item"><summary>Is this tax advice?</summary><p>No. TaxComp gives educational estimates and source-linked guidance. Check official sources and effective dates, or speak to a qualified Ugandan tax adviser, before filing, paying or taking a legal position.</p></details>
+          <details class="faq-item"><summary>Which tax year do the calculators use?</summary><p>FY 2026/27, including the amendments that generally took effect on 1 July 2026. A separate set of historical worked examples is labelled as such.</p></details>
+          <details class="faq-item"><summary>Where do my figures go?</summary><p>Calculator figures are worked out in your browser and are not uploaded. Questions you send to the AI assistant go through Cloudflare to the AI provider; live web research runs only when you opt in.</p></details>
+          <details class="faq-item"><summary>How do I pay for Premium or Firm?</summary><p>From My account, monthly, with MTN or Airtel Mobile Money or a card through Flutterwave. TaxComp never sees your card or PIN, and nothing is charged automatically.</p></details>
+          <details class="faq-item"><summary>Can I use it on my phone?</summary><p>Yes. Open the site in your phone's browser and install it as an app. The calculators work offline after their first load; the AI assistant and sources need internet.</p></details>
+          <details class="faq-item"><summary>Can I talk to a person?</summary><p>Yes. Opitekene consultants offer consultations and tax estimate reports. See the prices and contact details under About Us.</p></details>
+        </div>
       </section>
 
       <section class="home-cta" data-view="home" aria-labelledby="cta-title">
@@ -1852,30 +1946,6 @@
         <p class="payment-note">After paying, retain the transaction reference and contact the business through your agreed contact channel with the service you’re requesting. Never share your mobile-money PIN or one-time code. Monthly plans require manual renewal; no recurring charge is set up.</p>
       </section>
 
-      <section class="info-section" id="how-it-works" data-view="about" aria-labelledby="how-title">
-        <div class="info-intro">
-          <p class="eyebrow section-eyebrow">SIMPLE BY DESIGN</p>
-          <h2 id="how-title">Useful tax estimates.<br>Clear assumptions.</h2>
-        </div>
-        <div class="info-steps">
-          <article class="info-step">
-            <span class="info-step-number">1</span>
-            <h3>Choose a tax head</h3>
-            <p>Select the calculation for individual income, PAYE, company income, VAT, rental, withholding or presumptive tax.</p>
-          </article>
-          <article class="info-step">
-            <span class="info-step-number">2</span>
-            <h3>Enter the right figures</h3>
-            <p>Each tax head requests the specific income, turnover, sale or payment amounts it needs.</p>
-          </article>
-          <article class="info-step">
-            <span class="info-step-number">3</span>
-            <h3>Review the breakdown</h3>
-            <p>Understand the rates, credits and assumptions that contribute to your estimate.</p>
-          </article>
-        </div>
-      </section>
-
       <section class="info-section" id="install-guide" data-view="about" aria-labelledby="install-guide-title">
         <div class="section-heading">
           <div>
@@ -1948,16 +2018,35 @@
             <span class="brand-mark" aria-hidden="true">O</span>
             <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
           </a>
-          <p>Uganda tax tools and advice · FY 2026/27</p>
+          <p>Uganda tax calculations, guidance and practice tools from Opitekene Consultancy Limited, Kampala.</p>
         </div>
-        <nav class="footer-links" aria-label="Footer">
-          <a href="#about">About</a>
-          <a href="#tools">Services</a>
-          <a href="#contact">Contact</a>
-          <a href="#privacy">Privacy policy</a>
-          <a href="#terms">Terms of service</a>
-          <a href="#disclaimer">Disclaimer</a>
-        </nav>
+          <nav class="footer-col" aria-label="Tax Tools">
+            <p class="footer-col-title">Tax Tools</p>
+            <a href="#calc-individual">Income Tax</a>
+            <a href="#calc-paye">PAYE Calculator</a>
+            <a href="#calc-vat">VAT Calculator</a>
+            <a href="#tools">All calculators</a>
+          </nav>
+          <nav class="footer-col" aria-label="Knowledge">
+            <p class="footer-col-title">Knowledge</p>
+            <a href="#kb-guides">Tax guides</a>
+            <a href="#kb-cases">Case law</a>
+            <a href="#kb-updates">Tax updates</a>
+            <a href="#assistant">AI Tax Assistant</a>
+          </nav>
+          <nav class="footer-col" aria-label="Company">
+            <p class="footer-col-title">Company</p>
+            <a href="#about">About</a>
+            <a href="#tools">Services</a>
+            <a href="#contact">Contact</a>
+            <a href="#plans">Plans</a>
+          </nav>
+          <nav class="footer-col" aria-label="Legal">
+            <p class="footer-col-title">Legal</p>
+            <a href="#privacy">Privacy policy</a>
+            <a href="#terms">Terms of service</a>
+            <a href="#disclaimer">Disclaimer</a>
+          </nav>
         <p class="footer-copy">© <span id="footer-year">2026</span> Opitekene Consultancy Limited. All rights reserved.</p>
       </div>
     </footer>
