@@ -3648,3 +3648,30 @@ td:first-child {
     grid-column: auto;
   }
 }
+
+/* Account and subscriptions (account.js) */
+.account-section .phase6-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.account-panel { display: grid; gap: 16px; padding: 18px 0 4px; }
+.account-who { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.account-who p { margin: 0; color: var(--muted); font-size: 13px; }
+.account-who strong { color: var(--ink); }
+.account-plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.account-plan { display: grid; gap: 10px; align-content: start; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+.account-plan[data-active="true"] { border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); }
+.account-plan-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.account-plan h4 { margin: 0; font: 700 19px/1.2 var(--serif); }
+.account-plan-price { color: var(--green-dark); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.account-plan p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.account-plan .account-plan-state { color: var(--green-dark); font-weight: 600; }
+.account-plan .account-plan-state[data-kind="lapsed"] { color: #8a3b17; }
+.account-plan button { justify-self: start; }
+.account-plan button[disabled] { opacity: 0.55; cursor: not-allowed; }
+.account-firm { display: grid; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.account-firm h4 { margin: 0; font: 700 18px/1.2 var(--serif); }
+.account-firm p { margin: 0; color: var(--muted); font-size: 13px; }
+.account-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; max-width: 72ch; }
+.tax-chat-premium { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--gold); background: #faf5e8; color: #4a3f22; font-size: 13px; }
+.tax-chat-premium a { color: var(--green-dark); font-weight: 700; }
+@media (max-width: 720px) {
+  .account-plans, .account-section .phase6-form { grid-template-columns: 1fr; }
+}

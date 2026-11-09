@@ -10,7 +10,34 @@ const env = {
   GEMINI_API_KEY: "test-key-not-a-real-secret",
   GEMINI_MODEL: "gemini-test",
   CHAT_LIMITER: { limit: async () => ({ success: true }) },
+  // These tests describe live web research, a Premium feature; see the
+  // "non-Premium" test below for the gate itself.
+  PREMIUM_ACCESS_CHECK: async () => true,
 };
+
+test("live web research is Premium-only: other callers get local notes and never reach the provider", async () => {
+  const originalFetch = globalThis.fetch;
+  let providerCalls = 0;
+  globalThis.fetch = async () => { providerCalls += 1; throw new Error("provider must not be called"); };
+  try {
+    const free = { ...env, PREMIUM_ACCESS_CHECK: async () => false };
+    for (const path of ["/chat", "/advisor"]) {
+      const response = await handleRequest(request({ message: "What is the VAT rate in Uganda?", providerConsent: true }, { path }), free);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("X-TaxComp-Premium"), "required", path);
+      assert.match(response.headers.get("Access-Control-Expose-Headers"), /X-TaxComp-Premium/);
+      if (path === "/chat") assert.equal((await response.json()).providerStatus, "premium-required");
+    }
+    // (the request() helper defaults providerConsent to true, so opt out explicitly)
+    const noConsent = await handleRequest(request({ message: "What is the VAT rate in Uganda?", providerConsent: false }), free);
+    assert.equal(noConsent.headers.get("X-TaxComp-Premium"), null, "no upgrade prompt when research was not requested");
+    assert.equal(providerCalls, 0);
+    const preflight = await handleRequest(request(undefined, { method: "OPTIONS" }), free);
+    assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 test("retrieves scoped international-tax notes and relevant references", () => {
   const treaty = retrieveKnowledge("Can a treaty reduce Uganda withholding for a nonresident?");

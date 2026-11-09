@@ -9,6 +9,7 @@ import { handlePhase6Request } from "./phase6-api.mjs";
 import { withDatabase } from "./db.mjs";
 import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
+import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 
 const { createTaxAdvisor } = advisorModule;
 const { createLegalSourceRegistry } = legalSourceModule;
@@ -73,8 +74,9 @@ function getCorsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Expose-Headers": "X-Gemini-Upstream-Status, X-TaxComp-Answer-Source",
+    // Authorization: signed-in Premium users send their Supabase access token.
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+    "Access-Control-Expose-Headers": "X-Gemini-Upstream-Status, X-TaxComp-Answer-Source, X-TaxComp-Premium",
     "Access-Control-Max-Age": "600",
     "Vary": "Origin",
   };
@@ -1239,6 +1241,10 @@ export async function handleRequest(request, env) {
   if (requestUrl.pathname.startsWith("/api/phase6")) {
     return handlePhase6Request(request, env);
   }
+  if (requestUrl.pathname === "/api/account" || requestUrl.pathname.startsWith("/api/account/") ||
+      requestUrl.pathname.startsWith("/api/billing/")) {
+    return handleBillingRequest(request, env);
+  }
   if (requestUrl.pathname === "/admin" ||
       requestUrl.pathname.startsWith("/admin/")) {
     try {
@@ -1313,6 +1319,17 @@ export async function handleRequest(request, env) {
   if (body.providerConsent !== undefined && body.providerConsent !== null && typeof body.providerConsent !== "boolean") {
     return jsonResponse({ error: "Provider consent must be true or false." }, 400, corsHeaders);
   }
+  // Live web research (the AI provider) is a Premium feature. Without an active
+  // Premium plan the request is answered from the reviewed local notes instead.
+  let premiumRequired = false;
+  if (body.providerConsent === true && !(await hasPremiumAccess(request, env))) {
+    body.providerConsent = false;
+    premiumRequired = true;
+  }
+  const markPremium = (response) => {
+    if (premiumRequired) response.headers.set("X-TaxComp-Premium", "required");
+    return response;
+  };
   const taxPeriod = typeof body.taxPeriod === "string" ? body.taxPeriod.trim() : "";
   const periodParts = taxPeriod.match(/^(20\d{2})\/(\d{2})$/);
   if (taxPeriod && (!periodParts || Number(`${periodParts[1].slice(0, 2)}${periodParts[2]}`) !== Number(periodParts[1]) + 1)) {
@@ -1338,7 +1355,7 @@ export async function handleRequest(request, env) {
     }, 200, corsHeaders);
   }
 
-  if (advisorRoute) return handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders);
+  if (advisorRoute) return markPremium(await handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders));
 
   const recordRequested = body.recordUnanswered === true;
   const evidence = buildEvidence(knowledge);
@@ -1364,7 +1381,9 @@ export async function handleRequest(request, env) {
     answer.answerSource,
     answer.sources,
   );
-  const providerStatus = result.reason === "provider_consent_required"
+  const providerStatus = premiumRequired
+    ? "premium-required"
+    : result.reason === "provider_consent_required"
     ? "consent-required"
     : result.reason === "missing_api_key" || !env.GEMINI_API_KEY
       ? "not-configured"
@@ -1373,7 +1392,9 @@ export async function handleRequest(request, env) {
     kind: "ai_provider",
     label: "AI provider",
     used: result.fallback !== true,
-    detail: providerStatus === "consent-required"
+    detail: providerStatus === "premium-required"
+      ? "Live web research is part of TaxComp Premium; this answer uses local notes."
+      : providerStatus === "consent-required"
       ? "No provider request was made because consent was not given."
       : providerStatus === "not-configured"
         ? "No server-side provider credential is configured."
@@ -1403,7 +1424,7 @@ export async function handleRequest(request, env) {
   if (typeof result.upstreamStatus === "number") {
     response.headers.set("X-Gemini-Upstream-Status", String(result.upstreamStatus));
   }
-  return response;
+  return markPremium(response);
 }
 
 // With a HYPERDRIVE binding the database is Supabase Postgres (worker/db.mjs);
