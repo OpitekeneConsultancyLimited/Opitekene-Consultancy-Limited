@@ -20,6 +20,10 @@ test("identical databases MATCH; every kind of drift is reported", async () => {
   const restored = await seeded();
   const fingerprint = (side) => fingerprintDatabase(side.query);
 
+  // Different default search_path per role (as with taxcomp_worker vs postgres)
+  // must not create false differences.
+  await source.pg.exec("SET search_path TO taxcomp");
+  await restored.pg.exec("SET search_path TO public");
   const same = compareFingerprints(await fingerprint(source), await fingerprint(restored));
   assert.deepEqual(same, { verdict: "MATCH", differences: [] });
   assert.equal((await fingerprint(source)).tables.unanswered_questions.rows, 2);

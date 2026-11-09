@@ -17,6 +17,9 @@ GEMINI_MODEL = "gemini-3.5-flash-lite"
 # Supabase project (public URL). Phase 6 sign-in (Supabase Auth) and documents
 # (Supabase Storage) also need the SUPABASE_SERVICE_ROLE_KEY Worker secret.
 SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
+# ClamAV document scanner (scanner/README.md). Set to the deployed https URL;
+# also needs the MALWARE_SCANNER_TOKEN secret. Empty = uploads stay disabled.
+MALWARE_SCANNER_URL = ""
 PHASE10_OPERATIONS_ANALYTICS_ENABLED = "false"
 PHASE11_LEGAL_REVIEW_APPROVED = "false"
 PHASE11_SECURITY_REVIEW_APPROVED = "false"

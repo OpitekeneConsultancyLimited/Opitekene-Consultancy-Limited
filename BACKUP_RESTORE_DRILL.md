@@ -10,6 +10,24 @@ may be set to `"true"` only after this drill passes and is signed off below.
 | RPO | Most data you could lose (time since the last backup) | e.g. 24 h with daily backups, minutes with PITR |
 | RTO | Longest acceptable time to be back online | e.g. 4 h |
 
+## Results of the 2026-11-09 drill (Free plan, logical backup)
+| Step | Result |
+|---|---|
+| Backup method | `scripts/taxcomp-backup.mjs export`: encrypted (AES-256-GCM, scrypt-derived key), every row of every `taxcomp` table, migration list with SHA-256 |
+| Isolated target | New Supabase project `taxcomp-restore-drill` (eu-west-1, PG 17.11), created for the drill and **deleted afterwards** |
+| Restore | `taxcomp-backup.mjs restore`: built the schema from the 3 migrations, loaded the data in one transaction |
+| Verification | `scripts/verify-restore.mjs` verdict **MATCH**: 32 tables, 180 constraints, indexes, 32 RLS policies, audit triggers and Worker grants identical. Evidence: `evidence/restore-drill-2026-11-09.json` |
+| Measured time | export 7.4 s + restore 3.3 s + verify 8.2 s ≈ 19 s, plus about 2 minutes to create a project |
+| Limitation | Production held **no rows** on that date, so the drill proves the schema, security restoration and procedure, not data volume. Repeat it once real data exists. |
+| Clean-up | Export file deleted; drill project deleted; its one-off password was never stored |
+
+Daily backups on the Free plan: run `scripts\backup-setup.ps1` once (yourself). It
+creates the passphrase (shown once; save it in your password manager) and
+schedules `scripts\backup-daily.ps1` at 02:30 daily. It keeps 35 days in
+`%USERPROFILE%\TaxComp-backups`, with an encrypted off-site copy in
+`OneDrive\TaxComp-backups`. **RPO with this method: up to 24 hours.**
+The job needs your PC to be on; a missed run starts at the next logon.
+
 ## 1. Backups exist (BCP-1)
 State on 2026-11-09 (`npx supabase@2.121.0 backups list --project-ref xbooviddjkikcbccfcnw`):
 WAL-G enabled, **PITR off, no backups listed yet** (the project was created that day).

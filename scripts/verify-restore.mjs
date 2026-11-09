@@ -23,6 +23,10 @@ const SCHEMA = "taxcomp";
  * @param {(sql: string) => Promise<object[]>} query  runs SQL, returns rows
  */
 export async function fingerprintDatabase(query, schema = SCHEMA) {
+  // Postgres prints regclass names and constraint definitions relative to the
+  // session search_path, which differs per role (taxcomp_worker defaults to
+  // taxcomp, postgres to public). Pin it so both sides render identically.
+  await query("SELECT set_config('search_path', 'pg_catalog', false)");
   const tables = (await query(`SELECT tablename AS name, rowsecurity AS rls FROM pg_tables WHERE schemaname = '${schema}' ORDER BY tablename`));
   const result = { tables: {}, schema: {} };
   for (const table of tables) {
@@ -37,9 +41,12 @@ export async function fingerprintDatabase(query, schema = SCHEMA) {
   const [shape] = await query(`
     SELECT md5(coalesce(string_agg(table_name || '.' || column_name || ':' || data_type || ':' || is_nullable || ':' || coalesce(column_default, ''), ',' ORDER BY table_name, ordinal_position), '')) AS columns_md5
       FROM information_schema.columns WHERE table_schema = '${schema}'`);
+  // Sort by the definition text itself (inside an aggregate, "ORDER BY 1" is a
+  // constant, which left the order up to the server and caused false mismatches).
   const [constraints] = await query(`
-    SELECT md5(coalesce(string_agg(c.conrelid::regclass::text || ':' || c.conname || ':' || pg_get_constraintdef(c.oid), ',' ORDER BY 1), '')) AS constraints_md5
-      FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '${schema}'`);
+    SELECT md5(coalesce(string_agg(d, ',' ORDER BY d), '')) AS constraints_md5
+      FROM (SELECT c.conrelid::regclass::text || ':' || c.conname || ':' || pg_get_constraintdef(c.oid) AS d
+              FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = '${schema}') defs`);
   const [indexes] = await query(`
     SELECT md5(coalesce(string_agg(indexname || ':' || indexdef, ',' ORDER BY indexname), '')) AS indexes_md5
       FROM pg_indexes WHERE schemaname = '${schema}'`);

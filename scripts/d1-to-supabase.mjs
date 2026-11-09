@@ -52,7 +52,7 @@ export function sqlLiteral(value) {
  * @param {{ now?: Date }} options
  * @returns {{ sql: string, summary: Record<string, number>, skipped: Record<string, number>, unknownTables: string[] }}
  */
-export function buildImportSql(rowsByTable, { now = new Date() } = {}) {
+export function buildImportSql(rowsByTable, { now = new Date(), dropExpiredQuestions = true } = {}) {
   const unknownTables = Object.keys(rowsByTable).filter((name) => !TABLE_ORDER.includes(name));
   const summary = {};
   const skipped = {};
@@ -63,7 +63,7 @@ export function buildImportSql(rowsByTable, { now = new Date() } = {}) {
   ];
   for (const table of TABLE_ORDER) {
     let rows = rowsByTable[table] || [];
-    if (table === "unanswered_questions") {
+    if (table === "unanswered_questions" && dropExpiredQuestions) {
       const cutoff = now.toISOString();
       const kept = rows.filter((row) => typeof row.expires_at === "string" && row.expires_at > cutoff);
       if (kept.length !== rows.length) skipped[table] = rows.length - kept.length;

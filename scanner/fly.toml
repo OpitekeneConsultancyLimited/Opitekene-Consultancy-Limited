@@ -1,0 +1,25 @@
+# Fly.io deployment for the TaxComp malware scanner (see scanner/README.md).
+# Choose a globally unique app name when you run `fly launch --copy-config`.
+app = "taxcomp-scanner"
+primary_region = "ams" # Amsterdam: close to Supabase eu-west-1 and Cloudflare EU
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off" # clamd takes ~1 minute to load signatures; keep it warm
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "120s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    timeout = "5s"
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 1
