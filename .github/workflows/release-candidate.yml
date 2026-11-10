@@ -42,6 +42,11 @@ jobs:
       - name: Type-check the TypeScript Worker modules (strict)
         run: npx tsc -p tsconfig.json
 
+      - name: End-to-end test of Challenge an Assessment (real Worker on PGlite, Chrome)
+        env:
+          E2E_BROWSER_CHANNEL: chrome
+        run: node scripts/challenge-e2e.mjs "${{ runner.temp }}/e2e-screens"
+
       - name: Test Python suites
         run: python -m unittest discover -s . -q
 

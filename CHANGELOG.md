@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-10 - Tidy-up after release
+
+- Migration `20261110000200`: indexes every foreign key in the `taxcomp` schema (41 flagged by the Supabase performance advisor).
+- `manifest.webmanifest` theme colour now matches the page (`#0a1f3c`).
+- The Challenge an Assessment end-to-end test runs in CI on Chrome.
+- Dependabot vulnerability alerts turned on for the repository.
+
 ## 2026-11-10 - Challenge an Assessment (v1)
 
 - New `#challenge` feature for URA income tax and VAT assessments:

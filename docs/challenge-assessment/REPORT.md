@@ -62,9 +62,9 @@ Nothing is approved for computation.
 - **Recomputation** covers simple monthly interest and percentage penal tax only.
 - **Public holidays** are not modelled in the deadline engine (flag A3).
 - **The DOCX writer** produces plain formatting (headings, paragraphs, tables). It opens in Word and LibreOffice, but has no letterhead.
-- **The e2e is not in CI**: it needs Edge. It is run by hand (test guide).
+- **The e2e runs in CI** on Chrome (`E2E_BROWSER_CHANNEL=chrome`) and locally on Edge.
 - **Pre-existing issue fixed along the way:** the workspace sidebar caused sideways scrolling on phones.
-- **Pre-existing issue not fixed:** the manifest `theme_color` (`#176345`) differs from the page (`#0a1f3c`).
+- **Pre-existing issues fixed after release:** the manifest `theme_color` now matches the page (`#0a1f3c`), and every foreign key has an index (migration `20261110000200`, from the Supabase performance advisor).
 - **Superseded PR:** PR #11 (`foundations-law-register`) is replaced by this work and can be closed.
 
 ## 5. Owner deployment steps (Checkpoint B: each needs your approval)
