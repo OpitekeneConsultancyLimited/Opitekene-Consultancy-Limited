@@ -39,6 +39,9 @@ jobs:
       - name: Test JavaScript and Worker suites (includes Supabase/Postgres suites via PGlite)
         run: node --test *.test.js worker/*.test.mjs
 
+      - name: Type-check the TypeScript Worker modules (strict)
+        run: npx tsc -p tsconfig.json
+
       - name: Test Python suites
         run: python -m unittest discover -s . -q
 

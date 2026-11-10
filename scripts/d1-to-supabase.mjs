@@ -32,6 +32,12 @@ export const TABLE_ORDER = Object.freeze([
   // Billing (Supabase-only). billing_plans is reference data seeded by the
   // migration; the others are restored after it.
   "billing_plans", "billing_accounts", "billing_subscriptions", "billing_payments",
+  // Challenge an Assessment (Supabase-only). Law statutes, provision versions
+  // and procedure rules are seeded by the migration; ON CONFLICT DO NOTHING
+  // keeps the seed and restores reviewer edits made since.
+  "challenge_reviewers", "challenge_consents", "challenge_cases", "challenge_field_confirmations",
+  "challenge_documents", "challenge_disputed_items", "challenge_case_entitlements", "challenge_audit_log",
+  "law_statutes", "law_provision_versions", "procedure_rule_sets", "procedure_rules", "tax_case_law",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

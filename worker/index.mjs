@@ -10,6 +10,7 @@ import { withDatabase } from "./db.mjs";
 import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
+import { handleChallengeRequest } from "./challenge/api.mts";
 import { callClaude } from "./claude-research.mjs";
 
 const { createTaxAdvisor } = advisorModule;
@@ -1310,6 +1311,9 @@ export async function handleRequest(request, env) {
   if (requestUrl.pathname === "/api/account" || requestUrl.pathname.startsWith("/api/account/") ||
       requestUrl.pathname.startsWith("/api/billing/")) {
     return handleBillingRequest(request, env);
+  }
+  if (requestUrl.pathname.startsWith("/api/challenge/")) {
+    return handleChallengeRequest(request, env);
   }
   if (requestUrl.pathname === "/admin" ||
       requestUrl.pathname.startsWith("/admin/")) {

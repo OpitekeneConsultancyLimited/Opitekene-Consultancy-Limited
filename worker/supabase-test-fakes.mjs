@@ -82,14 +82,18 @@ export async function createFakeSupabase(pg, { url = SUPABASE_TEST_URL, serviceK
     if (storage) {
       if (!authorized(request)) return Response.json({ statusCode: "403", error: "Unauthorized" }, { status: 400 });
       const [, viaAuthenticated, bucket, encodedKey] = storage;
-      if (bucket !== "phase6-documents") return Response.json({ statusCode: "404", error: "Bucket not found" }, { status: 400 });
-      const key = encodedKey.split("/").map(decodeURIComponent).join("/");
+      // Any private bucket the migrations created (phase6-documents, assessment-documents).
+      const known = await pg.query("SELECT public FROM storage.buckets WHERE id = $1", [bucket]);
+      if (!known.rows.length || known.rows[0].public) return Response.json({ statusCode: "404", error: "Bucket not found" }, { status: 400 });
+      const objectKey = encodedKey.split("/").map(decodeURIComponent).join("/");
+      // phase6-documents keys stay unprefixed so existing tests can look them up directly.
+      const key = bucket === "phase6-documents" ? objectKey : `${bucket}/${objectKey}`;
       if (request.method === "POST" && !viaAuthenticated) {
         if (objects.has(key) && request.headers.get("x-upsert") !== "true") {
           return Response.json({ statusCode: "409", error: "Duplicate" }, { status: 400 });
         }
         objects.set(key, new Uint8Array(await request.arrayBuffer()));
-        return Response.json({ Key: `${bucket}/${key}` });
+        return Response.json({ Key: `${bucket}/${objectKey}` });
       }
       if (request.method === "GET" && viaAuthenticated) {
         const bytes = objects.get(key);
