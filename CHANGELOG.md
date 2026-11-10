@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-10 - Foundations: law register, intelligence routing, Challenge an Assessment
+
+- New Supabase migration `20261110000000_law_register_intelligence_assessments.sql` adds 15 tables in the `taxcomp` schema:
+  - **Law register:** `law_instruments`, `law_provisions` (versioned, point in time), `law_amendments`, `law_time_limits`, plus a `tax_heads` reference list.
+  - **Case repository:** `tax_cases`, `tax_case_principles`, `tax_case_provision_links`.
+  - **Intelligence:** `intel_triage_log` (routing metadata only, never the user's text).
+  - **Challenge an Assessment:** `assessment_challenges`, with its items, deadlines, evidence, drafts and append-only events.
+  - All tables have row-level security and are closed to the public API roles. They are included in backups.
+- `law-register.js` resolves the law as it stood on a given date. Bills, and amendment Acts that are unconfirmed or not yet in force, are reported as pending changes and never applied. Time limits computed from an unverified rule are marked PROVISIONAL.
+- `taxcomp-intelligence.js` decides whether a business owner or a tax professional is asking, routes the question to one of the seven service centres, and recommends professional review for enforcement, criminal exposure, Tribunal or court matters, and disputes of UGX 50 million or more.
+- `assessment-challenge.js` covers the steps from reading a URA notice to a draft objection:
+  - extracts the figures and cited sections from the notice for the user to confirm;
+  - works out a provisional objection deadline;
+  - rates grounds on evidence only;
+  - builds an evidence checklist and a risk level;
+  - drafts an objection marked DRAFT with placeholders;
+  - enforces a workflow in which an objection cannot be marked lodged without a professional's approval.
+- The seed data includes the principal Acts and the four 2026 Amendment Acts. Every row is `pending-review`, and the 2026 Acts are `unconfirmed` until assent and commencement are checked. The 45-, 90- and 30-day periods are seeded unverified.
+- `TAXCOMP_ARCHITECTURE.md` maps the seven centres and nine phases onto the code and holds the Challenge an Assessment blueprint.
+- 28 new tests; 376 pass in total.
+
 ## 2026-11-10 - Public front page in the owner's design
 
 - The signed-out front page now follows the owner's sample (`opitekene_tax_calculator_services_portal.html`):
