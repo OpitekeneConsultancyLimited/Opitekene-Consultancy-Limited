@@ -161,7 +161,7 @@ export function buildCaseView(input: ViewInputs): CaseView {
       cases: matches.map(({ caseLaw, matchedTags }) => ({
         citation: caseLaw.citation, parties: caseLaw.parties, decisionDate: caseLaw.decisionDate, sourceUrl: caseLaw.sourceUrl, matchedTags,
         summary: caseLaw.summaryStatus === "none" ? null : { background: caseLaw.background, legalQuestion: caseLaw.legalQuestion, decision: caseLaw.decision, principle: caseLaw.principle },
-        summaryLabel: caseLaw.summaryStatus === "approved" ? "Reviewed summary" : caseLaw.summaryStatus === "draft" ? "AI summary, unreviewed" : "No summary yet: read the decision on ULII",
+        summaryLabel: caseLaw.summaryStatus === "approved" ? "Reviewed summary" : caseLaw.summaryStatus === "draft" ? (caseLaw.summarySource === "ai" ? "AI summary, unreviewed" : "Staff summary, unreviewed") : "No summary yet: read the decision on ULII",
         appealStatus: caseLaw.appealStatus,
       })),
     };

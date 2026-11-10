@@ -180,12 +180,12 @@ export async function loadRuleSet(db: Database): Promise<RuleSet | null> {
 
 export async function loadCaseLaw(db: Database): Promise<CaseLaw[]> {
   const { results } = await db.prepare(`SELECT id, citation, parties, decision_date AS "decisionDate", forum, background, legal_question AS "legalQuestion",
-    decision, principle, summary_status AS "summaryStatus", issue_tags_json AS "issueTagsJson", search_terms AS "searchTerms",
+    decision, principle, summary_status AS "summaryStatus", summary_source AS "summarySource", issue_tags_json AS "issueTagsJson", search_terms AS "searchTerms",
     source_url AS "sourceUrl", appeal_status AS "appealStatus" FROM tax_case_law ORDER BY decision_date DESC NULLS LAST LIMIT 2000`).all<Row>();
   return results.map((row) => ({
     id: String(row.id), citation: String(row.citation), parties: String(row.parties), decisionDate: str(row.decisionDate), forum: "TAT",
     background: str(row.background), legalQuestion: str(row.legalQuestion), decision: str(row.decision), principle: str(row.principle),
-    summaryStatus: String(row.summaryStatus) as CaseLaw["summaryStatus"], issueTags: parse<string[]>(row.issueTagsJson, []),
+    summaryStatus: String(row.summaryStatus) as CaseLaw["summaryStatus"], summarySource: str(row.summarySource) as CaseLaw["summarySource"], issueTags: parse<string[]>(row.issueTagsJson, []),
     searchTerms: String(row.searchTerms ?? ""), sourceUrl: String(row.sourceUrl), appealStatus: String(row.appealStatus) as CaseLaw["appealStatus"],
   }));
 }

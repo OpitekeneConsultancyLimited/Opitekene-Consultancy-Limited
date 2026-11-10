@@ -282,3 +282,38 @@ test("reviewers cannot approve law or rules without approver rights; text must b
   assert.deepEqual(row.rows[0], { a: 1, b: reviewer.userId });
   await t.pg.close();
 });
+
+test("CASE-1 (harness): reviewer-curated decisions are found by a plain-English search, each with a ULII link", async () => {
+  const t = await setup();
+  const reviewer = await t.user("reviewer@example.com");
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, $2, $3)", [reviewer.userId, "reviewer@example.com", NOW.toISOString()]);
+  // Synthetic test records (not real decisions); production data is entered by a reviewer from ULII.
+  for (const [id, tags, terms] of [["synthetic-a", ["expense-deductibility", "burden-of-proof"], "expenses disallowed lack of evidence receipts"],
+    ["synthetic-b", ["burden-of-proof"], "taxpayer failed to prove expenses records"], ["synthetic-c", ["penal-tax"], "penal tax waiver"]]) {
+    const saved = await t.call("/api/challenge/review/case-law", { method: "POST", token: reviewer.token, body: { id, citation: `Synthetic ${id}`, parties: "Test v URA", sourceUrl: `https://ulii.org/test/${id}`, issueTags: tags, searchTerms: terms } });
+    assert.equal(saved.status, 200);
+  }
+  assert.equal((await t.call("/api/challenge/review/case-law", { method: "POST", token: reviewer.token, body: { id: "bad-one", citation: "x", parties: "y", sourceUrl: "https://ulii.org/x", issueTags: ["expense-deductibility"], decision: "You will win this." } })).status, 500, "unsafe summaries are refused");
+  const owner = await t.user("owner@example.com");
+  const found = await t.call(`/api/challenge/case-law?q=${encodeURIComponent("expenses disallowed for lack of evidence")}`, { token: owner.token });
+  const ids = found.body.results.map((r) => r.id);
+  assert.ok(ids.length >= 3, `found ${ids.join(", ")}`);
+  assert.equal(ids[0], "synthetic-a", "expenses + evidence ranks first");
+  assert.ok(ids.includes("synthetic-b"));
+  assert.ok(!ids.includes("synthetic-c"), "unrelated decisions are not returned");
+  assert.ok(ids.includes("quickway-property-services-ura-2023"), "the seeded TAT decision (burden of proof) is matched");
+  for (const result of found.body.results) {
+    assert.match(result.sourceUrl, /^https:\/\/ulii\.org\//);
+    assert.equal(result.appealStatus, "unverified");
+  }
+  // Research on a case: an expenses item gets provisions and decisions.
+  const caseId = await newCase(t, owner);
+  await confirmAll(t, owner, caseId);
+  const items = await t.call(`/api/challenge/cases/${caseId}/items`, { method: "PUT", token: owner.token, body: { items: [{ category: "expense", description: "Expenses disallowed for lack of evidence", uraAmount: 0, taxpayerAmount: 25000000, facts: { hasRecords: false, missingDocuments: ["supplier invoices"] } }] } });
+  const research = items.body.view.research[0];
+  assert.equal(items.body.view.reconciliation.items[0].outcome, "insufficient_evidence", "CLS-1 through the API");
+  assert.ok(research.provisions.some((p) => p.provisionId === "ita.deductions.2026"));
+  assert.ok(research.cases.length >= 2);
+  assert.ok(research.cases.some((c) => c.summaryLabel === "Staff summary, unreviewed"));
+  await t.pg.close();
+});

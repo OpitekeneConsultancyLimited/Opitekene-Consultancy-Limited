@@ -249,6 +249,7 @@ CREATE TABLE IF NOT EXISTS tax_case_law (
   principle TEXT,
   -- 'none' until someone drafts a summary; AI drafts stay 'draft' until a reviewer approves.
   summary_status TEXT NOT NULL DEFAULT 'none' CHECK (summary_status IN ('none', 'draft', 'approved')),
+  summary_source TEXT CHECK (summary_source IS NULL OR summary_source IN ('ai', 'staff')),
   issue_tags_json TEXT NOT NULL DEFAULT '[]' CHECK (issue_tags_json IS JSON ARRAY),
   search_terms TEXT NOT NULL DEFAULT '',
   source_url TEXT NOT NULL CHECK (source_url ~ '^https://ulii\.org/'),

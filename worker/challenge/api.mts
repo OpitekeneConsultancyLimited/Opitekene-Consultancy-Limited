@@ -13,8 +13,8 @@ import { resolveLaw } from "./law.mts";
 import { buildPack } from "./pack.mts";
 import { buildCaseView, type CaseView } from "./record.mts";
 import { DEFAULT_REVIEW_THRESHOLD_UGX, highestTier } from "./review.mts";
-import { UnsafeOutputError } from "./safety.mts";
-import { searchCases } from "./search.mts";
+import { assertSafe, UnsafeOutputError } from "./safety.mts";
+import { ISSUE_TAGS, searchCases } from "./search.mts";
 import {
   audit, isActiveReviewer, listAssignedCases, listOwnCases, loadCase, loadCaseLaw, loadConfirmations, loadDocuments, loadItems,
   loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
@@ -586,6 +586,38 @@ async function route(ctx: Ctx): Promise<Response> {
       if (!result.meta.changes) throw new HttpError(409, "Verify the provision's text before approving it.");
       await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "law.approve", details: { versionId }, at: ctx.nowIso }).run();
       return json({ approved: versionId }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/case-law" && method === "POST") {
+      // Add or update one TAT decision from a reviewer's reading of ULII (metadata, link, tags).
+      const body = await readJson(request);
+      const id = String(body.id ?? "");
+      const citation = cleanText(body.citation, 300);
+      const parties = cleanText(body.parties, 300);
+      const sourceUrl = String(body.sourceUrl ?? "");
+      const tags = Array.isArray(body.issueTags) ? body.issueTags.map(String).filter((tag) => ISSUE_TAGS.some((known) => known.id === tag)) : [];
+      if (!/^[a-z0-9-]{3,120}$/.test(id) || !citation || !parties || !/^https:\/\/ulii\.org\//.test(sourceUrl) || !tags.length) {
+        throw new HttpError(400, "Give an id, citation, parties, a https://ulii.org/ link and at least one issue tag.");
+      }
+      const decisionDate = body.decisionDate ? (isIsoDate(body.decisionDate) ? body.decisionDate : (() => { throw new HttpError(400, "Decision date must be YYYY-MM-DD."); })()) : null;
+      const summary = { legalQuestion: cleanText(body.legalQuestion, 2000) ?? null, decision: cleanText(body.decision, 4000) ?? null, principle: cleanText(body.principle, 2000) ?? null, background: cleanText(body.background, 4000) ?? null };
+      for (const text of Object.values(summary)) if (text) assertSafe(text, "case summary");
+      const hasSummary = Object.values(summary).some(Boolean);
+      const approve = body.approveSummary === true && hasSummary;
+      const appeal = ["final", "appealed", "overturned", "upheld"].includes(String(body.appealStatus)) ? String(body.appealStatus) : "unverified";
+      const verified = approve || appeal !== "unverified";
+      await db.batch([
+        db.prepare(`INSERT INTO tax_case_law (id, citation, parties, decision_date, forum, background, legal_question, decision, principle, summary_status, summary_source, issue_tags_json, search_terms, source_url, appeal_status, verified_by, verified_at, ingested_at)
+          VALUES (?, ?, ?, ?, 'TAT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT (id) DO UPDATE SET citation = EXCLUDED.citation, parties = EXCLUDED.parties, decision_date = EXCLUDED.decision_date, background = EXCLUDED.background,
+            legal_question = EXCLUDED.legal_question, decision = EXCLUDED.decision, principle = EXCLUDED.principle, summary_status = EXCLUDED.summary_status,
+            summary_source = EXCLUDED.summary_source, issue_tags_json = EXCLUDED.issue_tags_json, search_terms = EXCLUDED.search_terms, source_url = EXCLUDED.source_url,
+            appeal_status = EXCLUDED.appeal_status, verified_by = EXCLUDED.verified_by, verified_at = EXCLUDED.verified_at`)
+          .bind(id, citation, parties, decisionDate, summary.background, summary.legalQuestion, summary.decision, summary.principle,
+            hasSummary ? (approve ? "approved" : "draft") : "none", hasSummary ? "staff" : null, JSON.stringify(tags), cleanText(body.searchTerms, 1000) ?? "",
+            sourceUrl, appeal, verified ? ctx.userId : null, verified ? ctx.nowIso : null, ctx.nowIso),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
+      ]);
+      return json({ saved: id }, 200, ctx.cors);
     }
     if ((m = path.match(/^\/api\/challenge\/review\/rules\/([a-z0-9.-]{3,60})\/approve$/)) && method === "POST") {
       if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can approve the deadline rules.");

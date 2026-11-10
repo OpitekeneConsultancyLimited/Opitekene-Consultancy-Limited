@@ -96,6 +96,7 @@ export interface CaseLaw {
   decision: string | null;
   principle: string | null;
   summaryStatus: "none" | "draft" | "approved";
+  summarySource: "ai" | "staff" | null;
   issueTags: string[];
   searchTerms: string;
   sourceUrl: string;
