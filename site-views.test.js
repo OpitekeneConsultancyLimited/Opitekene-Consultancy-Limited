@@ -50,3 +50,28 @@ test("the router never opens the sign-in wall and leaves auth fragments alone", 
   assert.ok(!/dataset\.auth\s*=|setAttribute\(\s*["']data-auth["']/.test(router), "only account.js may change data-auth");
   assert.match(router, /hash\.includes\("="\) \|\| hash\.includes\("\?"\)/);
 });
+
+test("signed-out front page and signed-in home do not repeat each other (required fix 1)", () => {
+  const gateStart = html.indexOf('<div id="auth-gate"');
+  const gate = html.slice(gateStart, html.indexOf('<header class="site-header-bar">'));
+  const main = html.slice(html.indexOf("<main>"), html.indexOf("</main>"));
+  const homeBlocks = [...main.matchAll(/<section [^>]*data-view="home"[^>]*>[\s\S]*?<\/section>/g)].map((m) => m[0]).join("\n");
+  const headings = (block) => [...block.matchAll(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/g)]
+    .map((m) => m[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().toLowerCase()).filter(Boolean);
+  const gateHeadings = new Set(headings(gate));
+  const repeated = headings(homeBlocks).filter((heading) => gateHeadings.has(heading));
+  assert.deepEqual(repeated, [], "a heading appears on both the signed-out page and the signed-in home");
+  assert.equal((html.match(/<div id="auth-gate"/g) || []).length, 1, "exactly one signed-out page");
+  assert.equal((html.match(/id="home"/g) || []).length, 1, "exactly one signed-in home");
+  assert.match(gate, /id="lp-signin"/, "the sign-in card keeps its anchor");
+});
+
+test("every in-page link has a target", () => {
+  const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  const views = new Set(["home", "tools", "knowledge", "assistant", "workspace", "about", "challenge"]);
+  const broken = [...new Set([...html.matchAll(/href="#([^"]*)"/g)].map((m) => m[1]))]
+    .filter((hash) => hash && !ids.has(hash) && !views.has(hash) && !/^(calc|kb|ws)-[a-z0-9-]+$/.test(hash));
+  assert.deepEqual(broken, []);
+  for (const mode of ["signin", "signup"]) assert.match(html, new RegExp(`data-auth-mode="${mode}"`), `${mode} button`);
+  assert.match(html, /data-install-app/, "install button");
+});
