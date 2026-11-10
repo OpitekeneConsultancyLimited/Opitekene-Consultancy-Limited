@@ -34,6 +34,17 @@ test("navigation covers the six sections of the brief", () => {
   assert.match(html, /<script src="site-router\.js\?v=[^"]+" defer><\/script>/);
 });
 
+test("the public quick calculator takes every rate from the tax engine", () => {
+  const front = fs.readFileSync(path.join(__dirname, "front-page.js"), "utf8");
+  for (const fn of ["calculatePaye", "calculateVat", "calculateWithholdingTax", "calculateCompanyIncomeTax"]) {
+    assert.match(front, new RegExp(`engine\\.${fn}\\(`), `uses ugandaTax.${fn}`);
+  }
+  // No hard-coded tax rates or bands (e.g. 0.18, 0.3, 235000) in the front page.
+  assert.ok(!/\b0\.\d+/.test(front), "no decimal tax rates in front-page.js");
+  assert.ok(!/\b\d{3},?000\b/.test(front.replace(/2026/g, "")), "no hard-coded money thresholds in front-page.js");
+  assert.match(html, /<script src="front-page\.js\?v=[^"]+" defer><\/script>/);
+});
+
 test("the router never opens the sign-in wall and leaves auth fragments alone", () => {
   const router = fs.readFileSync(path.join(__dirname, "site-router.js"), "utf8");
   assert.ok(!/dataset\.auth\s*=|setAttribute\(\s*["']data-auth["']/.test(router), "only account.js may change data-auth");

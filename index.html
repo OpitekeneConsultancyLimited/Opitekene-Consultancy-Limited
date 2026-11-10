@@ -30,14 +30,18 @@
       #auth-gate .phase6-tabs { padding-top: 0; }
       #auth-gate .primary-button, #auth-gate .secondary-button { width: 100%; justify-content: center; }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=landing-1">
-    <script src="site-router.js?v=landing-1" defer></script>
+    <link rel="stylesheet" href="design.css?v=front-1">
+    <script src="site-router.js?v=front-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
     <script src="tax-clarification.js?v=phase5-clarification-2" defer></script>
     <script src="tax-calculator.js?v=paye-role-selector-1" defer></script>
+    <script src="front-page.js?v=front-1" defer></script>
     <script src="corporate-tax.js?v=corporate-tax-phase3-1" defer></script>
     <script src="capital-allowances.js?v=capital-allowances-phase3-1" defer></script>
     <script src="industrial-building.js?v=industrial-building-phase3-1" defer></script>
@@ -56,43 +60,174 @@
   </head>
   <body>
     <div id="auth-gate" role="region" aria-labelledby="auth-gate-title">
-      <header class="lp-header">
-        <div class="lp-wrap lp-header-inner">
-          <a class="brand" href="#auth-gate" aria-label="Opitekene TaxComp">
-            <span class="brand-mark" aria-hidden="true">O</span>
-            <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
+      <header class="pc-header">
+        <div class="pc-wrap pc-header-inner">
+          <a class="pc-brand" href="#auth-gate" aria-label="Opitekene Consultancy Ltd, home">
+            <span class="pc-brand-mark" aria-hidden="true">OC</span>
+            <span class="pc-brand-text"><strong>OPITEKENE</strong><span>Consultancy Ltd</span><em>Where Technology Meets Trusted Finance</em></span>
           </a>
-          <nav class="lp-nav" aria-label="Page sections">
-            <a href="#lp-features">Features</a>
-            <a href="#lp-how">How it works</a>
-            <a href="#lp-plans">Plans</a>
-            <a href="#lp-faq">FAQ</a>
+          <nav class="pc-nav" aria-label="Main">
+            <a href="#pc-calculator"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg> Tax Calculator</a>
+            <a href="#pc-services">Our Services</a>
+            <a href="#pc-coverage">Coverage</a>
+            <a href="#pc-contact">Contact Us</a>
           </nav>
-          <div class="lp-header-actions">
-            <button type="button" class="lp-link-button" data-auth-mode="signin">Sign in</button>
-            <button type="button" class="btn btn-primary btn-compact" data-auth-mode="signup">Get started</button>
+          <div class="pc-header-actions">
+            <a class="pc-btn pc-btn-whatsapp" href="https://wa.me/256782092825?text=Hello%20Opitekene%20Consultancy%2C%20I%20need%20assistance%20with%20tax%20and%20accounting%20services." target="_blank" rel="noopener noreferrer"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.4-4A8 8 0 1 1 8 18.6z"/></svg> WhatsApp Us</a>
+            <a class="pc-btn pc-btn-navy" href="#pc-contact">Book Advisory</a>
+            <button type="button" class="pc-btn pc-btn-outline" data-auth-mode="signin"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Sign in</button>
           </div>
+          <button type="button" class="pc-menu-toggle" id="pc-menu-toggle" aria-expanded="false" aria-controls="pc-mobile-menu" aria-label="Menu"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        </div>
+        <div class="pc-mobile-menu" id="pc-mobile-menu" hidden>
+          <a href="#pc-calculator">Tax Calculator Suite</a>
+          <a href="#pc-services">Our Services</a>
+          <a href="#pc-coverage">Service Coverage</a>
+          <a href="#pc-contact">Contact Us</a>
+          <button type="button" data-auth-mode="signin">Sign in to TaxComp</button>
+          <a class="pc-mobile-whatsapp" href="https://wa.me/256782092825" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
         </div>
       </header>
 
-      <section class="home-hero lp-hero" aria-labelledby="auth-gate-title">
-        <div class="lp-wrap hero-split">
-          <div class="hero-pitch">
-            <p class="hero-pill">Uganda · FY 2026/27 rules</p>
-            <h1 id="auth-gate-title">Smarter Tax Management. <span>Better Business Decisions.</span></h1>
-            <p class="home-lead">Your trusted digital platform for tax calculations, compliance guidance and business financial management in Uganda.</p>
-            <div class="home-actions">
-              <button type="button" class="btn btn-primary" data-auth-mode="signup">Get started free</button>
-              <button type="button" class="btn btn-secondary" data-auth-mode="signin">Sign in</button>
+      <section class="pc-hero" aria-labelledby="auth-gate-title">
+        <div class="pc-wrap pc-hero-grid">
+          <div class="pc-hero-copy">
+            <p class="pc-pill"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg><span>Where Technology Meets Trusted Finance</span></p>
+            <h1 id="auth-gate-title">Tax, Accounting Software &amp; Training <span>Under One Roof</span></h1>
+            <p class="pc-lead">Simplifying statutory tax returns, URA EFRIS setup, QuickBooks accounting, and financial management for businesses across Uganda.</p>
+            <p class="pc-tagline"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg> “We handle returns, you handle life.”</p>
+            <div class="pc-hero-actions">
+              <a class="pc-btn pc-btn-teal pc-btn-lg" href="#pc-calculator">Compute Taxes Now <svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></a>
+              <a class="pc-btn pc-btn-ghost pc-btn-lg" href="#pc-services">Explore Services</a>
             </div>
-            <ul class="hero-points">
-              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><span><strong>No accounting skills needed</strong>Each calculator asks only for what it needs.</span></li>
-              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/></svg></span><span><strong>Works on any phone</strong>Install it; calculators work offline.</span></li>
-              <li><span class="hero-point-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span><strong>Private by default</strong>Calculator figures stay in your browser.</span></li>
+          </div>
+          <div class="pc-coverage" id="pc-coverage">
+            <p class="pc-coverage-title"><span>Service Delivery Parameters</span><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg></p>
+            <div class="pc-coverage-item"><span>Based in</span><strong>Kampala</strong><em>Kireka, Kamuli Road</em></div>
+            <div class="pc-coverage-item"><span>Serving</span><strong>Businesses</strong><em>Individuals, SACCOs and NGOs</em></div>
+            <div class="pc-coverage-item"><span>Delivery Mode</span><strong class="pc-teal-text">Online / On-site</strong><em>Join from anywhere in Uganda &amp; beyond</em></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pc-section pc-section-muted" id="pc-calculator" aria-labelledby="pc-calculator-title">
+        <div class="pc-wrap">
+          <div class="pc-section-head">
+            <p class="pc-badge">Ugandan Tax Engine</p>
+            <h2 id="pc-calculator-title">Interactive Multi-Head Tax Calculator</h2>
+            <p>Estimate your tax using TaxComp's FY 2026/27 rules, the same engine as our full calculators.</p>
+          </div>
+          <div class="pc-calc">
+            <div class="pc-tabs" role="tablist" aria-label="Choose a tax head">
+              <button type="button" class="pc-tab" role="tab" id="pc-tab-paye" data-pc-tab="paye" aria-selected="true" aria-controls="pc-panel-paye"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>PAYE (Income Tax)</span></button>
+              <button type="button" class="pc-tab" role="tab" id="pc-tab-vat" data-pc-tab="vat" aria-selected="false" aria-controls="pc-panel-vat"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg><span>Value Added Tax (VAT)</span></button>
+              <button type="button" class="pc-tab" role="tab" id="pc-tab-wht" data-pc-tab="wht" aria-selected="false" aria-controls="pc-panel-wht"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5 20 18M8 15.5 20 6"/></svg><span>Withholding Tax (WHT)</span></button>
+              <button type="button" class="pc-tab" role="tab" id="pc-tab-cit" data-pc-tab="cit" aria-selected="false" aria-controls="pc-panel-cit"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/></svg><span>Corporate Income Tax (CIT)</span></button>
+            </div>
+            <div class="pc-calc-body">
+              <div class="pc-calc-form">
+                <div class="pc-panel" id="pc-panel-paye" role="tabpanel" aria-labelledby="pc-tab-paye">
+                  <h3>PAYE (Pay As You Earn) Calculation</h3>
+                  <p class="pc-sub">Monthly PAYE for a resident employee with one employer.</p>
+                  <div class="pc-field"><label for="pc-paye-gross">Monthly Gross Salary (UGX)</label><input id="pc-paye-gross" type="number" inputmode="numeric" min="0" step="1" value="2500000"><p class="pc-help">Treated as monthly taxable pay. Benefits, other employers and non-residents: use the full PAYE calculator after signing in.</p></div>
+                  <div class="pc-rates" aria-live="polite"><strong>FY 2026/27 annual bands applied</strong><ul id="pc-paye-bands"></ul></div>
+                </div>
+                <div class="pc-panel" id="pc-panel-vat" role="tabpanel" aria-labelledby="pc-tab-vat" hidden>
+                  <h3>Value Added Tax (VAT) Calculation</h3>
+                  <p class="pc-sub">Standard-rated VAT at <span data-pc-vat-rate>18</span>% on taxable goods and services.</p>
+                  <div class="pc-field"><label for="pc-vat-mode">Calculation Type</label>
+                    <select id="pc-vat-mode">
+                      <option value="exclusive">VAT Exclusive (add VAT to the net amount)</option>
+                      <option value="inclusive">VAT Inclusive (extract VAT from the total)</option>
+                    </select></div>
+                  <div class="pc-field"><label for="pc-vat-amount">Amount (UGX)</label><input id="pc-vat-amount" type="number" inputmode="numeric" min="0" step="1" value="10000000"></div>
+                </div>
+                <div class="pc-panel" id="pc-panel-wht" role="tabpanel" aria-labelledby="pc-tab-wht" hidden>
+                  <h3>Withholding Tax (WHT) Calculation</h3>
+                  <p class="pc-sub">Tax withheld at source on payments to suppliers and service providers.</p>
+                  <div class="pc-field"><label for="pc-wht-amount">Gross Payment Amount (UGX)</label><input id="pc-wht-amount" type="number" inputmode="numeric" min="0" step="1" value="5000000"></div>
+                  <div class="pc-field"><label for="pc-wht-type">Payment Type</label>
+                    <select id="pc-wht-type">
+                      <option value="resident-supply">Resident supply / contract payment (6%)</option>
+                      <option value="nonresident-payment">Non-resident dividend, interest, royalty, rent or management fee (15%)</option>
+                      <option value="resident-dividend">Resident dividend (15%)</option>
+                      <option value="resident-interest">Resident interest (15%)</option>
+                      <option value="listed-dividend">Dividend to individual from listed company (10%)</option>
+                      <option value="resident-entertainer">Resident public entertainer (6%)</option>
+                    </select>
+                    <p class="pc-help">More payment types (22 in all) are in the full calculator after signing in.</p></div>
+                  <label class="pc-check" for="pc-wht-designated"><input id="pc-wht-designated" type="checkbox" checked> The payer is a designated withholding agent</label>
+                </div>
+                <div class="pc-panel" id="pc-panel-cit" role="tabpanel" aria-labelledby="pc-tab-cit" hidden>
+                  <h3>Corporate Income Tax (CIT)</h3>
+                  <p class="pc-sub">Annual company income tax at the standard resident rate on net chargeable profit.</p>
+                  <div class="pc-field"><label for="pc-cit-revenue">Annual Gross Revenue (UGX)</label><input id="pc-cit-revenue" type="number" inputmode="numeric" min="0" step="1" value="120000000"></div>
+                  <div class="pc-field"><label for="pc-cit-expenses">Allowable Operating Expenses (UGX)</label><input id="pc-cit-expenses" type="number" inputmode="numeric" min="0" step="1" value="70000000"><p class="pc-help">Simplified: add-backs, capital allowances and losses are not included. Use the full company calculator after signing in.</p></div>
+                </div>
+              </div>
+              <div class="pc-summary" aria-live="polite">
+                <div class="pc-summary-top"><span id="pc-summary-head">PAYE SUMMARY</span><em>FY 2026/27 rules</em></div>
+                <dl class="pc-summary-rows" id="pc-summary-rows"></dl>
+                <div class="pc-result"><span id="pc-result-label">Net Take-Home Salary</span><strong id="pc-result-amount">—</strong></div>
+                <p class="pc-summary-note" id="pc-summary-note">Estimate only, not a tax filing.</p>
+                <div class="pc-summary-actions">
+                  <button type="button" class="pc-btn pc-btn-ghost" id="pc-print"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7"/></svg> Print Calculation Summary</button>
+                  <a class="pc-btn pc-btn-teal" href="#pc-contact" id="pc-request-filing">Get Professional Return Filing Support <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pc-section" id="pc-services" aria-labelledby="pc-services-title">
+        <div class="pc-wrap">
+          <div class="pc-section-head">
+            <p class="pc-badge">Our Core Offerings</p>
+            <h2 id="pc-services-title">Our Services</h2>
+            <p>Tax, accounting software and training under one roof.</p>
+          </div>
+          <div class="pc-services">
+            <article class="pc-service">
+              <div class="pc-service-head"><span class="pc-service-icon tone-teal"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="m9 14 2 2 4-4"/></svg></span><h3>Tax compliance</h3></div>
+              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>TIN, VAT and PAYE registration</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>VAT, PAYE and withholding tax returns</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Corporate and individual income tax</span></li></ul>
+              <a class="pc-text-link" href="#pc-contact" data-pc-service="Tax compliance">Request Tax Support <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </article>
+            <article class="pc-service">
+              <div class="pc-service-head"><span class="pc-service-icon tone-navy"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="M12 8v4M12 15.5v.5"/></svg></span><h3>Advisory and disputes</h3></div>
+              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Tax planning and advisory</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>URA audit support and objections</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>International and cross-border tax</span></li></ul>
+              <a class="pc-text-link" href="#pc-contact" data-pc-service="Advisory and disputes">Schedule Audit Review <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </article>
+            <article class="pc-service">
+              <div class="pc-service-head"><span class="pc-service-icon tone-blue"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 19h18"/></svg></span><h3>Accounting software</h3></div>
+              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>QuickBooks Online and Desktop setup</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>EFRIS system-to-system integration</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Bookkeeping and reconciliations</span></li></ul>
+              <a class="pc-text-link" href="#pc-contact" data-pc-service="Accounting software">Get Software Setup <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </article>
+            <article class="pc-service">
+              <div class="pc-service-head"><span class="pc-service-icon tone-indigo"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-4 9 4-9 4z"/><path d="M7 11v4c0 1.5 2.2 3 5 3s5-1.5 5-3v-4M21 9v5"/></svg></span><h3>Training</h3></div>
+              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Practical Tax Return Filing</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>QuickBooks Online and Desktop</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>EFRIS navigation and payroll taxes</span></li></ul>
+              <a class="pc-text-link" href="#pc-contact" data-pc-service="Training">Enrol for Training <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="pc-section pc-section-navy" id="pc-online" aria-labelledby="pc-online-title">
+        <div class="pc-wrap pc-online-grid">
+          <div class="pc-online-copy">
+            <p class="pc-badge pc-badge-dark">TaxComp Online</p>
+            <h2 id="pc-online-title">Sign in for the full TaxComp toolkit</h2>
+            <p>Your free account opens everything we've built for Uganda tax:</p>
+            <ul class="pc-ticks pc-ticks-dark">
+              <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>11 tax calculators with the working shown: PAYE, income, company, VAT, rental, withholding, presumptive, customs and more</span></li>
+              <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>AI Tax Assistant that cites its sources</span></li>
+              <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Knowledge centre: guides, laws, case law and FY 2026/27 updates</span></li>
+              <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Business workspace for firms: clients, compliance, documents and reports</span></li>
             </ul>
+            <p class="pc-online-plans">Free account · Individual Premium UGX 100,000/month (live AI web research) · Firm UGX 500,000/month (practice workspace)</p>
           </div>
           <div class="auth-gate-card" id="lp-signin">
-            <h2 class="gate-card-title">Welcome</h2>
+            <h2 class="gate-card-title">Welcome to TaxComp</h2>
             <p class="gate-card-note">Create a free account, or sign in to continue.</p>
             <div id="auth-gate-root" aria-live="polite"><p class="auth-gate-loading">Loading sign-in…</p></div>
             <noscript><p class="auth-gate-loading">TaxComp needs JavaScript to sign in. Please enable it and reload.</p></noscript>
@@ -100,126 +235,65 @@
         </div>
       </section>
 
-      <section class="page-block lp-wrap" id="lp-features" aria-labelledby="lp-features-title">
-        <div class="block-head">
-          <h2 id="lp-features-title">Your tax work, in plain numbers</h2>
-          <p>Stop piecing together rates, rules and spreadsheets. Everything you need for Uganda tax is in one account.</p>
-        </div>
-        <div class="feature-grid">
-          <div class="feature-cell"><span class="feature-icon tone-teal"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11v6M8 15h2M12 15h2"/></svg></span><span><strong>Tax Calculators</strong>PAYE, income tax, VAT, withholding, rental and more for FY 2026/27, with the working shown.</span></div>
-          <div class="feature-cell"><span class="feature-icon tone-navy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><span><strong>Tax Advisory and Knowledge</strong>Guides, laws and regulations, case law and updates, each linked to its source.</span></div>
-          <div class="feature-cell"><span class="feature-icon tone-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><span><strong>AI Tax Assistant</strong>Ask in plain language. Answers say what is verified and cite where it comes from.</span></div>
-          <div class="feature-cell"><span class="feature-icon tone-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><span><strong>Business Management Workspace</strong>For firms: clients, compliance deadlines, documents and reports in one private workspace.</span></div>
-        </div>
-      </section>
-
-      <section class="lp-band" id="lp-how" aria-labelledby="lp-how-title">
-        <div class="page-block lp-wrap steps-block">
-          <div class="block-head">
-            <h2 id="lp-how-title">Up and running in three steps</h2>
-            <p>No training and no spreadsheets. If you know your figures, you can check your tax.</p>
+      <section class="pc-section pc-section-muted" id="pc-contact" aria-labelledby="pc-contact-title">
+        <div class="pc-wrap pc-contact-grid">
+          <div class="pc-contact-info">
+            <p class="pc-badge">Contact Us Today</p>
+            <h2 id="pc-contact-title">Reach Our Team</h2>
+            <p>Whether you need individual income tax filing, EFRIS integration, or hands-on QuickBooks staff training, we are available online and on-site.</p>
+            <div class="pc-card">
+              <p class="pc-card-label"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h3l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2"/></svg> Phone Numbers</p>
+              <a href="tel:+256782092825">MTN: 0782 092 825</a>
+              <a href="tel:+256753267505">Airtel: 0753 267 505</a>
+            </div>
+            <div class="pc-card">
+              <p class="pc-card-label"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg> Email &amp; Address</p>
+              <p><strong>Email:</strong> <a href="mailto:opitekenecons@gmail.com">opitekenecons@gmail.com</a></p>
+              <p><strong>Location:</strong> Kireka, Kamuli Road, Kampala, Uganda</p>
+            </div>
+            <div class="pc-card pc-card-whatsapp">
+              <p class="pc-card-label"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.4-4A8 8 0 1 1 8 18.6z"/></svg> Chat with us on WhatsApp</p>
+              <p>Connect directly with our advisory staff on WhatsApp for immediate support.</p>
+              <a class="pc-btn pc-btn-green" href="https://wa.me/256782092825?text=Hello%20Opitekene%20Consultancy%20Ltd%2C" target="_blank" rel="noopener noreferrer"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.4-4A8 8 0 1 1 8 18.6z"/></svg> Chat on WhatsApp (+256 782 092 825)</a>
+            </div>
           </div>
-          <ol class="steps">
-            <li><span class="step-num">1</span><strong>Create your free account</strong><span>Sign up with your email and confirm it. That's all it takes.</span></li>
-            <li><span class="step-num">2</span><strong>Choose a tool and enter figures</strong><span>Pick a calculator, or ask the assistant a question in plain language.</span></li>
-            <li><span class="step-num">3</span><strong>See where you stand</strong><span>Every result shows its rates, credits and assumptions, with sources you can check.</span></li>
-          </ol>
-        </div>
-      </section>
-
-      <section class="page-block lp-wrap plans-block" id="lp-plans" aria-labelledby="lp-plans-title">
-        <div class="block-head center">
-          <h2 id="lp-plans-title">Plans that grow with you</h2>
-          <p>Start free. Upgrade month by month when you need more; nothing renews automatically.</p>
-        </div>
-        <div class="plan-grid">
-            <article class="plan-card">
-              <div class="plan-top"><h3>Account</h3><span class="plan-badge">No card needed</span></div>
-              <p class="plan-price">Free</p>
-              <p class="plan-text">For anyone checking their own tax.</p>
-              <ul class="plan-list">
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>All tax calculators</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Knowledge centre: guides, case law, updates</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI assistant using TaxComp's reviewed notes</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Audit-readiness checklist</span></li>
-              </ul>
-              <button type="button" class="btn btn-secondary plan-cta" data-auth-mode="signup">Create free account</button>
-            </article>
-            <article class="plan-card is-featured">
-              <div class="plan-top"><h3>Individual Premium</h3><span class="plan-badge">Live research</span></div>
-              <p class="plan-price">UGX 100,000 <span>/ month</span></p>
-              <p class="plan-text">For professionals who need current sources.</p>
-              <ul class="plan-list">
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Account</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>AI tax advisor with live, source-linked web research</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Current public sources cited in each answer</span></li>
-              </ul>
-              <button type="button" class="btn btn-primary plan-cta" data-auth-mode="signup">Get started</button>
-            </article>
-            <article class="plan-card">
-              <div class="plan-top"><h3>Firm</h3></div>
-              <p class="plan-price">UGX 500,000 <span>/ month</span></p>
-              <p class="plan-text">For tax practices serving clients.</p>
-              <ul class="plan-list">
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Everything in Individual Premium</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Private practice workspace for the firm</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Clients, compliance, documents and reports</span></li>
-                <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span>Invite your staff with roles</span></li>
-              </ul>
-              <button type="button" class="btn btn-secondary plan-cta" data-auth-mode="signup">Get started</button>
-            </article>
-        </div>
-        <p class="plans-note">Create your account first, then upgrade from My account. Pay with MTN or Airtel Mobile Money or a card through Flutterwave.</p>
-      </section>
-
-      <section class="lp-band" id="lp-faq" aria-labelledby="lp-faq-title">
-        <div class="page-block lp-wrap faq-block">
-          <div class="faq-intro">
-            <h2 id="lp-faq-title">Questions people ask</h2>
-            <p>Still unsure? Create a free account and try a calculator. It takes two minutes.</p>
-          </div>
-          <div class="faq-list">
-            <details class="faq-item"><summary>Do I need to know accounting?</summary><p>No. Each calculator asks only for the figures it needs and explains every line of the result in plain language.</p></details>
-            <details class="faq-item"><summary>Is this tax advice?</summary><p>No. TaxComp gives educational estimates and source-linked guidance. Check official sources, or speak to a qualified Ugandan tax adviser, before filing, paying or taking a legal position. Opitekene consultants are available when you need one.</p></details>
-            <details class="faq-item"><summary>Which tax year do the calculators use?</summary><p>FY 2026/27, including the amendments that generally took effect on 1 July 2026.</p></details>
-            <details class="faq-item"><summary>What does the free account include?</summary><p>All the tax calculators, the knowledge centre, the audit-readiness checklist and the AI assistant using TaxComp's reviewed notes. Live web research and the firm workspace are paid monthly plans.</p></details>
-            <details class="faq-item"><summary>Where do my figures go?</summary><p>Calculator figures are worked out in your browser and are not uploaded. Questions you send to the AI assistant go through Cloudflare to the AI provider; live web research runs only when you opt in.</p></details>
-            <details class="faq-item"><summary>Can I use it on my phone?</summary><p>Yes. Open the site in your phone's browser and install it as an app. The calculators work offline after their first load.</p></details>
+          <div class="pc-form-card">
+            <h3>Send an Advisory Request</h3>
+            <p class="pc-sub">Fill in your requirements. Pressing Send opens WhatsApp with your request ready to send to our team.</p>
+            <p class="pc-form-alert" id="pc-form-alert" role="status" hidden></p>
+            <form id="pc-contact-form" novalidate>
+              <div class="pc-form-row">
+                <div class="pc-field"><label for="pc-c-name">Full Name *</label><input id="pc-c-name" type="text" required maxlength="120" autocomplete="name" placeholder="e.g. John Okello"></div>
+                <div class="pc-field"><label for="pc-c-email">Email Address</label><input id="pc-c-email" type="email" maxlength="254" autocomplete="email" placeholder="john@example.com"></div>
+              </div>
+              <div class="pc-form-row">
+                <div class="pc-field"><label for="pc-c-phone">Phone / WhatsApp</label><input id="pc-c-phone" type="tel" maxlength="40" autocomplete="tel" placeholder="078… / 075…"></div>
+                <div class="pc-field"><label for="pc-c-service">Primary Service Needed</label>
+                  <select id="pc-c-service">
+                    <option value="Tax compliance">Tax Compliance (TIN, VAT, PAYE Returns)</option>
+                    <option value="Advisory and disputes">Advisory &amp; URA Audit Objections</option>
+                    <option value="Accounting software">QuickBooks &amp; EFRIS Integration</option>
+                    <option value="Training">Tax &amp; Accounting Software Training</option>
+                  </select></div>
+              </div>
+              <div class="pc-field"><label for="pc-c-message">Message *</label><textarea id="pc-c-message" rows="4" required maxlength="1500" placeholder="Describe your inquiry or calculation details…"></textarea></div>
+              <p class="pc-help">Don't include your TIN, passwords or Mobile Money PIN.</p>
+              <button type="submit" class="pc-btn pc-btn-navy pc-btn-block"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></svg> Send Request on WhatsApp</button>
+            </form>
           </div>
         </div>
       </section>
 
-      <section class="lp-wrap home-cta lp-cta" aria-labelledby="lp-cta-title">
-        <h2 id="lp-cta-title">Take control of your tax and financial management.</h2>
-        <p>Create your free account in two minutes. No card required.</p>
-        <div class="home-actions">
-          <button type="button" class="btn btn-primary" data-auth-mode="signup">Get started free</button>
-        </div>
-      </section>
-
-      <footer class="site-footer-bar lp-footer">
-        <div class="site-footer">
-          <div class="footer-brand-block">
-            <span class="brand footer-brand">
-              <span class="brand-mark" aria-hidden="true">O</span>
-              <span class="brand-text">Opitekene <span class="brand-country">TaxComp</span></span>
-            </span>
-            <p>Uganda tax calculations, guidance and practice tools from Opitekene Consultancy Limited, Kampala.</p>
+      <footer class="pc-footer">
+        <div class="pc-wrap">
+          <div class="pc-footer-top">
+            <div class="pc-footer-brand"><span class="pc-brand-mark pc-brand-mark-sm" aria-hidden="true">OC</span><span><strong>OPITEKENE CONSULTANCY LTD</strong><em>Where Technology Meets Trusted Finance</em></span></div>
+            <div class="pc-footer-contact"><p>MTN: 0782 092 825 | Airtel: 0753 267 505</p><p>opitekenecons@gmail.com | Kampala, Uganda</p></div>
           </div>
-          <nav class="footer-col" aria-label="Product">
-            <p class="footer-col-title">Product</p>
-            <a href="#lp-features">Features</a>
-            <a href="#lp-how">How it works</a>
-            <a href="#lp-plans">Plans</a>
-            <a href="#lp-faq">FAQ</a>
-          </nav>
-          <nav class="footer-col" aria-label="Account">
-            <p class="footer-col-title">Account</p>
-            <button type="button" class="footer-link-button" data-auth-mode="signup">Create an account</button>
-            <button type="button" class="footer-link-button" data-auth-mode="signin">Sign in</button>
-            <button type="button" class="footer-link-button" data-auth-mode="reset">Forgot password</button>
-          </nav>
-          <p class="footer-copy">© 2026 Opitekene Consultancy Limited. Educational estimates and guidance, not a tax filing or legal advice.</p>
+          <div class="pc-footer-bottom">
+            <p>© <span data-pc-year>2026</span> Opitekene Consultancy Ltd. All rights reserved. Calculator results are estimates, not a tax filing or legal advice.</p>
+            <p class="pc-footer-tagline">“We handle returns, you handle life.”</p>
+          </div>
         </div>
       </footer>
     </div>
