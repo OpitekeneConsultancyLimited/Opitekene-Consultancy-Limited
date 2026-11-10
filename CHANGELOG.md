@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-10 - Public front page in the owner's design
+
+- The signed-out front page now follows the owner's sample (`opitekene_tax_calculator_services_portal.html`):
+  - Header: Tax Calculator, Our Services, Coverage, Contact Us, plus WhatsApp, Book Advisory and Sign in.
+  - Hero with a service-coverage card.
+  - Four-tab quick calculator: PAYE, VAT, WHT and CIT.
+  - The four service groups: tax compliance, advisory and disputes, accounting software, training.
+  - A "Sign in for the full TaxComp toolkit" section, then contact details, the advisory request form and the footer.
+- The quick calculator runs on the real FY 2026/27 engine (`front-page.js` calls `window.ugandaTax`). The sample's hard-coded rates were not used: its PAYE brackets disagreed with the engine (UGX 502,000 vs 488,250 on a UGX 2,000,000 salary). A new test fails if rates are hard-coded into the front page.
+- The advisory form opens WhatsApp (+256 782 092 825) with the request typed in, and tells the visitor to press Send. The sample only displayed a thank-you message and sent nothing.
+- All existing app features stay behind Sign in, unchanged.
+- Daily audit scripts added: `scripts/daily-audit.ps1`, `daily-audit-browser.mjs`, `daily-audit-setup.ps1`.
+- Service worker cache moved to v30.
+
 ## 2026-11-09 - Site redesign: navy, white and teal; six page views
 
 - New look: navy, white and teal palette, one sans-serif type scale, a single content width, and quieter notice boxes. `design.css` sits on top of `styles.css`; `scripts/recolor-css.mjs` moved the old greens to navy and teal at the same lightness, so contrast is unchanged.
