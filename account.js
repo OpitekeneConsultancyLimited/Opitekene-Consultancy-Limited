@@ -218,7 +218,7 @@
   function firmSetup(subscription) {
     if (!subscription?.active || !subscription.includesWorkspace) return null;
     if (subscription.organizationId) {
-      return el("p", { className: "phase6-alert", "data-kind": "success", text: "Your firm workspace is set up. Open it from Practice workspace at the top of this page, signed in with this account." });
+      return el("p", { className: "phase6-alert", "data-kind": "success", text: "Your firm workspace is set up. Open it from Business Workspace → Overview, signed in with this account." });
     }
     return el("div", { className: "account-firm" }, [
       el("h4", { text: "Set up your firm workspace" }),
@@ -247,7 +247,7 @@
     ]));
     if (!account) return wrap;
     if (!account.paymentsEnabled) {
-      wrap.append(el("p", { className: "phase6-alert", text: "Online payment is being set up. Until then, use the manual Mobile Money payment details further down this page." }));
+      wrap.append(el("p", { className: "phase6-alert", text: "Online payment is being set up. Until then, use the manual Mobile Money payment details under About Us." }));
     } else if (account.paymentsTestMode) {
       wrap.append(el("p", { className: "phase6-alert", text: "Payments are in test mode: no real money is charged." }));
     }
