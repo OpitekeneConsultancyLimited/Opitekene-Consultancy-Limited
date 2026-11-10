@@ -20,6 +20,7 @@ import {
   loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
 import type { CaseRow, ConfirmableField, ItemCategory, Outcome } from "./types.mts";
+import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
 export const CONSENT_VERSION = "2026-11-10";
 export const DOCUMENTS_BUCKET = "assessment-documents";
@@ -243,6 +244,7 @@ async function route(ctx: Ctx): Promise<Response> {
       consentVersion: CONSENT_VERSION, consented: Boolean(consent), reviewer: ctx.reviewer, canApproveLaw: ctx.canApproveLaw,
       cases: cases.map((row) => ({ id: row.id, taxHead: row.taxHead, periodStart: row.periodStart, periodEnd: row.periodEnd, principal: row.principal, status: row.status, reviewStatus: row.reviewStatus, updatedAt: row.updatedAt })),
       uploadsEnabled: Boolean(storageFor(ctx.env)),
+      questions: OWNER_QUESTIONS, lateReasons: LATE_OBJECTION_REASONS, outcomeLabels: OUTCOME_PROFESSIONAL_LABELS,
     }, 200, ctx.cors);
   }
 

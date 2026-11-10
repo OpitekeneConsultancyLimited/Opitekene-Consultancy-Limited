@@ -20,6 +20,8 @@ export interface AiEnv {
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
   GEMINI_FETCH?: typeof fetch;
+  /** "true" only when the owner has confirmed a paid Gemini tier (paid-tier data is not used to improve Google products). */
+  CHALLENGE_GEMINI_PAID_TIER?: string;
 }
 
 export interface ReadResult {
@@ -109,6 +111,8 @@ async function viaClaude(input: NoticeInput, env: AiEnv): Promise<Extraction> {
 
 async function viaGemini(input: NoticeInput, env: AiEnv): Promise<Extraction> {
   if (!env.GEMINI_API_KEY) throw new ProviderSkip("missing_api_key");
+  // Taxpayer documents never go to an unpaid Gemini tier (decision D-23).
+  if (env.CHALLENGE_GEMINI_PAID_TIER !== "true") throw new ProviderSkip("gemini_not_paid_tier");
   const model = env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
   const part = input.kind === "text"
     ? { text: input.text.slice(0, 100_000) }

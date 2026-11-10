@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 8 Ltd
+TIN: 1000055433
+Period assessed: 1 December 2025 - 31 December 2025
+Date of assessment: 12 March 2025
+
+Principal Tax Due: UGX 24,469,000.00
+Penalty at 20%: UGX 4,893,800.00
+Interest at 2% per month for 1 months: UGX 489,380.00
+Total amount due: UGX 29,852,180.00
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

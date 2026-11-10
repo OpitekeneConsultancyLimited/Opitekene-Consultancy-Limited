@@ -16,7 +16,7 @@ test("every element a front-end script looks up exists exactly once", () => {
 
 test("every top-level section belongs to a page view", () => {
   const main = html.slice(html.indexOf("<main>"), html.indexOf("</main>"));
-  const views = new Set(["home", "tools", "knowledge", "assistant", "workspace", "about"]);
+  const views = new Set(["home", "tools", "knowledge", "assistant", "workspace", "about", "challenge"]);
   // Top-level sections are indented exactly 6 spaces inside <main>.
   const tops = [...main.matchAll(/\n {6}<section ([^>]*)>/g)].map((m) => m[1]);
   assert.ok(tops.length > 10);

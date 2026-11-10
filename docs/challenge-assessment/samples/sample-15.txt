@@ -1,0 +1,17 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - INCOME TAX
+Taxpayer: Sample Trading 15 Ltd
+TIN: 1000110866
+Tax Period: 01/07/2025 to 30/06/2026
+Date of assessment: 19/02/2026
+
+| Item | Amount |
+| Tax payable | 47,688,000/= |
+| Penal Tax at 30% | 14,306,400/= |
+| Interest at 2% per month for 1 months | 953,760/= |
+| Total amount due | 62,948,160/= |
+
+Reasons: Expenses claimed were not supported by documents.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

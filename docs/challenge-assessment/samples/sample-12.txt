@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 12 Ltd
+TIN: 1000087109
+Period assessed: 1 August 2026 - 31 August 2026
+Date of assessment: 16 November 2026
+
+Principal Tax Due: UGX 37,737,000.00
+Penal Tax at 30%: UGX 11,321,100.00
+Interest at 2% per month for 5 months: UGX 3,773,700.00
+Total amount due: UGX 52,831,800.00
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

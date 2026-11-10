@@ -30,6 +30,10 @@ export interface ClassifiedItem {
   schedule: "agreed" | "disputed" | "unexplained";
   keepInObjection: boolean;
   setByReviewer: boolean;
+  /** The user's own answers, returned so editors can show them again. */
+  facts: DisputedItem["facts"];
+  documentIds: string[];
+  reviewerOutcome: Outcome | null;
 }
 
 export const DEFAULT_DOCUMENTS: Readonly<Record<ItemCategory, string[]>> = Object.freeze({
@@ -159,6 +163,9 @@ export function classifyItem(
     schedule,
     keepInObjection: item.keepInObjection,
     setByReviewer,
+    facts: item.facts,
+    documentIds: item.documentIds,
+    reviewerOutcome: item.reviewerOutcome,
   };
 }
 

@@ -1,0 +1,8 @@
+{
+  "taxHead": "vat",
+  "principal": 64273000,
+  "penalTax": 12854600,
+  "interest": 7712760,
+  "periodStart": "2025-12-01",
+  "periodEnd": "2025-12-31"
+}

@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ORIGINAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 4 Ltd
+TIN: 1000023757
+Tax period: April 2024
+Date of assessment: 8 July 2024
+
+Principal Tax Due: UGX 11,201,000.00
+Penal tax at 10%: UGX 1,120,100.00
+Interest at 2% per month for 4 months: UGX 896,080.00
+Total amount due: UGX 13,217,180.00
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

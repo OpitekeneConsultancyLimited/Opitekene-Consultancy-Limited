@@ -4,7 +4,7 @@
 // (account.js owns <html data-auth>), and it leaves Supabase auth fragments
 // (#access_token=…, #type=recovery, #…?…) alone for account.js / phase6-app.js.
 (function siteRouter() {
-  const VIEWS = ["home", "tools", "knowledge", "assistant", "workspace", "about"];
+  const VIEWS = ["home", "tools", "knowledge", "assistant", "workspace", "about", "challenge"];
   const root = document.documentElement;
   let currentView = "";
 
