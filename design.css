@@ -61,7 +61,8 @@ html[data-view="tools"] main > [data-view]:not([data-view~="tools"]),
 html[data-view="knowledge"] main > [data-view]:not([data-view~="knowledge"]),
 html[data-view="assistant"] main > [data-view]:not([data-view~="assistant"]),
 html[data-view="workspace"] main > [data-view]:not([data-view~="workspace"]),
-html[data-view="about"] main > [data-view]:not([data-view~="about"]) {
+html[data-view="about"] main > [data-view]:not([data-view~="about"]),
+html[data-view="challenge"] main > [data-view]:not([data-view~="challenge"]) {
   display: none !important;
 }
 .is-filtered-out { display: none !important; }
@@ -1100,10 +1101,11 @@ main > [data-view]:not(.home-hero) {
 }
 
 @media (max-width: 860px) {
-  .workspace-view { grid-template-columns: 1fr; gap: 16px; padding-top: 24px; }
-  .ws-sidebar { position: static; padding: 6px; }
+  .workspace-view { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 24px; }
+  .ws-sidebar { position: static; padding: 6px; min-width: 0; }
   .ws-sidebar-title { display: none; }
   .ws-nav { display: flex; overflow-x: auto; }
+  .ws-nav a { flex: 0 0 auto; white-space: nowrap; }
   .site-footer-bar .site-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1138,4 +1140,99 @@ main > [data-view]:not(.home-hero) {
   .site-header-bar,
   .site-footer-bar,
   .mobile-install-banner { display: none !important; }
+}
+
+/* ------------------------------------------------ Challenge an Assessment */
+/* Uses the site's tokens; alert colours are the ones .phase6-alert already uses. */
+.challenge-view { max-width: 980px; }
+.challenge-view h3 { font-size: 1.15rem; margin: 0 0 10px; color: var(--navy-900); }
+.challenge-view h3:focus { outline: none; }
+.challenge-view h4 { font-size: 1rem; margin: 22px 0 8px; color: var(--navy-900); }
+.ch-muted { color: var(--muted); }
+.ch-intro p { max-width: 65ch; }
+.ch-card { background: var(--paper, #fff); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin: 16px 0; display: grid; gap: 10px; }
+.ch-card > *, .ch-research, .ch-research * { min-width: 0; overflow-wrap: anywhere; }
+.ch-card > label, .ch-upload > label { font-weight: 600; margin-top: 6px; }
+.ch-card input[type="file"], .ch-card textarea, .ch-card select, .ch-card input[type="text"], .ch-card input[type="date"] {
+  width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; color: var(--ink); background: #fff; box-sizing: border-box;
+}
+.ch-card textarea { min-height: 72px; }
+.ch-card :is(input, select, textarea, button):focus-visible { outline: 3px solid var(--teal-600); outline-offset: 2px; }
+.ch-list { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.ch-link { background: none; border: 0; padding: 4px 0; color: var(--teal-700); text-decoration: underline; font: inherit; cursor: pointer; text-align: left; min-height: 32px; }
+.ch-danger-text { color: #682b2b; }
+.ch-message { padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--teal-600); background: var(--teal-50); color: var(--navy-900); }
+.ch-message.ch-error { border-color: #9c3939; background: #fbefed; color: #682b2b; }
+.ch-message.ch-success { border-color: var(--green, #1f7a4d); }
+.ch-banner { border-left: 4px solid var(--teal-600); background: var(--teal-50); color: var(--navy-900); padding: 12px 16px; border-radius: 8px; margin: 10px 0; }
+.ch-banner strong { display: block; font-size: 1.05rem; }
+.ch-banner p { margin: 6px 0 0; }
+.ch-banner.ch-warn { border-color: #b07827; background: #fdf6e9; color: #5a3d10; }
+.ch-banner.ch-danger { border-color: #9c3939; background: #fbefed; color: #682b2b; }
+.ch-banner.ch-ok { border-color: var(--teal-600); }
+.ch-rule { font-size: .85rem; }
+.ch-provisional { font-weight: 700; font-size: .9rem; }
+.ch-assumptions { font-size: .85rem; margin: 6px 0 0; padding-left: 18px; }
+.ch-next { margin: 4px 0 8px; }
+.ch-case-head { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.ch-toggle, .ch-tabs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.ch-toggle button { min-height: 40px; padding: 6px 14px; border: 1px solid var(--slate-300); background: #fff; color: var(--navy-900); border-radius: 999px; font: inherit; cursor: pointer; }
+.ch-toggle button[aria-pressed="true"] { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
+.ch-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.ch-steps button { min-height: 40px; padding: 6px 12px; border: 1px solid var(--line); background: var(--slate-50); color: var(--navy-900); border-radius: 8px; font: inherit; cursor: pointer; }
+.ch-steps button[aria-current="step"] { background: var(--teal-600); border-color: var(--teal-600); color: #fff; }
+.ch-steps button:disabled { opacity: .55; cursor: not-allowed; }
+.ch-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.ch-field { display: grid; gap: 6px; min-width: 0; }
+.ch-field > label { font-weight: 600; }
+.ch-field.ch-wide { grid-column: 1 / -1; }
+.ch-field.is-pending { background: var(--teal-50); border-radius: 8px; padding: 8px; }
+.ch-field-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: .85rem; }
+.ch-inline { display: inline-flex; gap: 8px; align-items: center; font-weight: 500; }
+.ch-inline input { width: 20px; height: 20px; min-height: 0; }
+.ch-conf { font-weight: 600; }
+.ch-conf-low { color: #682b2b; }
+.ch-conf-medium { color: #5a3d10; }
+.ch-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 0 0 12px; display: grid; gap: 10px; }
+.ch-item legend { font-weight: 700; padding: 0 6px; }
+.ch-questions { margin: 0; padding-left: 18px; color: var(--navy-900); }
+.ch-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.ch-outcomes { list-style: none; padding: 0; display: grid; gap: 10px; }
+.ch-outcome { border-left: 4px solid var(--slate-300); padding: 8px 12px; background: var(--slate-50); border-radius: 6px; }
+.ch-outcome p { margin: 4px 0 0; }
+.ch-o-computational_error, .ch-o-arguable_legal_ground { border-color: var(--teal-600); }
+.ch-o-insufficient_evidence { border-color: #b07827; }
+.ch-o-procedural_issue { border-color: #9c3939; }
+.ch-table-wrap { overflow-x: auto; }
+.ch-table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.ch-table th, .ch-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.ch-table th { background: var(--slate-50); }
+.ch-note { border-left: 3px solid #b07827; padding-left: 10px; }
+.ch-research { border-top: 1px solid var(--line); padding-top: 8px; }
+.ch-checklist { list-style: none; padding: 0; display: grid; gap: 8px; }
+.ch-checklist li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 200px); gap: 10px; align-items: center; }
+.ch-checklist small { display: block; color: var(--muted); }
+.ch-case-list { list-style: none; padding: 0; display: grid; gap: 8px; }
+.ch-law-list { list-style: none; padding: 0; display: grid; gap: 14px; }
+.ch-law-row { display: grid; gap: 6px; }
+.ch-reviewer { border-top: 2px solid var(--navy-900); padding-top: 10px; display: grid; gap: 8px; }
+.feature-cell-wide { grid-column: 1 / -1; }
+.kb-register-title { margin-top: 22px; }
+#challenge-print { display: none; }
+@media (max-width: 560px) {
+  .ch-card { padding: 14px; }
+  .ch-checklist li { grid-template-columns: 1fr; }
+}
+@media print {
+  html.ch-printing body > * { display: none !important; }
+  html.ch-printing body > main { display: block !important; }
+  html.ch-printing main > * { display: none !important; }
+  html.ch-printing main > #challenge { display: block !important; }
+  html.ch-printing #challenge > * { display: none !important; }
+  html.ch-printing #challenge-print { display: block !important; font: 11pt/1.45 Georgia, serif; color: #000; }
+  html.ch-printing #challenge-print .ch-print-doc { break-before: page; }
+  html.ch-printing #challenge-print .ch-print-doc:first-of-type { break-before: auto; }
+  html.ch-printing #challenge-print table { border-collapse: collapse; width: 100%; }
+  html.ch-printing #challenge-print th, html.ch-printing #challenge-print td { border: 1px solid #555; padding: 4px; }
+  html.ch-printing #challenge-print .ch-cite { font-size: 9pt; font-style: italic; }
 }

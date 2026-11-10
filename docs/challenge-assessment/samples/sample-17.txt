@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - INCOME TAX
+Taxpayer: Sample Trading 17 Ltd
+TIN: 1000126704
+Tax Period: 01/09/2025 to 30/09/2025
+Date of assessment: 21/12/2025
+
+Principal tax: UGX 54,322,000
+Penalty at 20%: UGX 10,864,400
+Interest at 2% per month for 3 months: UGX 3,259,320
+Total amount due: UGX 68,445,720
+
+Reasons: Expenses claimed were not supported by documents.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

@@ -34,8 +34,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=front-1">
-    <script src="site-router.js?v=front-1" defer></script>
+    <link rel="stylesheet" href="design.css?v=challenge-1">
+    <script src="site-router.js?v=challenge-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -56,6 +56,8 @@
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
     <script src="phase6-app.js?v=supabase-auth-1" defer></script>
     <script src="account.js?v=landing-1" defer></script>
+    <script src="challenge-docx.js?v=challenge-1" defer></script>
+    <script src="challenge-app.js?v=challenge-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -195,7 +197,7 @@
             </article>
             <article class="pc-service">
               <div class="pc-service-head"><span class="pc-service-icon tone-navy"><svg class="pc-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6z"/><path d="M12 8v4M12 15.5v.5"/></svg></span><h3>Advisory and disputes</h3></div>
-              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Tax planning and advisory</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>URA audit support and objections</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>International and cross-border tax</span></li></ul>
+              <ul class="pc-ticks"><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Tax planning and advisory</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>URA audit support and objections</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Challenge an Assessment online: deadline, grounds and a draft objection</span></li><li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>International and cross-border tax</span></li></ul>
               <a class="pc-text-link" href="#pc-contact" data-pc-service="Advisory and disputes">Schedule Audit Review <svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
             </article>
             <article class="pc-service">
@@ -221,10 +223,12 @@
             <ul class="pc-ticks pc-ticks-dark">
               <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>11 tax calculators with the working shown: PAYE, income, company, VAT, rental, withholding, presumptive, customs and more</span></li>
               <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>AI Tax Assistant that cites its sources</span></li>
+              <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Challenge an Assessment: upload a URA income tax or VAT assessment and see your deadline, where you stand and a draft response</span></li>
               <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Knowledge centre: guides, laws, case law and FY 2026/27 updates</span></li>
               <li><svg class="pc-icon pc-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12.5 4 4 8-9"/></svg><span>Business workspace for firms: clients, compliance, documents and reports</span></li>
             </ul>
             <p class="pc-online-plans">Free account · Individual Premium UGX 100,000/month (live AI web research) · Firm UGX 500,000/month (practice workspace)</p>
+            <button type="button" class="pc-btn pc-btn-teal" data-auth-mode="signup">Create a free account</button>
           </div>
           <div class="auth-gate-card" id="lp-signin">
             <h2 class="gate-card-title">Welcome to TaxComp</h2>
@@ -317,6 +321,7 @@
             <a href="#calc-withholding">Withholding Tax</a>
             <a href="#calc-rental">Rental Income Tax</a>
             <a href="#tools">Other Tax Calculators</a>
+            <a href="#challenge">Challenge a URA assessment</a>
           </div>
         </div>
         <div class="nav-menu" data-menu>
@@ -400,6 +405,7 @@
           <a class="feature-cell" href="#knowledge"><span class="feature-icon tone-navy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span><span><strong>Tax Advisory and Knowledge</strong>Guides, laws and regulations, case law and updates, each linked to its source.</span></a>
           <a class="feature-cell" href="#assistant"><span class="feature-icon tone-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><span><strong>AI Tax Assistant</strong>Ask in plain language. Answers say what is verified and cite where it comes from.</span></a>
           <a class="feature-cell" href="#workspace"><span class="feature-icon tone-violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></span><span><strong>Business Management Workspace</strong>For firms: clients, compliance deadlines, documents and reports in one private workspace.</span></a>
+          <a class="feature-cell feature-cell-wide" href="#challenge"><span class="feature-icon tone-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M12 11v4M12 17.5v.5"/></svg></span><span><strong>Received a URA assessment?</strong>See what URA is claiming, how many days you have to object and where you stand, then get a draft response pack.</span></a>
         </div>
       </section>
 
@@ -1938,6 +1944,9 @@
           <a href="https://ulii.org/en/judgments/" target="_blank" rel="noopener noreferrer">ULII judgments database</a>
           for other published decisions.
         </p>
+        <h3 class="kb-register-title">Tax Appeals Tribunal decisions in the TaxComp register</h3>
+        <p class="ch-muted">Decisions entered by our reviewers, with links to the full text on ULII. Summaries are labelled until reviewed; appeal status is shown only once checked.</p>
+        <div id="kb-case-register" aria-live="polite"><p class="ch-muted">Sign in to see the register.</p></div>
       </section>
 
       <section class="law-updates" id="law-updates" data-view="knowledge" data-kb="updates" aria-labelledby="law-updates-title">
@@ -1967,6 +1976,9 @@
           <li><a href="https://www.eac.int/documents/category/eac-common-external-tariff" target="_blank" rel="noopener noreferrer">EAC Common External Tariff <span aria-hidden="true">↗</span></a><span>Customs tariff resources for imports and exports.</span></li>
           <li><a href="tax-law-notes.md">TaxComp calculation assumptions and source notes</a><span>How each calculator applies the FY 2026/27 rules.</span></li>
         </ul>
+        <h3 class="kb-register-title">TaxComp law register</h3>
+        <p class="ch-muted">The Acts used by Challenge an Assessment, with their 2026 amendments. Section wording is entered only from the official text.</p>
+        <div id="kb-law-register" aria-live="polite"><p class="ch-muted">Sign in to see the register.</p></div>
       </section>
 
       <section class="other-heads" id="other-heads" data-view="knowledge" data-kb="laws" aria-labelledby="other-heads-title">
@@ -2047,6 +2059,7 @@
             <a href="#ws-assets" data-pane-link="assets">Business assets</a>
             <a href="#ws-reports" data-pane-link="reports">Reports</a>
             <a href="#ws-records" data-pane-link="records">Financial records</a>
+            <a href="#ws-assessments" data-pane-link="assessments">My assessments</a>
             <a href="#ws-settings" data-pane-link="settings">Settings</a>
           </nav>
         </aside>
@@ -2088,6 +2101,10 @@
               <a class="btn btn-secondary" href="#audit-health">Records checklist</a>
             </div>
           </section>
+          <section class="ws-pane" data-pane="assessments" aria-labelledby="ws-assessments-title" hidden>
+            <div class="block-head"><h2 id="ws-assessments-title">My assessments</h2></div>
+            <div id="ws-assessments-root" aria-live="polite"><p class="ws-empty">Your URA assessment cases appear here after you sign in.</p></div>
+          </section>
           <div class="ws-pane" data-pane="settings" hidden>
             <section class="phase6-section account-section" id="account" aria-labelledby="account-title">
         <div class="phase6-heading">
@@ -2102,6 +2119,16 @@
       </section>
           </div>
         </div>
+      </section>
+
+      <section class="page-block challenge-view" id="challenge" data-view="challenge" aria-labelledby="challenge-title">
+        <div class="block-head">
+          <p class="kicker">URA assessment</p>
+          <h1 id="challenge-title">Challenge an assessment</h1>
+          <p>Received a URA income tax or VAT assessment? See what URA is claiming, how long you have to object, and where you stand, then get a draft response pack.</p>
+        </div>
+        <div id="challenge-root" aria-live="polite"><p class="ch-muted">Loading your cases…</p></div>
+        <div id="challenge-print" aria-hidden="true"></div>
       </section>
 
       <section class="page-block about-intro" id="about" data-view="about" aria-labelledby="about-title">
@@ -2180,6 +2207,7 @@
           <li>AI questions are sent through Cloudflare to Anthropic Claude (Google Gemini as backup). Live web research runs only when you opt in. Chat history is not saved.</li>
           <li>If you agree, a question TaxComp could not answer is saved for research, visible only to administrators, and deleted after 90 days.</li>
           <li>Firm workspace records are stored in the firm's private workspace and are visible only to that firm's members.</li>
+          <li>Challenge an Assessment: you agree before your first upload. Notices, records and your answers are kept in TaxComp's private Supabase database and private file storage (EU, Ireland) until you delete the case; one button deletes the case and all its files. Only you and, if your case is assigned to one, an Opitekene reviewer can see them, and every reviewer view, change and download is logged. When you ask us to read a notice, it is sent to Anthropic's Claude (and to Google Gemini's paid service only if Opitekene has turned it on), neither of which uses it to train its models. Uploaded documents and case data are never stored in the app's offline cache.</li>
         </ul>
         <p>Questions or deletion requests: <a href="#contact">contact us</a>.</p>
       </section>

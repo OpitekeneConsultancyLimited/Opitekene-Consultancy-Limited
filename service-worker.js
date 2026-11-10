@@ -1,6 +1,6 @@
 // Bump on every release that changes styles.css: CSS is served cache-first and
 // the cache match ignores ?v= query strings.
-const CACHE_NAME = "taxcomp-app-v30";
+const CACHE_NAME = "taxcomp-app-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -12,6 +12,8 @@ const APP_SHELL = [
   "./app-install.js",
   "./phase6-app.js",
   "./account.js",
+  "./challenge-docx.js",
+  "./challenge-app.js",
   "./web-search.js",
   "./tax-advisory.js",
   "./tax-rules.js",
@@ -58,7 +60,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const requestUrl = new URL(request.url);
+  // Never cache case data or documents: API calls go to the Worker (another
+  // origin) and are left to the network; anything under /api/ is too.
   if (requestUrl.origin !== self.location.origin) return;
+  if (requestUrl.pathname.includes("/api/")) { event.respondWith(fetch(request)); return; }
   if (requestUrl.pathname.startsWith("/api/phase6") || request.credentials === "include") {
     event.respondWith(fetch(request));
     return;

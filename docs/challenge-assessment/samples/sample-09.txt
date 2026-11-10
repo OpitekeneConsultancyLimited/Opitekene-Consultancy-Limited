@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - INCOME TAX
+Taxpayer: Sample Trading 9 Ltd
+TIN: 1000063352
+Tax Period: 01/05/2026 to 31/05/2026
+Date of assessment: 13/08/2026
+
+Principal tax: UGX 27,786,000
+Penal Tax at 30%: UGX 8,335,800
+Interest at 2% per month for 2 months: UGX 1,111,440
+Total amount due: UGX 37,233,240
+
+Reasons: Expenses claimed were not supported by documents.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

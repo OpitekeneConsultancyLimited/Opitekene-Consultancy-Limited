@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 2 Ltd
+TIN: 1000007919
+Period assessed: 1 June 2025 - 30 June 2025
+Date of assessment: 6 September 2025
+
+Tax assessed: Shs. 4,567,000
+Penalty at 20%: Shs. 913,400
+Interest at 2% per month for 2 months: Shs. 182,680
+Total amount due: Shs. 5,663,080
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

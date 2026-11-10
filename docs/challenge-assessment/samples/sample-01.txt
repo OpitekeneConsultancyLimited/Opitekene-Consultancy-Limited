@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ORIGINAL ASSESSMENT - INCOME TAX
+Taxpayer: Sample Trading 1 Ltd
+TIN: 1000000000
+Tax period: January 2024
+Date of assessment: 05/04/2024
+
+Principal tax: UGX 1,250,000
+Penal tax at 10%: UGX 125,000
+Interest at 2% per month for 1 months: UGX 25,000
+Total amount due: UGX 1,400,000
+
+Reasons: Expenses claimed were not supported by documents.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

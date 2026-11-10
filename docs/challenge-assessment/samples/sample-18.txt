@@ -1,0 +1,16 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ADDITIONAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 18 Ltd
+TIN: 1000134623
+Period assessed: 1 February 2026 - 28 February 2026
+Date of assessment: 22 May 2026
+
+Tax assessed: Shs. 57,639,000
+Penal Tax at 30%: Shs. 17,291,700
+Interest at 2% per month for 4 months: Shs. 4,611,120
+Total amount due: Shs. 79,541,820
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

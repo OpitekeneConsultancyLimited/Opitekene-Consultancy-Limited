@@ -1,0 +1,17 @@
+SYNTHETIC TEST DOCUMENT - NOT A REAL URA NOTICE
+UGANDA REVENUE AUTHORITY (sample layout)
+NOTICE OF ORIGINAL ASSESSMENT - VALUE ADDED TAX
+Taxpayer: Sample Trading 10 Ltd
+TIN: 1000071271
+Tax period: October 2024
+Date of assessment: 14 January 2024
+
+| Item | Amount |
+| Tax assessed | Shs. 31,103,000 |
+| Penal tax at 10% | Shs. 3,110,300 |
+| Interest at 2% per month for 3 months | Shs. 1,866,180 |
+| Total amount due | Shs. 36,079,480 |
+
+Reasons: Input tax claimed was not supported by valid tax invoices.
+
+Issued under the Tax Procedures Code Act (section not shown in this synthetic sample).

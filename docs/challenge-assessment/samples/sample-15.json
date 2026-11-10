@@ -1,0 +1,8 @@
+{
+  "taxHead": "income_tax",
+  "principal": 47688000,
+  "penalTax": 14306400,
+  "interest": 953760,
+  "periodStart": "2025-07-01",
+  "periodEnd": "2026-06-30"
+}
