@@ -1,0 +1,66 @@
+# TODO_VERIFY: items for the legal reviewer (Checkpoint C)
+
+Nothing below has been approved. While it is unapproved:
+- every deadline shows **"Provisional: rules pending legal review"**;
+- penal tax and interest are checked only against the rate printed on URA's own notice;
+- statute sections show as "section to be confirmed".
+
+Code and seed data never set `approved_for_computation = true`. A reviewer with the `can_approve_law` flag does that in the app (Challenge an Assessment → Law and cases admin), and every approval is written to the audit log.
+
+## A. Deadline and procedure rules (rule set `objections-2026.v1`)
+
+| # | Item | Seeded value | Source given in the brief | To confirm |
+|---|---|---|---|---|
+| A1 | Objection period | 45 days from receipt of the assessment | URA Objections and Appeals page | The period and the provision, as amended by the TPC (Amendment) Act 2026 |
+| A2 | Day of receipt counted? | Not counted (`exclude_trigger_day = 1`) | Not stated | Counting convention |
+| A3 | Weekends and public holidays | Calendar days; a deadline on a weekend is not moved | Not stated | Whether a deadline that falls on a weekend or holiday moves to the next working day. If so, a public-holiday list is also needed. |
+| A4 | "Urgent" threshold | 10 days or fewer | Brief (product choice) | None; this is a product choice |
+| A5 | Late objection grounds | Absence from Uganda, sickness or another reasonable cause, without unreasonable delay | URA page | Wording, the provision, and the form of the application |
+| A6 | URA's time to decide | 90 days after the objection is lodged | Daily Monitor article | The period, the provision, and **what happens if URA does not decide in time** (the app only alerts) |
+| A7 | Tribunal application | 30 days after service of the objection decision | URA page | The period and the provision |
+| A8 | Payment before the Tribunal | 30% of the tax assessed or the tax not in dispute, whichever is higher | URA page | The rule, the provision, and whether "tax assessed" includes penal tax and interest (the app uses principal only) |
+| A9 | Grounds limited to those raised at objection | Pack lists every arguable ground | Daily Monitor article | The provision, or the case law behind it |
+| A10 | ADR | Optional; never replaces filing on time | URA page | Current URA ADR procedure |
+
+## B. Statutes (`law_statutes`)
+
+| # | Item | Seeded | To confirm |
+|---|---|---|---|
+| B1 | Income Tax Act | Cap. 338 | Chapter in the Laws of Uganda 2024 Revised Edition; exact ULII link (ULII's sitemap lists `/en/akn/ug/act/1997/11/…`, but its pages could not be opened automatically) |
+| B2 | Value Added Tax Act | Cap. 344 | The same |
+| B3 | Tax Procedures Code Act | Cap. 343 | The same (sitemap lists `/en/akn/ug/act/2014/14/…`) |
+| B4 | Tax Appeals Tribunal Act | Cap. 345 | The same |
+| B5 | VAT (Amendment) Act 2026 | Assented 18 May 2026; commenced 1 July 2026 (from the owner's brief) | Act number, Gazette reference and ULII link |
+| B6 | Tax Procedures Code (Amendment) Act 2026 | Same dates as B5 | The same |
+| B7 | Income Tax (Amendment) Act 2026 | Bill returned 14 July 2026; assented 20 August 2026; applied by URA from 1 July 2026 | The same, plus the retrospective application. The app tells the user a professional should consider whether applying it before assent can be questioned. |
+
+## C. Provision versions (`law_provision_versions`)
+
+Each row needs: the official text pasted from ULII, the section number, and confirmation of whether the 2026 amendment changed it. Two rows also need a formula.
+
+| Topic | Rows | Extra |
+|---|---|---|
+| Expense deductibility (ITA) | `ita.deductions.pre-2026`, `ita.deductions.2026` | |
+| Penal tax (ITA) | `ita.penal-tax.pre-2026`, `ita.penal-tax.2026` | **Rate and base**: formula `{"kind":"percent-of-principal","percent":?}` |
+| Input VAT credit (VAT Act) | `vata.input-credit.pre-2026`, `vata.input-credit.2026` | |
+| Objection procedure (TPCA) | `tpca.objection.pre-2026`, `tpca.objection.2026` | |
+| Interest on unpaid tax (TPCA) | `tpca.interest.pre-2026`, `tpca.interest.2026` | **Rate, and whether it compounds**: formula `{"kind":"simple-monthly","ratePercentPerMonth":?}` (only simple monthly interest is coded) |
+| Burden of proof (TPCA) | `tpca.burden-of-proof` | Whether it sits in the TPCA or the TAT Act |
+| Tribunal application (TAT Act) | `tata.review-application` | |
+
+## D. Case repository
+
+| # | Item |
+|---|---|
+| D1 | Enter TAT decisions, aiming for 50, tagged by issue. ULII does not allow automated collection (decision D-21): use the reviewer form, or the CSV import (`scripts/ulii-ingest.mjs import`). Alternatively, ask ULII for permission or a data feed. |
+| D2 | `[2023] UGTAT 2` (Quickway Property Services v URA): its summary is marked "Staff summary, unreviewed"; approve it or correct it. Its appeal status is **unverified**. |
+| D3 | For each decision: appeal status (never inferred by code) and summary approval. |
+
+## E. Product and policy (owner)
+
+| # | Item |
+|---|---|
+| E1 | Review threshold: UGX 50,000,000 of disputed principal (`CHALLENGE_REVIEW_THRESHOLD_UGX`) |
+| E2 | Prices for the "reviewed pack" and "managed dispute" tiers; existing plans give only the self-service pack (D-08) |
+| E3 | Retention period for cases (privacy notes) |
+| E4 | Whether the Gemini key is a paid tier (privacy notes) |

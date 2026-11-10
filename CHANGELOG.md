@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-10 - Challenge an Assessment (v1)
+
+- New `#challenge` feature for URA income tax and VAT assessments:
+  - read the notice (PDF, photo, Word or pasted text) and confirm every figure;
+  - deadline banners counted from the date of service;
+  - reconcile URA's figures with the taxpayer's records;
+  - one outcome per disputed item;
+  - law for the tax period and Tax Appeals Tribunal decisions;
+  - a draft response pack (Word, or PDF through print).
+- Plain English and Professional views of the same case record. Reviewer queue and sign-off for high-risk cases.
+- Server: a strict-TypeScript Worker API (`/api/challenge/*`) and migration `20261110000000` (13 tables, RLS, a private bucket, an append-only audit log). Production RLS audit in `docs/challenge-assessment/rls-audit.md`.
+- Every legal rule and statute is seeded `TODO_VERIFY` and unapproved. Deadlines show "Provisional: rules pending legal review".
+- Tests: 388 Node tests, 44 Edge end-to-end checks, EXT-1 text harness 20/20.
+- Full report: `docs/challenge-assessment/REPORT.md`.
+
 ## 2026-11-10 - Public front page in the owner's design
 
 - The signed-out front page now follows the owner's sample (`opitekene_tax_calculator_services_portal.html`):

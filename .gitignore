@@ -7,3 +7,4 @@ __pycache__/
 .env.*
 supabase/d1-data-import.sql
 supabase/.temp/
+.e2e-screens/
