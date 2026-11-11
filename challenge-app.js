@@ -25,6 +25,20 @@
     input_vat: ["VAT you paid on business purchases", "Input VAT"], output_vat: ["VAT on your sales", "Output VAT"], credit: ["Tax already taken off or already paid", "Credit (WHT / payments)"],
     interest: ["Interest on the notice", "Interest"], penal_tax: ["Penalty on the notice", "Penal tax"], procedural: ["How or when you received the notice", "Procedural"],
     other: ["Something else", "Other"],
+    employment_income: ["A payment to staff URA says was taxable pay", "Employment income (PAYE)"],
+    withholding: ["A payment you made that URA says needed tax taken off", "Withholding tax not withheld or not paid"],
+  };
+  const TAX_HEAD_LABELS = { income_tax: "Income tax", vat: "VAT", paye: "PAYE", wht: "Withholding tax" };
+  const headLabel = (head, fallback = "New case") => TAX_HEAD_LABELS[head] || fallback;
+  // Which kinds of item each tax offers (income tax and VAT keep the original list).
+  const ORIGINAL_CATEGORIES = ["expense", "income", "input_vat", "output_vat", "credit", "interest", "penal_tax", "procedural", "other"];
+  const CATEGORIES_FOR_HEAD = {
+    paye: ["employment_income", "credit", "interest", "penal_tax", "procedural", "other"],
+    wht: ["withholding", "interest", "penal_tax", "procedural", "other"],
+  };
+  const categoriesFor = (head, current) => {
+    const list = CATEGORIES_FOR_HEAD[head] || ORIGINAL_CATEGORIES;
+    return current && !list.includes(current) ? [...list, current] : list;
   };
   const DOC_TYPES = [["assessment", "The assessment notice"], ["return", "A tax return"], ["ledger", "Accounts or ledger"], ["invoice", "Invoices or receipts"], ["bank_statement", "Bank statement"], ["correspondence", "Letters or emails with URA"], ["objection_decision", "URA's decision on an objection"], ["other", "Something else"]];
   const STEPS = [["notice", "1. Your notice"], ["figures", "2. Check the figures"], ["dates", "3. Dates"], ["records", "4. Your records"], ["results", "5. Where you stand"], ["pack", "6. Your pack"]];
@@ -130,7 +144,7 @@
     const me = state.me;
     const parts = [
       h("div", { className: "ch-intro" }, [
-        h("p", { text: "Upload or type in your URA income tax or VAT assessment. We explain what URA is asking for, show how many days you have to object, compare URA's figures with your records and prepare a draft response pack." }),
+        h("p", { text: "Upload or type in your URA income tax, VAT, PAYE or withholding tax assessment. We explain what URA is asking for, show how many days you have to object, compare URA's figures with your records and prepare a draft response pack." }),
         h("p", { className: "ch-muted", text: "This is a preliminary position to help you prepare, not a decision on your case." }),
       ]),
     ];
@@ -144,7 +158,7 @@
     parts.push(h("button", { className: "btn btn-primary", type: "button", disabled: state.busy, onclick: () => act(async () => { const created = await call("/api/challenge/cases", { method: "POST" }); state.view = created.view; state.role = "owner"; state.step = "notice"; await loadMe(); }), text: "Start a new case" }));
     parts.push(h("h3", { text: "Your cases" }));
     parts.push(me.cases.length ? h("ul", { className: "ch-case-list" }, me.cases.map((c) => h("li", {}, [
-      h("button", { type: "button", className: "ch-link", onclick: () => act(() => openCase(c.id)), text: `${c.taxHead === "vat" ? "VAT" : c.taxHead === "income_tax" ? "Income tax" : "New case"}${c.periodStart ? ` · ${date(c.periodStart)} to ${date(c.periodEnd)}` : ""}${c.principal !== null ? ` · ${ugx(c.principal)}` : ""}` }),
+      h("button", { type: "button", className: "ch-link", onclick: () => act(() => openCase(c.id)), text: `${headLabel(c.taxHead)}${c.periodStart ? ` · ${date(c.periodStart)} to ${date(c.periodEnd)}` : ""}${c.principal !== null ? ` · ${ugx(c.principal)}` : ""}` }),
       h("span", { className: "ch-muted", text: ` Updated ${date(c.updatedAt.slice(0, 10))}${c.reviewStatus === "pending" ? " · waiting for review" : c.reviewStatus === "approved" ? " · reviewed" : ""}` }),
     ]))) : h("p", { className: "ch-muted", text: "No cases yet." }));
     return parts;
@@ -198,7 +212,7 @@
       const shown = name === "provisions_cited" && current ? JSON.parse(current).join("; ") : current ?? "";
       const id = `ch-f-${name}`;
       let input;
-      if (name === "tax_head") input = h("select", { id }, [h("option", { value: "", text: "Not shown" }), h("option", { value: "income_tax", text: "Income tax", selected: shown === "income_tax" }), h("option", { value: "vat", text: "VAT", selected: shown === "vat" })]);
+      if (name === "tax_head") input = h("select", { id }, [h("option", { value: "", text: "Not shown" }), ...Object.entries(TAX_HEAD_LABELS).map(([value, text]) => h("option", { value, text, selected: shown === value }))]);
       else if (name === "assessment_type") input = h("select", { id }, [h("option", { value: "", text: "Not shown" }), ...["original", "additional", "other"].map((v) => h("option", { value: v, text: v[0].toUpperCase() + v.slice(1), selected: shown === v }))]);
       else if (name === "ura_reasons") input = h("textarea", { id, rows: "3", maxlength: "4000" });
       else input = h("input", { id, type: /period|date/.test(name) ? "date" : "text", inputmode: /principal|penal|interest/.test(name) ? "decimal" : null, autocomplete: "off" });
@@ -274,7 +288,7 @@
     const editors = [];
     function editor(item, index) {
       const id = `ch-i${index}`;
-      const category = h("select", { id: `${id}-cat` }, Object.entries(CATEGORY_LABELS).map(([v, pair]) => h("option", { value: v, text: lbl(pair), selected: item.category === v })));
+      const category = h("select", { id: `${id}-cat` }, categoriesFor(view.case.taxHead, item.category).map((key) => h("option", { value: key, text: lbl(CATEGORY_LABELS[key]), selected: item.category === key })));
       const description = h("input", { id: `${id}-desc`, type: "text", maxlength: "500", value: item.description || "" });
       const ura = h("input", { id: `${id}-ura`, type: "text", inputmode: "numeric", value: item.uraAmount ?? "" });
       const mine = h("input", { id: `${id}-mine`, type: "text", inputmode: "numeric", value: item.taxpayerAmount ?? "" });
@@ -333,7 +347,7 @@
       h("h3", { id: "ch-rec-title", text: "Compare URA's figures with your records" }),
       h("p", { text: "Add one item for each figure you think is wrong, including the interest and penalty if they look wrong. Upload supporting papers below." }),
       list,
-      h("button", { type: "button", className: "btn btn-secondary", onclick: () => list.append(editor({ category: "expense", description: "", uraAmount: null, taxpayerAmount: null, facts: {}, keepInObjection: true }, editors.length)), text: "Add an item" }),
+      h("button", { type: "button", className: "btn btn-secondary", onclick: () => list.append(editor({ category: categoriesFor(view.case.taxHead)[0], description: "", uraAmount: null, taxpayerAmount: null, facts: {}, keepInObjection: true }, editors.length)), text: "Add an item" }),
       h("button", { type: "button", className: "btn btn-primary", disabled: state.busy, onclick: () => act(async () => {
         const body = { items: editors.map((e) => e.read()).filter((i) => i.description) };
         setView((await call(`/api/challenge/cases/${view.case.id}/items`, { method: "PUT", body })).view);
@@ -542,7 +556,7 @@
     return h("section", { className: "ch-card" }, [
       h("h3", { text: "Cases assigned to you" }),
       list.length ? h("ul", { className: "ch-case-list" }, list.map((c) => h("li", {}, [
-        h("button", { type: "button", className: "ch-link", onclick: () => act(() => openCase(c.id, "results")), text: `${c.taxHead === "vat" ? "VAT" : "Income tax"} · ${ugx(c.principal)} · ${c.reviewStatus}` }),
+        h("button", { type: "button", className: "ch-link", onclick: () => act(() => openCase(c.id, "results")), text: `${headLabel(c.taxHead, "Case")} · ${ugx(c.principal)} · ${c.reviewStatus}` }),
         h("ul", { className: "ch-muted" }, (c.reasons || []).map((r) => h("li", { text: r }))),
       ]))) : h("p", { className: "ch-muted", text: "Nothing waiting for you." }),
     ]);
@@ -619,7 +633,7 @@
   function renderWorkspaceList(pane) {
     const cases = state.me?.cases || [];
     pane.replaceChildren(
-      cases.length ? h("ul", { className: "ch-case-list" }, cases.map((c) => h("li", {}, [h("a", { href: "#challenge", "data-case": c.id, text: `${c.taxHead === "vat" ? "VAT" : c.taxHead === "income_tax" ? "Income tax" : "New case"}${c.principal !== null ? ` · ${ugx(c.principal)}` : ""}` }), h("span", { className: "ch-muted", text: ` · ${c.status.replace(/_/g, " ")}` })]))) : h("p", { className: "ws-empty", text: "No assessments yet." }),
+      cases.length ? h("ul", { className: "ch-case-list" }, cases.map((c) => h("li", {}, [h("a", { href: "#challenge", "data-case": c.id, text: `${headLabel(c.taxHead)}${c.principal !== null ? ` · ${ugx(c.principal)}` : ""}` }), h("span", { className: "ch-muted", text: ` · ${c.status.replace(/_/g, " ")}` })]))) : h("p", { className: "ws-empty", text: "No assessments yet." }),
       h("a", { className: "btn btn-primary", href: "#challenge", text: "Challenge an assessment" }),
     );
   }

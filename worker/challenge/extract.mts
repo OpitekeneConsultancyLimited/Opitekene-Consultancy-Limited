@@ -1,7 +1,7 @@
 // F1 Assessment reader: output validation (for every provider) and a
 // deterministic text reader used when no AI provider is available. Pure.
 import { isIsoDate } from "./dates.mts";
-import type { ConfirmableField } from "./types.mts";
+import { TAX_HEADS, type ConfirmableField } from "./types.mts";
 
 export interface ExtractedField {
   fieldName: ConfirmableField;
@@ -45,7 +45,7 @@ function slot(raw: Record<string, unknown>, key: string): { value: unknown; conf
 }
 
 /**
- * Validates provider output against the schema in prompts/assessment-extraction.v1.json.
+ * Validates provider output against the schema in prompts/assessment-extraction.v2.json.
  * Structural problems throw (the whole result is discarded). A single value
  * that is present but implausible is dropped to null with confidence 0.
  */
@@ -78,7 +78,7 @@ export function validateExtraction(raw: unknown, source: ExtractionSource): Extr
   }
   {
     const { value, confidence } = slot(raw, "tax_head");
-    if (value !== null && value !== "income_tax" && value !== "vat") throw new MalformedExtractionError('Field "tax_head" has an unknown value.');
+    if (value !== null && !(TAX_HEADS as readonly unknown[]).includes(value)) throw new MalformedExtractionError('Field "tax_head" has an unknown value.');
     fields.push({ fieldName: "tax_head", value: value as string | null, confidence: value === null ? 0 : confidence });
   }
   {
@@ -158,9 +158,16 @@ export function readNoticeText(input: string): Extraction {
   const tin = text.match(/\bTIN\s*(?:No\.?|Number)?\s*[:\-]?\s*(\d{10})\b/i);
   put("tin", tin?.[1] ?? null, 0.8);
 
+  // PAYE and WHT notices also say "income tax", so they are checked first. An
+  // income tax notice often mentions withholding tax only as a credit, so WHT
+  // needs a stronger signal than the words "withholding tax".
+  const paye = /\bPAYE\b|\bpay\s+as\s+you\s+earn\b/i.test(text);
+  const wht = /\bwithholding\s+tax\s+assessment\b|\bassessment\s*[-–:]\s*withholding\s+tax\b|\bfailure\s+to\s+withhold\b|\bwithholding\s+agent\b/i.test(text);
   const vat = /\b(?:value\s+added\s+tax|VAT)\b/i.test(text);
   const income = /\bincome\s+tax\b|\bcorporation\s+tax\b/i.test(text);
-  put("tax_head", vat && !income ? "vat" : income && !vat ? "income_tax" : null, 0.75);
+  if (paye !== wht) put("tax_head", paye ? "paye" : "wht", 0.7);
+  else if (paye && wht) put("tax_head", null, 0);
+  else put("tax_head", vat && !income ? "vat" : income && !vat ? "income_tax" : null, 0.75);
 
   const type = /\badditional\s+assessment\b/i.test(text) ? "additional"
     : /\boriginal\s+assessment\b/i.test(text) ? "original"

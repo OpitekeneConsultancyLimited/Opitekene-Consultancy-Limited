@@ -1,0 +1,47 @@
+{
+  "id": "assessment-extraction",
+  "version": "2",
+  "purpose": "Read a URA income tax, VAT, PAYE or withholding tax assessment notice (PDF, photo or text) and return the figures as JSON. v2 adds the paye and wht tax heads. Output is validated by worker/challenge/extract.mts; anything invalid is discarded, never shown raw.",
+  "system": "You read Uganda Revenue Authority (URA) tax assessment notices for a taxpayer who will check every value you return. Copy values exactly as printed; do not calculate, infer or correct anything. If a value is not printed on the notice, return null for it with confidence 0. Never use the date the notice was issued as the date it was received. Dates must be YYYY-MM-DD; Ugandan notices write dates day first (15/09/2026 is 2026-09-15). Amounts are whole Uganda shillings as plain numbers, without commas or currency. confidence is your probability (0 to 1) that the value is exactly what the notice prints. tax_head is paye for a Pay As You Earn assessment (tax an employer should have deducted from employees' pay); wht for a withholding tax assessment on a person as withholding agent (tax that should have been withheld from payments the person made, or was withheld but not paid to URA); vat for value added tax; and income_tax for any other income tax (including corporation or individual income tax). An income tax assessment that only lists withholding tax credits is income_tax, not wht. Return null for any other tax. assessment_type is original, additional or other. period_start and period_end are the first and last day of the tax period assessed. ura_reasons is URA's stated reason or basis for the assessment, copied briefly. provisions_cited lists each provision the notice cites, as printed (for example 'section 22 of the Income Tax Act'). interest_rate_percent_per_month, interest_months and penal_tax_percent are only the rates and periods printed on the notice for URA's own interest and penal tax figures.",
+  "user": "Extract the assessment details from the attached notice.",
+  "output_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["tin", "tax_head", "assessment_type", "period_start", "period_end", "date_issued", "principal", "penal_tax", "interest", "interest_rate_percent_per_month", "interest_months", "penal_tax_percent", "ura_reasons", "provisions_cited"],
+    "properties": {
+      "tin": { "$ref": "#/$defs/text" },
+      "tax_head": {
+        "type": "object", "additionalProperties": false, "required": ["value", "confidence"],
+        "properties": { "value": { "anyOf": [{ "type": "string", "enum": ["income_tax", "vat", "paye", "wht"] }, { "type": "null" }] }, "confidence": { "type": "number" } }
+      },
+      "assessment_type": {
+        "type": "object", "additionalProperties": false, "required": ["value", "confidence"],
+        "properties": { "value": { "anyOf": [{ "type": "string", "enum": ["original", "additional", "other"] }, { "type": "null" }] }, "confidence": { "type": "number" } }
+      },
+      "period_start": { "$ref": "#/$defs/text" },
+      "period_end": { "$ref": "#/$defs/text" },
+      "date_issued": { "$ref": "#/$defs/text" },
+      "principal": { "$ref": "#/$defs/number" },
+      "penal_tax": { "$ref": "#/$defs/number" },
+      "interest": { "$ref": "#/$defs/number" },
+      "interest_rate_percent_per_month": { "$ref": "#/$defs/number" },
+      "interest_months": { "$ref": "#/$defs/number" },
+      "penal_tax_percent": { "$ref": "#/$defs/number" },
+      "ura_reasons": { "$ref": "#/$defs/text" },
+      "provisions_cited": {
+        "type": "object", "additionalProperties": false, "required": ["value", "confidence"],
+        "properties": { "value": { "type": "array", "items": { "type": "string" } }, "confidence": { "type": "number" } }
+      }
+    },
+    "$defs": {
+      "text": {
+        "type": "object", "additionalProperties": false, "required": ["value", "confidence"],
+        "properties": { "value": { "anyOf": [{ "type": "string" }, { "type": "null" }] }, "confidence": { "type": "number" } }
+      },
+      "number": {
+        "type": "object", "additionalProperties": false, "required": ["value", "confidence"],
+        "properties": { "value": { "anyOf": [{ "type": "number" }, { "type": "null" }] }, "confidence": { "type": "number" } }
+      }
+    }
+  }
+}

@@ -46,6 +46,8 @@ export const DEFAULT_DOCUMENTS: Readonly<Record<ItemCategory, string[]>> = Objec
   penal_tax: ["URA's penalty working"],
   procedural: ["proof of how and when you received the notice"],
   other: ["the records that support your figure"],
+  employment_income: ["payslips and payroll records for the period", "employment contracts or letters showing what each payment was for", "receipts for any costs you paid staff back for"],
+  withholding: ["the invoices and payment records for the payments URA lists", "your withholding tax returns and payment slips", "any exemption certificates your suppliers held"],
 });
 
 /**

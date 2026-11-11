@@ -3,7 +3,7 @@
 import { formatDate, formatUgx } from "./dates.mts";
 import type { CaseView } from "./record.mts";
 import { assertSafe } from "./safety.mts";
-import { OUTCOME_PROFESSIONAL_LABELS } from "./wording.mts";
+import { OUTCOME_PROFESSIONAL_LABELS, TAX_HEAD_LABEL, TAX_HEAD_PACK_TITLE } from "./wording.mts";
 
 export interface PackParagraph { text: string; citations?: Array<{ label: string; sourceUrl: string | null }> }
 export interface PackTable { headers: string[]; rows: string[][] }
@@ -47,14 +47,14 @@ function groundsBlocks(view: CaseView): PackDocument["blocks"] {
 export function buildPack(view: CaseView, generatedOn: string): Pack {
   const row = view.case;
   const deadlines = view.deadlines;
-  const head = row.taxHead === "vat" ? "VALUE ADDED TAX" : "INCOME TAX";
+  const head = row.taxHead ? TAX_HEAD_PACK_TITLE[row.taxHead] : "[CONFIRM TAX]";
   const period = row.periodStart && row.periodEnd ? `${formatDate(row.periodStart)} to ${formatDate(row.periodEnd)}` : "[CONFIRM PERIOD]";
   const total = (row.principal ?? 0) + (row.penalTax ?? 0) + (row.interest ?? 0);
   const objectionCitation = (view.law?.byTopic["objection-procedure"] ?? []).map((p) => ({ label: p.label, sourceUrl: p.sourceUrl }));
   const ruleCitation = [{ label: `${deadlines.objection.ruleLabel} (rule set ${deadlines.ruleSetVersion})`, sourceUrl: deadlines.objection.sourceUrl }];
 
   const objectionLetter: PackDocument = {
-    id: "objection-letter", title: `Notice of objection: ${head.toLowerCase()} assessment`, draft: true,
+    id: "objection-letter", title: `Notice of objection: ${row.taxHead ? TAX_HEAD_LABEL[row.taxHead].replace(/^(?!VAT|PAYE)\w/, (c) => c.toLowerCase()) : "tax"} assessment`, draft: true,
     blocks: [
       { paragraphs: [{ text: "DRAFT: check every detail, and have it reviewed, before you lodge it with URA." }] },
       { paragraphs: [{ text: "The Commissioner General, Uganda Revenue Authority" }, { text: "[CONFIRM the URA office or the URA portal objection channel]" }, { text: `Date: [DATE OF LODGEMENT]` }] },

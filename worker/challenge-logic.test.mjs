@@ -78,6 +78,40 @@ test("A3: holidays warn earlier always, extend later only when verified and the 
   assert.equal(computeDeadlines(input({ dateServed: "2026-11-10" }), SEED_RULE_SET).objection.closedDay, null, "without a holiday list a Friday is a working day");
 });
 
+test("text reader: PAYE and WHT notices are recognised; WHT credits on an income tax notice are not", () => {
+  const base = "UGANDA REVENUE AUTHORITY\nTIN: 1000123456\nTax period: 01/07/2026 to 31/07/2026\nPrincipal tax: UGX 1,000,000\n";
+  const head = (title) => readNoticeText(`${title}\n${base}`).fields.find((f) => f.fieldName === "tax_head").value;
+  assert.equal(head("NOTICE OF ASSESSMENT - PAY AS YOU EARN"), "paye");
+  assert.equal(head("INCOME TAX (PAYE) ASSESSMENT"), "paye");
+  assert.equal(head("WITHHOLDING TAX ASSESSMENT"), "wht");
+  assert.equal(head("ASSESSMENT: failure to withhold tax"), "wht");
+  assert.equal(head("INCOME TAX ASSESSMENT\nLess withholding tax credits: UGX 200,000"), "income_tax");
+  assert.equal(head("PAYE and failure to withhold"), null, "both signals: let the user choose");
+  assert.equal(validateExtraction({ ...good(), tax_head: { value: "wht", confidence: 0.9 } }, "ai-claude").fields.find((f) => f.fieldName === "tax_head").value, "wht");
+  assert.throws(() => validateExtraction({ ...good(), tax_head: { value: "stamp_duty", confidence: 0.9 } }, "ai-claude"), MalformedExtractionError);
+});
+
+test("PAYE and WHT law: ITA topics resolve by period; new categories get their own questions and evidence", () => {
+  const statutes = [
+    { id: "ita", title: "Income Tax Act", chapter: "Cap. 338", kind: "principal", parentId: null, billStatus: "in_force", returnedDate: null, assentDate: null, commencementDate: null, appliesFromPeriod: null, sourceUrl: null, note: "" },
+    { id: "tpca", title: "Tax Procedures Code Act", chapter: "Cap. 343", kind: "principal", parentId: null, billStatus: "in_force", returnedDate: null, assentDate: null, commencementDate: null, appliesFromPeriod: null, sourceUrl: null, note: "" },
+  ];
+  const version = (id, topic, from, to) => ({ id, statuteId: "ita", topic, section: "TODO_VERIFY", heading: id, textOrSummary: "", textVerified: false, billStatus: "in_force", assentDate: null, commencementDate: null, appliesFromPeriod: from, appliesToPeriod: to, amendedByStatuteId: null, computation: {}, approvedForComputation: false, sourceUrl: null, note: "" });
+  const versions = [version("ita.wht-payments.pre-2026", "wht-payments", null, "2026-06-30"), version("ita.wht-payments.2026", "wht-payments", "2026-07-01", null)];
+  const june = resolveLaw({ taxHead: "wht", periodStart: "2026-06-01", periodEnd: "2026-06-30" }, statutes, versions);
+  assert.deepEqual(june.byTopic["wht-payments"].map((c) => c.provisionId), ["ita.wht-payments.pre-2026"]);
+  assert.deepEqual(june.statutes.map((s) => s.id), ["ita", "tpca"]);
+  const item = (category) => ({ id: "x", position: 0, category, description: "d", uraAmount: 100, taxpayerAmount: 0, facts: { hasRecords: false }, documentIds: [], reviewerOutcome: null, keepInObjection: true });
+  const ctx = { principal: 100, noticeTerms: {}, interestFormula: null, penalFormula: null };
+  assert.ok(classifyItem(item("withholding"), ctx).evidenceGap.includes("any exemption certificates your suppliers held"));
+  assert.equal(classifyItem(item("employment_income"), ctx).outcome, "insufficient_evidence");
+  for (const category of ["employment_income", "withholding"]) {
+    assert.ok(OWNER_QUESTIONS[category].length >= 2, category);
+    for (const question of OWNER_QUESTIONS[category]) assert.doesNotThrow(() => assertSafe(question, "question"));
+  }
+  assert.ok(searchCases([{ id: "c", citation: "[2020] UGTAT 9", parties: "A v URA", decisionDate: null, forum: "TAT", background: null, legalQuestion: null, decision: null, principle: null, summaryStatus: "none", summarySource: null, issueTags: ["withholding"], searchTerms: "", sourceUrl: "https://ulii.org/x", appealStatus: "unverified" }], "contractor payments", { tags: ["withholding"] }).length === 1);
+});
+
 test("decision day 90, Tribunal countdown, 30% payment and ADR", () => {
   const filed = computeDeadlines(input({ dateServed: "2026-06-01", objectionFiledOn: "2026-07-01" }), SEED_RULE_SET);
   assert.equal(filed.decision.dueDate, "2026-09-29");
@@ -253,7 +287,7 @@ test("extraction validator accepts schema output and drops implausible values", 
 });
 
 test("malformed provider output fails cleanly", () => {
-  for (const raw of [null, "text", [], { ...good(), principal: { value: "lots", confidence: 1 } }, { ...good(), tax_head: { value: "paye", confidence: 1 } }, (() => { const g = good(); delete g.interest; return g; })()]) {
+  for (const raw of [null, "text", [], { ...good(), principal: { value: "lots", confidence: 1 } }, { ...good(), tax_head: { value: "stamp_duty", confidence: 1 } }, (() => { const g = good(); delete g.interest; return g; })()]) {
     assert.throws(() => validateExtraction(raw, "ai-gemini"), MalformedExtractionError);
   }
   assert.throws(() => readNoticeText("too short"), MalformedExtractionError);

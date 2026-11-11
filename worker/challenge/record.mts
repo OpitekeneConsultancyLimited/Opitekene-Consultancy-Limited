@@ -10,7 +10,7 @@ import { packAccess, reviewGate, type PackAccess, type ReviewGate, type Tier } f
 import { scrubSentences } from "./safety.mts";
 import { searchCases, TAGS_FOR_CATEGORY } from "./search.mts";
 import type { CaseLaw, CaseRow, ConfirmableField, DisputedItem, FieldConfirmation, IsoDate, ProvisionVersion, PublicHoliday, RuleSet, Statute } from "./types.mts";
-import { STANDING_DISCLAIMER, TAX_HEAD_PLAIN, joinList } from "./wording.mts";
+import { STANDING_DISCLAIMER, TAX_HEAD_LABEL, TAX_HEAD_PLAIN, joinList } from "./wording.mts";
 
 export const REQUIRED_FIELDS: ConfirmableField[] = ["tax_head", "period_start", "period_end", "principal"];
 
@@ -106,7 +106,7 @@ function explanation(row: CaseRow): CaseView["explanation"] {
   ];
   if (row.taxAccepted !== null) owner.push(`You told us you accept ${formatUgx(row.taxAccepted)} of the tax.`);
   const professional = [
-    `${row.taxHead === "vat" ? "VAT" : "Income tax"} ${row.assessmentType ?? "assessment"}${row.tin ? `, TIN ${row.tin}` : ""}${period}.`,
+    `${TAX_HEAD_LABEL[row.taxHead]} ${row.assessmentType ?? "assessment"}${row.tin ? `, TIN ${row.tin}` : ""}${period}.`,
     `Principal ${formatUgx(row.principal)}; penal tax ${formatUgx(row.penalTax ?? 0)}; interest ${formatUgx(row.interest ?? 0)}; total ${formatUgx(total)}.`,
     `Provisions cited by URA: ${row.provisionsCited.length ? row.provisionsCited.join("; ") : "none stated"}.`,
     `Issued ${row.dateIssued ? formatDate(row.dateIssued) : "date not confirmed"}; received ${row.dateServed ? formatDate(row.dateServed) : "date not given"}${row.serviceMethod ? ` (${row.serviceMethod})` : ""}.`,

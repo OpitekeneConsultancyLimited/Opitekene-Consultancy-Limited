@@ -9,6 +9,8 @@ const ENACTED = new Set<Statute["billStatus"]>(["assented", "in_force"]);
 export const STATUTES_FOR_HEAD: Record<TaxHead, string[]> = {
   income_tax: ["ita", "tpca", "tata"],
   vat: ["vata", "tpca", "tata"],
+  paye: ["ita", "tpca", "tata"],
+  wht: ["ita", "tpca", "tata"],
 };
 
 export const TOPICS_FOR_CATEGORY: Record<ItemCategory, string[]> = {
@@ -21,6 +23,8 @@ export const TOPICS_FOR_CATEGORY: Record<ItemCategory, string[]> = {
   penal_tax: ["penal-tax"],
   procedural: ["objection-procedure"],
   other: ["burden-of-proof"],
+  employment_income: ["paye-employment-income", "paye-employer-duty", "burden-of-proof"],
+  withholding: ["wht-payments", "wht-agent-liability", "burden-of-proof"],
 };
 
 export interface Citation {

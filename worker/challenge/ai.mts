@@ -3,7 +3,7 @@
 // goes through validateExtraction; malformed output fails cleanly.
 // Document contents are never logged.
 import Anthropic from "@anthropic-ai/sdk";
-import prompt from "../../prompts/assessment-extraction.v1.json" with { type: "json" };
+import prompt from "../../prompts/assessment-extraction.v2.json" with { type: "json" };
 import { MalformedExtractionError, readNoticeText, validateExtraction, type Extraction } from "./extract.mts";
 
 export const CLAUDE_MODEL = "claude-opus-5-5";

@@ -16,6 +16,8 @@ export const ISSUE_TAGS: ReadonlyArray<IssueTag> = [
   { id: "objection-procedure", label: "Assessment and objection procedure", patterns: [/\bobjection\b/i, /\bout\s+of\s+time\b/i, /\bextension\s+of\s+time\b/i, /\btime\s*-?\s*barred\b/i, /\bservice\s+of\s+(?:the\s+)?(?:assessment|notice)\b/i, /\badditional\s+assessment\b/i] },
   { id: "penal-tax", label: "Penal tax", patterns: [/\bpenal\s+tax\b/i, /\bpenalt(?:y|ies)\b/i] },
   { id: "interest", label: "Interest", patterns: [/\binterest\s+on\s+(?:unpaid|late|outstanding)\s+tax\b/i, /\binterest\b[^.]{0,40}\bper\s+(?:month|annum)\b/i, /\bwaiver\s+of\s+(?:interest|penalt)/i] },
+  { id: "paye", label: "PAYE and employment income", patterns: [/\bpaye\b/i, /\bpay\s+as\s+you\s+earn\b/i, /\bemployment\s+income\b/i, /\bemoluments?\b/i, /\bfringe\s+benefits?\b/i, /\ballowances?\b[^.]{0,40}\bemployees?\b/i] },
+  { id: "withholding", label: "Withholding tax", patterns: [/\bwithholding\s+tax\b/i, /\bwithholding\s+agent\b/i, /\bwht\b/i, /\bfailure\s+to\s+withhold\b/i, /\bexemption\s+certificate\b/i] },
 ];
 
 export const TAGS_FOR_CATEGORY: Readonly<Record<ItemCategory, string[]>> = {
@@ -28,6 +30,8 @@ export const TAGS_FOR_CATEGORY: Readonly<Record<ItemCategory, string[]>> = {
   penal_tax: ["penal-tax"],
   procedural: ["objection-procedure"],
   other: [],
+  employment_income: ["paye", "burden-of-proof"],
+  withholding: ["withholding", "burden-of-proof"],
 };
 
 /** Tags whose patterns match at least `minHits` times in a judgment's text. */
@@ -54,6 +58,8 @@ const SYNONYMS: Record<string, string[]> = {
   penalty: ["penalty", "penal", "penalties"],
   interest: ["interest"],
   objection: ["objection", "object", "late", "extension"],
+  paye: ["paye", "salary", "salaries", "allowance", "allowances", "benefit", "benefits", "employee", "employees", "payroll"],
+  withhold: ["withhold", "withholding", "withheld", "wht"],
 };
 
 function stem(word: string): string {
