@@ -138,6 +138,9 @@ await page.selectOption("#ch-method", "email");
 await clickButton("Save and continue");
 check("DL-1: 5 days left, urgent banner", (await text()).includes("Urgent: 5 days left to object"));
 check("provisional label shown", (await text()).includes("Provisional: rules pending legal review"));
+const [icsDownload] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Add to my calendar" }).first().click()]);
+const ics = readFileSync(await icsDownload.path(), "utf8");
+check("calendar reminder: .ics with the last day and three alerts", ics.includes(`DTSTART;VALUE=DATE:${daysAgo(-5).replace(/-/g, "")}`) && (ics.match(/BEGIN:VALARM/g) || []).length === 3 && icsDownload.suggestedFilename().endsWith(".ics"));
 
 // Records: CLS-1 and CLS-2.
 await clickButton("Add an item");
@@ -172,6 +175,8 @@ check("no sideways scroll at 360 px", await page.evaluate(() => document.documen
 // Pack.
 await page.getByRole("button", { name: "6. Your pack" }).click();
 check("full pack needs a paid plan (free outputs still offered)", (await text()).includes("needs a paid plan") && (await text()).includes("Summary and checklist (Word)"));
+check("offers: reviewed pack at UGX 250,000 (WhatsApp while online payment is off) and a managed-dispute quote",
+  (await text()).includes("Reviewed pack: UGX 250,000 for this case") && await page.getByRole("link", { name: "Pay by mobile money through WhatsApp" }).isVisible() && await page.getByRole("link", { name: "Ask for a quote on WhatsApp" }).isVisible());
 const [freeDownload] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Summary and checklist (Word)" }).click()]);
 const freeText = await docx.readDocxText(readFileSync(await freeDownload.path()).buffer);
 check("free summary downloads as Word", freeText.includes("Your assessment explained") && freeText.includes("Evidence checklist"));

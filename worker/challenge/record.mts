@@ -151,7 +151,7 @@ export function buildCaseView(input: ViewInputs): CaseView {
     taxNotInDispute: row.taxAccepted,
     holidays: input.holidays ?? [],
   }, input.ruleSet);
-  const review = reviewGate(row, deadlines, reconciliation, input.confirmations, input.reviewThresholdUgx);
+  const review = reviewGate(row, deadlines, reconciliation, input.confirmations, input.reviewThresholdUgx, input.tier);
 
   const research: ResearchEntry[] = reconciliation.grounds.map((item) => {
     const topics = TOPICS_FOR_CATEGORY[item.category];

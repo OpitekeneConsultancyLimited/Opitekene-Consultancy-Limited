@@ -4,9 +4,9 @@
 
 1. **Sign in**, then open **Challenge a URA assessment**. It's on the home page, in the Tax Tools menu and under Workspace → My assessments.
 2. **Agree** to how your documents are handled. You only do this once.
-3. **Start a new case** and add your notice. Upload a PDF, take a photo with your phone, upload a Word file, or paste the text.
+3. **Start a new case** and add your notice: income tax, VAT, PAYE or withholding tax. Upload a PDF, take a photo with your phone, upload a Word file, or paste the text.
 4. **Check every figure.** TaxComp uses a figure only after you confirm it. Correct anything that's wrong. Tick "I can't confirm this" if you're unsure.
-5. **Enter the day you received the notice.** Your time to object counts from that day, not from the date printed on the notice.
+5. **Enter the day you received the notice.** Your time to object counts from that day, not from the date printed on the notice. Press **Add to my calendar** to save the last day in your phone's calendar, with reminders 7 days and 2 days before and on the morning of the day.
 6. **Your records:** add each figure you think is wrong, with your own figure, and say whether you have the papers to support it. Upload those papers if you have them.
 7. **Where you stand:** see what URA is claiming, your deadline, each item's result, the law for your period and related Tribunal decisions. Switch to **Professional** to see the full workings.
 8. **Your pack:**
@@ -14,6 +14,9 @@
    - Download the free summary and checklist.
    - With a paid plan, download the draft objection letter, the schedules and the briefing as a Word file (or print / save as PDF). Edit the draft before you use it.
    - If your case needs a professional review, the full pack unlocks once a reviewer signs it off.
+   - **Want a professional to help?**
+     - **Reviewed pack, UGX 250,000 for one case:** an Opitekene reviewer checks your figures, deadline and grounds and signs off the full pack. Pay by mobile money or card. Until online payment is switched on, the button opens WhatsApp instead.
+     - **Managed dispute:** Opitekene prepares, lodges and follows up the objection for you. Ask for a quote on WhatsApp; quote your case reference (shown in this section).
 9. **Delete** a case at any time; the case and all its files go.
 
 TaxComp gives a preliminary position to help you prepare. It is not a decision on your case.
@@ -33,7 +36,8 @@ TaxComp gives a preliminary position to help you prepare. It is not a decision o
   - **Sign off this version** or **Request changes**.
 
   Any later change by the taxpayer reopens the review.
-- **Record a paid review or managed dispute** after payment, with its payment reference.
+- **Online Reviewed pack payments** (Flutterwave) are added to the case automatically, and the case goes to the review queue.
+- **Payments taken by hand** (mobile money on WhatsApp, or an agreed managed-dispute quote): a legal approver records them under **Law and cases admin → Record a payment for a case**. Enter the customer's case reference (the first 8 characters, shown on their pack step), what they paid for and the payment reference. The case is then assigned for review.
 - **Law and cases admin:**
   - Paste the official ULII text for each provision and save it as verified.
   - Legal approvers can then approve a provision for computation (with its formula), and approve the deadline rule set.

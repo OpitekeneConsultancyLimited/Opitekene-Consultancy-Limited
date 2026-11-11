@@ -150,8 +150,8 @@ export async function creditVerifiedTransaction(db, transaction, { now = new Dat
     return { credited: false, reason: "not-successful" };
   }
   const payment = await db.prepare(
-    `SELECT p.tx_ref AS txRef, p.user_id AS userId, p.plan_id AS planId, p.amount, p.currency, p.status,
-            pl.interval_months AS intervalMonths
+    `SELECT p.tx_ref AS txRef, p.user_id AS userId, p.plan_id AS planId, p.amount, p.currency, p.status, p.case_id AS caseId,
+            pl.interval_months AS intervalMonths, pl.kind, pl.challenge_tier AS challengeTier
        FROM billing_payments p JOIN billing_plans pl ON pl.id = p.plan_id WHERE p.tx_ref = ?`,
   ).bind(transaction.tx_ref).first();
   if (!payment) return { credited: false, reason: "unknown-reference" };
@@ -161,6 +161,7 @@ export async function creditVerifiedTransaction(db, transaction, { now = new Dat
     return { credited: false, reason: "amount-or-currency-mismatch" };
   }
   const nowIso = now.toISOString();
+  if (payment.kind === "per_case") return creditCasePayment(db, transaction, payment, nowIso);
   const months = Number(payment.intervalMonths) || 1;
   try {
     const results = await db.batch([
@@ -188,13 +189,50 @@ export async function creditVerifiedTransaction(db, transaction, { now = new Dat
   }
 }
 
-async function plans(db) {
+/**
+ * A per-case purchase (e.g. the Reviewed pack): marks the payment successful
+ * and grants the case its tier, in one batch. The grant only happens if THIS
+ * call's update succeeded (matched on its verified_at), so retries and the
+ * webhook racing the redirect cannot grant twice. If the case was deleted
+ * before payment completed, the payment is still recorded (refund by hand).
+ */
+async function creditCasePayment(db, transaction, payment, nowIso) {
+  try {
+    const results = await db.batch([
+      db.prepare(
+        `UPDATE billing_payments SET status = 'successful', provider_transaction_id = ?, provider_payment_type = ?, verified_at = ?
+          WHERE tx_ref = ? AND status = 'pending'`,
+      ).bind(String(transaction.id), String(transaction.payment_type || "").slice(0, 40) || null, nowIso, payment.txRef),
+      db.prepare(
+        `INSERT INTO challenge_case_entitlements (case_id, tier, granted_by, granted_at, payment_reference)
+         SELECT p.case_id, ?, 'payment:flutterwave', ?, p.tx_ref FROM billing_payments p
+          WHERE p.tx_ref = ? AND p.status = 'successful' AND p.verified_at = ? AND p.case_id IS NOT NULL
+         ON CONFLICT (case_id, tier) DO NOTHING`,
+      ).bind(payment.challengeTier, nowIso, payment.txRef, nowIso),
+      db.prepare(
+        `INSERT INTO challenge_audit_log (id, actor_user_id, actor_role, action, case_id, details_json, occurred_at)
+         SELECT ?, p.user_id, 'system', 'entitlement.paid', p.case_id, ?, ? FROM billing_payments p
+          WHERE p.tx_ref = ? AND p.status = 'successful' AND p.verified_at = ?`,
+      ).bind(crypto.randomUUID(), JSON.stringify({ tier: payment.challengeTier, txRef: payment.txRef, amount: Number(payment.amount) }), nowIso, payment.txRef, nowIso),
+    ]);
+    return results[0].meta.changes === 1
+      ? { credited: true, userId: payment.userId, planId: payment.planId, caseId: payment.caseId }
+      : { credited: false, reason: "already-credited" };
+  } catch (error) {
+    if (/UNIQUE constraint failed/.test(error?.message || "")) return { credited: false, reason: "transaction-already-used" };
+    throw error;
+  }
+}
+
+async function plans(db, { includePerCase = false } = {}) {
   const { results = [] } = await db.prepare(
-    `SELECT id, audience, name, description, amount, currency, interval_months AS intervalMonths,
+    `SELECT id, audience, name, description, amount, currency, interval_months AS intervalMonths, kind, challenge_tier AS challengeTier,
             includes_premium_advisor AS includesPremium, includes_firm_workspace AS includesWorkspace
        FROM billing_plans WHERE active = 1 ORDER BY sort_order`,
   ).bind().all();
-  return results.map((p) => ({ ...p, includesPremium: Number(p.includesPremium) === 1, includesWorkspace: Number(p.includesWorkspace) === 1 }));
+  return results
+    .filter((p) => includePerCase || p.kind !== "per_case")
+    .map((p) => ({ ...p, includesPremium: Number(p.includesPremium) === 1, includesWorkspace: Number(p.includesWorkspace) === 1 }));
 }
 
 async function handleWebhook(request, env) {
@@ -259,18 +297,28 @@ export async function handleBillingRequest(request, env) {
     if (path === "/api/billing/checkout" && request.method === "POST") {
       const provider = flutterwave(env);
       if (!provider) return json({ error: "Online payments are not configured yet. Please use the manual payment options below." }, 503, cors);
-      const { planId } = await readJson(request);
-      const plan = (await plans(db)).find((item) => item.id === planId);
+      const { planId, caseId } = await readJson(request);
+      const plan = (await plans(db, { includePerCase: true })).find((item) => item.id === planId);
       if (!plan) return json({ error: "Choose a valid plan." }, 400, cors);
-      const txRef = `taxcomp-${crypto.randomUUID()}`;
+      const perCase = plan.kind === "per_case";
+      if (perCase) {
+        // Only the case's owner can pay for it, and only once per tier.
+        const owned = typeof caseId === "string" && /^[0-9a-f-]{36}$/.test(caseId)
+          ? await db.prepare("SELECT id FROM challenge_cases WHERE id = ? AND owner_user_id = ?").bind(caseId, identity.userId).first()
+          : null;
+        if (!owned) return json({ error: "Case not found." }, 404, cors);
+        const granted = await db.prepare("SELECT 1 AS x FROM challenge_case_entitlements WHERE case_id = ? AND tier = ?").bind(caseId, plan.challengeTier).first();
+        if (granted) return json({ error: "This case already has a reviewed pack." }, 409, cors);
+      }
+      const txRef = `${perCase ? "taxcomp-case-" : "taxcomp-"}${crypto.randomUUID()}`;
       await db.batch([
         db.prepare("INSERT INTO billing_accounts (user_id, email, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT (user_id) DO UPDATE SET email = EXCLUDED.email, updated_at = EXCLUDED.updated_at")
           .bind(identity.userId, identity.email, now, now),
-        db.prepare("INSERT INTO billing_payments (tx_ref, user_id, plan_id, amount, currency, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-          .bind(txRef, identity.userId, plan.id, plan.amount, plan.currency, now),
+        db.prepare("INSERT INTO billing_payments (tx_ref, user_id, plan_id, amount, currency, created_at, case_id) VALUES (?, ?, ?, ?, ?, ?, ?)")
+          .bind(txRef, identity.userId, plan.id, plan.amount, plan.currency, now, perCase ? caseId : null),
       ]);
       const returnUrl = new URL(env.PUBLIC_SITE_URL || env.ALLOWED_ORIGIN);
-      returnUrl.hash = "account";
+      returnUrl.hash = perCase ? "challenge" : "account";
       const checkoutUrl = await provider.createPaymentLink({
         tx_ref: txRef,
         amount: plan.amount,
@@ -278,8 +326,8 @@ export async function handleBillingRequest(request, env) {
         redirect_url: returnUrl.toString(),
         payment_options: "mobilemoneyuganda,card",
         customer: { email: identity.email },
-        customizations: { title: `TaxComp ${plan.name}`, description: `${plan.name}: one month` },
-        meta: { plan_id: plan.id },
+        customizations: { title: `TaxComp ${plan.name}`, description: perCase ? `${plan.name}: one assessment case` : `${plan.name}: one month` },
+        meta: perCase ? { plan_id: plan.id, case_id: caseId } : { plan_id: plan.id },
       });
       return json({ checkoutUrl, txRef }, 201, cors);
     }

@@ -82,6 +82,16 @@ export async function loadCase(db: Database, caseId: string, userId: string, isR
   return { row: caseRow, access: { userId, role: caseRow.ownerUserId === userId ? "owner" : "reviewer" } };
 }
 
+/**
+ * Cases whose id starts with `prefix` (the short reference a customer quotes on
+ * WhatsApp). Only for legal approvers granting a paid tier; never for owners.
+ */
+export async function findCasesByReference(db: Database, prefix: string): Promise<CaseRow[]> {
+  if (!/^[0-9a-f]{8,36}$/.test(prefix)) return [];
+  const { results } = await db.prepare(`SELECT ${CASE_COLUMNS} FROM challenge_cases WHERE id LIKE ? ORDER BY created_at DESC LIMIT 2`).bind(`${prefix}%`).all<Row>();
+  return results.map(toCaseRow);
+}
+
 export async function listOwnCases(db: Database, userId: string): Promise<CaseRow[]> {
   const { results } = await db.prepare(`SELECT ${CASE_COLUMNS} FROM challenge_cases WHERE owner_user_id = ? ORDER BY updated_at DESC LIMIT 100`).bind(userId).all<Row>();
   return results.map(toCaseRow);

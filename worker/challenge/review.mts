@@ -31,8 +31,14 @@ export function reviewGate(
   reconciliation: Reconciliation,
   confirmations: FieldConfirmation[],
   thresholdUgx: number = DEFAULT_REVIEW_THRESHOLD_UGX,
+  tier: Tier = "free",
 ): ReviewGate {
   const reasons: ReviewGate["reasons"] = [];
+  // A Reviewed pack (paid per case) or Managed dispute is a promise that a
+  // professional checks this case, so it always goes to a reviewer.
+  if (TIER_RANK[tier] >= TIER_RANK.reviewed) {
+    reasons.push({ code: "paid-review", text: tier === "managed" ? "Opitekene is managing this dispute for you." : "You bought a reviewed pack: a professional will check this case." });
+  }
   const disputed = disputedPrincipal(row);
   if (disputed !== null && disputed > thresholdUgx) {
     reasons.push({ code: "above-threshold", text: `The tax in dispute is above UGX ${thresholdUgx.toLocaleString("en-US")}.` });
