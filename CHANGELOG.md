@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-11 - Knowledge search, chat history, Excise Duty in the law register
+
+- **Knowledge Centre search** (`kb-search.js`): one box across guides, laws, case law, updates and compliance resources, including the law and case registers once loaded. Every word must match; headings rank first. Choosing a result scrolls to it and highlights it. Nothing is sent anywhere.
+- **AI chat history**: the conversation is kept in this browser (localStorage), separately per signed-in user, and comes back after a reload. Clear removes it, and signing out deletes it from the device. Only the message text, https source links and calculator buttons are stored.
+- **Law register**: Excise Duty Act and Excise Duty (Amendment) Act 2026 (migration `20261111000300`), named in the Master Development Directive. No dates were given, so the amendment is held as a bill and never applied until a legal reviewer confirms it (todo-verify B8, B9). The Knowledge Centre now shows bill status in plain words.
+
 ## 2026-11-11 - Reviewed pack payments and calendar reminders
 
 - **Reviewed pack, UGX 250,000 per case.** Bought from the case's pack step through Flutterwave (mobile money or card). A verified payment grants that case the reviewed tier (not a subscription), writes an audit entry, and sends the case for review; the full pack unlocks on sign-off. Without Flutterwave keys the button opens WhatsApp instead.

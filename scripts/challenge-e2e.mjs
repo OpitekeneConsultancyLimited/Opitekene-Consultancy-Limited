@@ -38,11 +38,11 @@ const check = (name, ok, detail = "") => { results.push({ name, ok: Boolean(ok) 
 // written to axe-report.json for the screen-reader pass.
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 const axeFindings = [];
-async function axeScan(page, label) {
+async function axeScan(page, label, scope = "#challenge-root") {
   if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: AXE_SOURCE });
-  const violations = await page.evaluate(async () => (await window.axe.run("#challenge-root", {
+  const violations = await page.evaluate(async (selector) => (await window.axe.run(selector, {
     runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
-  })).violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) })));
+  })).violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) })), scope);
   axeFindings.push({ screen: label, violations });
   const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   check(`axe (WCAG 2.1 AA): no serious problems on ${label}`, blocking.length === 0, blocking.map((v) => `${v.id}: ${v.nodes.join(", ")}`).join("; "));
@@ -280,6 +280,39 @@ check("knowledge centre reads the law register", ((await page.textContent("#kb-l
 await page.screenshot({ path: path.join(shots, "5-kb-laws-360.png"), fullPage: false });
 const paye = await page.evaluate(() => { location.hash = "home"; return true; }) && await page.textContent("#paye-preview-tax");
 check("PAYE preview still calculates", /UGX|[0-9]/.test(paye || ""));
+// Knowledge Centre search across the whole library.
+await page.evaluate(() => { location.hash = "knowledge"; });
+await page.waitForTimeout(250);
+await page.fill("#kb-search", "rental income");
+await page.waitForSelector("#kb-search-results .kb-search-hit", { timeout: 5000 }).catch(() => {});
+const kbHits = await page.$$eval("#kb-search-results .kb-search-hit", (nodes) => nodes.length);
+check("knowledge search finds guides across the library", kbHits > 0, `hits=${kbHits}`);
+if (kbHits) {
+  await page.click("#kb-search-results .kb-search-hit >> nth=0");
+  // styles.css uses smooth scrolling: wait for the scroll to finish.
+  await page.waitForFunction(() => { const el = document.querySelector(".kb-hit"); if (!el) return false; const r = el.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }, null, { timeout: 5000 }).catch(() => {});
+  const shown = await page.evaluate(() => { const el = document.querySelector(".kb-hit"); if (!el) return { ok: false, why: "no .kb-hit element" }; const r = el.getBoundingClientRect(); return { ok: r.height > 0 && r.top < innerHeight && r.bottom > 0, why: `${el.tagName} top=${Math.round(r.top)} h=${Math.round(r.height)} view=${document.documentElement.dataset.view}` }; });
+  check("choosing a result shows it on screen", shown.ok, shown.why);
+}
+await page.fill("#kb-search", "zzqqxx");
+await page.waitForTimeout(300);
+check("knowledge search says when nothing matches", ((await page.textContent("#kb-search-results")) || "").includes("Nothing found"));
+await axeScan(page, "knowledge search", "#knowledge");
+
+// Chat history: kept on this device for this user, and Clear removes it.
+await page.evaluate((id) => localStorage.setItem(`taxcomp-chat-history:${id}`, JSON.stringify([
+  { role: "user", text: "What is the VAT registration threshold?", sources: [], calculators: [], meta: {} },
+  { role: "assistant", text: "Saved answer from an earlier visit.", sources: [], calculators: ["vat"], meta: { answerSource: "local" } },
+])), userId);
+await page.reload();
+await page.waitForFunction(() => document.documentElement.dataset.auth === "in", null, { timeout: 15_000 });
+await page.evaluate(() => { location.hash = "assistant"; });
+await page.waitForFunction(() => document.querySelector("#tax-chat-messages")?.textContent?.includes("Saved answer from an earlier visit."), null, { timeout: 5000 }).catch(() => {});
+const chatText = (await page.textContent("#tax-chat-messages")) || "";
+check("chat history comes back after a reload, marked as kept on this device", chatText.includes("Saved answer from an earlier visit.") && chatText.includes("kept on this device only"));
+await page.click("#tax-chat-clear");
+check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
+
 check("no script errors", errors.length === 0, errors.join(" | "));
 
 writeFileSync(path.join(shots, "axe-report.json"), JSON.stringify(axeFindings, null, 2));
