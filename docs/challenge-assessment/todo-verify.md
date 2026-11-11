@@ -33,8 +33,10 @@ Code and seed data never set `approved_for_computation = true`. A reviewer with 
 | B5 | VAT (Amendment) Act 2026 | Assented 18 May 2026; commenced 1 July 2026 (from the owner's brief) | Act number, Gazette reference and ULII link |
 | B6 | Tax Procedures Code (Amendment) Act 2026 | Same dates as B5 | The same |
 | B7 | Income Tax (Amendment) Act 2026 | Bill returned 14 July 2026; assented 20 August 2026; applied by URA from 1 July 2026 | The same, plus the retrospective application. The app tells the user a professional should consider whether applying it before assent can be questioned. |
-| B8 | Excise Duty Act | Chapter not seeded | Chapter in the Laws of Uganda 2024 Revised Edition; exact ULII link |
-| B9 | Excise Duty (Amendment) Act 2026 | Seeded as a **bill** (never applied): no dates were given | Act number, assent and commencement dates, Gazette reference. Statutes are owner-managed: once confirmed, update the row in the Supabase SQL editor, for example `UPDATE taxcomp.law_statutes SET bill_status = 'in_force', assent_date = 'YYYY-MM-DD', commencement_date = 'YYYY-MM-DD', applies_from_period = 'YYYY-MM-DD' WHERE id = 'eda-amendment-2026';` |
+| B8 | Excise Duty Act | Cap. 336 (as stated by Parliament's Bill Tracker, bill 561) | Chapter in the Laws of Uganda 2024 Revised Edition; exact ULII link |
+| B9 | Excise Duty (Amendment) Act 2026 | Seeded as **passed, not assented** (never applied). Parliament's Bill Tracker (https://bills.parliament.ug/user_bill_stage.php?billid=561) shows third reading on 21 April 2026 and no assent date. | Assent and commencement dates, Act number, Gazette reference. Statutes are owner-managed: once confirmed, run in the Supabase SQL editor, for example `UPDATE taxcomp.law_statutes SET bill_status = 'in_force', assent_date = 'YYYY-MM-DD', commencement_date = 'YYYY-MM-DD', applies_from_period = 'YYYY-MM-DD' WHERE id = 'eda-amendment-2026';` |
+
+Evidence found 2026-11-11 (to help, not to replace, the check): Parliament's Bill Tracker describes the 2026 amendment Bills as amending the Income Tax Act **Cap. 338** (bill 564), the VAT Act **Cap. 344** (bill 562) and the Tax Procedures Code Act **Cap. 343** (bill 563), matching B1 to B3. It records third readings on 21 April (VAT, TPC, Excise) and 23 April 2026 (Income Tax), and no assent dates.
 
 ## C. Provision versions (`law_provision_versions`)
 
