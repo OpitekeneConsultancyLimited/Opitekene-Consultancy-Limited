@@ -92,6 +92,37 @@
       setTimeout(() => element.classList.remove("kb-hit"), 2400);
     }
 
+    function statusText(count) {
+      return count ? `${count} result${count === 1 ? "" : "s"}` : "Nothing found. Try fewer or different words, or ask the AI Tax Assistant.";
+    }
+
+    /** Results from providers (e.g. the tax Acts in the legislative database), added when they arrive. */
+    async function addProviderResults(query, status, localCount) {
+      const lists = await Promise.all(providers.map((provider) => Promise.resolve(provider(query)).catch(() => [])));
+      const extra = lists.flat().filter((hit) => hit && hit.text);
+      if (!extra.length || input.value !== query) return;
+      const list = doc.createElement("ol");
+      list.className = "kb-search-list";
+      for (const hit of extra) {
+        const item = doc.createElement("li");
+        const button = doc.createElement("button");
+        button.type = "button";
+        button.className = "kb-search-hit";
+        const meta = doc.createElement("span");
+        meta.className = "kb-search-meta";
+        meta.textContent = hit.meta || "";
+        const body = doc.createElement("span");
+        body.className = "kb-search-snippet";
+        body.textContent = hit.text;
+        button.append(meta, body);
+        button.addEventListener("click", () => hit.select && hit.select());
+        item.append(button);
+        list.append(item);
+      }
+      status.textContent = statusText(localCount + extra.length);
+      results.append(list);
+    }
+
     function render() {
       const query = input.value;
       results.replaceChildren();
@@ -100,8 +131,9 @@
       results.hidden = false;
       const status = doc.createElement("p");
       status.className = "kb-search-status";
-      status.textContent = hits.length ? `${hits.length} result${hits.length === 1 ? "" : "s"}` : "Nothing found. Try fewer or different words, or ask the AI Tax Assistant.";
+      status.textContent = statusText(hits.length);
       results.append(status);
+      if (providers.length) addProviderResults(query, status, hits.length);
       if (!hits.length) return;
       const list = doc.createElement("ol");
       list.className = "kb-search-list";
@@ -131,7 +163,13 @@
     input.form?.addEventListener("submit", (event) => { event.preventDefault(); clearTimeout(timer); render(); });
   }
 
-  const api = Object.freeze({ rankBlocks, snippet, words });
+  const providers = [];
+  /** A provider is (query) => Promise<[{ meta, text, select }]>. */
+  function addProvider(provider) {
+    if (typeof provider === "function") providers.push(provider);
+  }
+
+  const api = Object.freeze({ rankBlocks, snippet, words, addProvider });
   if (typeof module === "object" && module.exports) module.exports = api;
   root.TaxCompKbSearch = api;
   if (typeof document !== "undefined") {

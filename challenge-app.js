@@ -168,7 +168,7 @@
     ];
     if (me.reviewer) {
       parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["law", "Law and cases admin"]].map(([key, text]) =>
-        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); } }), text }))));
+        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); state.legislation = await call("/api/challenge/review/legislation?flagged=1&pageSize=200"); } }), text }))));
       if (state.panel === "queue") return [...parts, queueScreen()];
       if (state.panel === "law") return [...parts, lawAdminScreen()];
     }
@@ -646,6 +646,96 @@
     ]);
   }
 
+  /**
+   * Legislation verification: Acts and sections from the legislative database.
+   * Reviewers can mark records under review or needing amendment review; only
+   * legal approvers can verify (with the official source) or supersede, and
+   * confirm chapters, commencement dates, headings or wording. Every change is
+   * kept in the history.
+   */
+  function legislationPanel() {
+    const leg = state.legislation;
+    if (!leg) return null;
+    const filters = state.legislationFilters || (state.legislationFilters = { law: "", status: "", flagged: true });
+    const reload = async () => {
+      const q = new URLSearchParams({ pageSize: "200", ...(filters.law ? { law: filters.law } : {}), ...(filters.status ? { status: filters.status } : {}), ...(filters.flagged ? { flagged: "1" } : {}) });
+      state.legislation = await call(`/api/challenge/review/legislation?${q}`);
+    };
+    const statusSelect = (current, label) => h("select", { "aria-label": label }, Object.entries(leg.statuses)
+      .filter(([value]) => leg.canApprove || !["verified", "superseded"].includes(value) || value === current)
+      .map(([value, text]) => h("option", { value, text, selected: value === current ? "" : null })));
+    const lawRow = (law) => {
+      const status = statusSelect(law.verificationStatus, `Status of ${law.officialTitle}`);
+      const note = h("input", { type: "text", "aria-label": `Verification note for ${law.officialTitle}`, placeholder: "What was checked, against which edition" });
+      const source = h("input", { type: "url", "aria-label": `Official source for ${law.officialTitle}`, placeholder: "https://… official edition", value: law.officialSourceUrl || "" });
+      const chapter = h("input", { type: "text", "aria-label": `Chapter of ${law.officialTitle}`, value: law.chapter || "", placeholder: "Cap. 338" });
+      const commencement = h("input", { type: "date", "aria-label": `Commencement of ${law.officialTitle}`, value: law.commencementDate || "" });
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: law.officialTitle }),
+        h("span", { className: "ch-muted", text: ` · ${[law.chapter, `${law.sectionCount} sections`, law.verificationLabel, law.verifiedAt ? `verified ${date(law.verifiedAt.slice(0, 10))}` : null].filter(Boolean).join(" · ")}` }),
+        law.laterAmendments.length ? h("p", { className: "ch-muted", text: `Later amendments not captured: ${law.laterAmendments.map((a) => a.title).join("; ")}` }) : null,
+        h("div", { className: "ch-fields" }, [status, note, source, ...(leg.canApprove ? [chapter, commencement] : [])].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("div", { className: "ch-actions" }, [
+          h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
+            await call(`/api/challenge/review/legislation/${leg.edition.id}/${law.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
+              ...(leg.canApprove ? { chapter: chapter.value.trim() || undefined, commencementDate: commencement.value || undefined } : {}) } });
+            await reload();
+          }, "Saved."), text: "Save status" }),
+          h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { state.legislationHistory = await call(`/api/challenge/review/legislation/history?id=${encodeURIComponent(`${leg.edition.id}/${law.id}`)}`); }), text: "History" }),
+        ]),
+      ]);
+    };
+    const sectionRow = (s) => {
+      const status = statusSelect(s.verificationStatus, `Status of ${s.citation}`);
+      const note = h("input", { type: "text", "aria-label": `Note for ${s.citation}`, placeholder: "Verification note" });
+      const source = h("input", { type: "url", "aria-label": `Official source for ${s.citation}`, placeholder: "https://…", value: s.officialSourceUrl || "" });
+      const heading = h("input", { type: "text", "aria-label": `Heading of ${s.citation}`, value: s.heading });
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: `${s.citation} – ${s.heading}` }),
+        h("span", { className: "ch-muted", text: ` · ${s.verificationLabel}${s.flags.length ? ` · ${s.flags.join(", ")}` : ""}` }),
+        h("div", { className: "ch-fields" }, [status, note, source, ...(leg.canApprove ? [heading] : [])].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
+          await call(`/api/challenge/review/legislation/${leg.edition.id}/${s.lawId}/sections/${s.sectionNumber}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
+            ...(leg.canApprove && heading.value.trim() !== s.heading ? { heading: heading.value.trim() } : {}) } });
+          await reload();
+        }, "Saved."), text: "Save" }),
+      ]);
+    };
+    const lawFilter = h("select", { "aria-label": "Law" }, [h("option", { value: "", text: "All laws" }), ...leg.laws.map((l) => h("option", { value: l.id, text: l.officialTitle, selected: filters.law === l.id ? "" : null }))]);
+    const statusFilter = h("select", { "aria-label": "Status" }, [h("option", { value: "", text: "Any status" }), ...Object.entries(leg.statuses).map(([v, t]) => h("option", { value: v, text: t, selected: filters.status === v ? "" : null }))]);
+    const flagged = h("input", { type: "checkbox", "aria-label": "Flagged only" });
+    flagged.checked = filters.flagged;
+    const compare = { law: h("select", { "aria-label": "Law to compare" }, leg.laws.map((l) => h("option", { value: l.id, text: l.officialTitle }))),
+      from: h("select", { "aria-label": "From edition" }, leg.editions.map((e) => h("option", { value: e.id, text: e.label }))),
+      to: h("select", { "aria-label": "To edition" }, leg.editions.map((e) => h("option", { value: e.id, text: e.label }))) };
+    const diff = state.legislationDiff;
+    const history = state.legislationHistory;
+    return h("section", { className: "ch-kb", "aria-labelledby": "ch-leg-title" }, [
+      h("h3", { id: "ch-leg-title", text: "Legislation verification" }),
+      h("p", { className: "ch-muted", text: `${leg.edition.label}. Every captured record starts unverified. Check each Act's chapter, commencement, Parts, section numbers and headings against the official Uganda Law Reform Commission edition. Only legal approvers can mark records verified (with the official source) or superseded.` }),
+      h("details", {}, [h("summary", { text: `Acts and regulations (${leg.laws.length})` }), h("ul", { className: "ch-law-list" }, leg.laws.map(lawRow))]),
+      h("details", { open: "" }, [
+        h("summary", { text: "Sections" }),
+        h("div", { className: "ch-fields" }, [lawFilter, statusFilter].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("label", {}, [flagged, " Flagged for checks only"]),
+        h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { Object.assign(filters, { law: lawFilter.value, status: statusFilter.value, flagged: flagged.checked }); await reload(); }), text: "Show" }),
+        h("ul", { className: "ch-law-list" }, leg.sections.length ? leg.sections.map(sectionRow) : [h("li", { className: "ch-muted", text: "No sections match." })]),
+      ]),
+      leg.editions.length > 1 ? h("details", {}, [
+        h("summary", { text: "Compare editions" }),
+        h("div", { className: "ch-fields" }, Object.values(compare).map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { state.legislationDiff = await call(`/api/challenge/review/legislation/compare?law=${compare.law.value}&from=${compare.from.value}&to=${compare.to.value}`); }), text: "Compare" }),
+        diff ? h("ul", { className: "ch-law-list" }, [
+          ...diff.added.map((s) => h("li", { text: `Added: ${s.section}. ${s.heading}` })),
+          ...diff.removed.map((s) => h("li", { text: `Removed: ${s.section}. ${s.heading}` })),
+          ...diff.changed.map((s) => h("li", { text: `Changed: ${s.section}. ${s.from} → ${s.to}` })),
+          h("li", { className: "ch-muted", text: `${diff.unchanged} unchanged` }),
+        ]) : null,
+      ]) : null,
+      history ? h("details", { open: "" }, [h("summary", { text: `History of ${history.id}` }), h("ul", { className: "ch-law-list" }, history.history.map((e) => h("li", { text: `${e.occurredAt.slice(0, 16).replace("T", " ")} · ${e.action.replace("_", " ")}${e.toStatus ? ` → ${e.toStatus}` : ""}${e.toValue ? ` · ${e.toValue}` : ""}${e.actor ? ` · by ${e.actor}` : ""}${e.note ? ` · ${e.note}` : ""}` })))]) : null,
+    ]);
+  }
+
   /** Knowledge base: drafts to review, verified records, and a form to add one. Users see only verified records. */
   function knowledgePanel() {
     const kb = state.knowledge;
@@ -754,6 +844,7 @@
     return h("section", { className: "ch-card" }, [
       ...paymentForm,
       lawWatchPanel(),
+      legislationPanel(),
       knowledgePanel(),
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),

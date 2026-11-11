@@ -477,6 +477,41 @@
           article.append(details);
         }
 
+        // Provisions retrieved from the legislative database, with their status.
+        const legislation = metadata.legislation;
+        if (legislation && legislation.provisions.length) {
+          const details = document.createElement("details");
+          details.className = "tax-chat-legislation";
+          details.open = true;
+          const summary = document.createElement("summary");
+          summary.textContent = `Legislation retrieved (${legislation.provisions.length})`;
+          const list = document.createElement("ul");
+          for (const provision of legislation.provisions) {
+            const item = document.createElement("li");
+            const cite = document.createElement("strong");
+            cite.textContent = `${provision.citation} – ${provision.heading}`;
+            const status = document.createElement("span");
+            status.className = "tax-chat-legislation-status";
+            status.textContent = ` · ${provision.evidenceLabel}${provision.relatedTo ? ` · related${provision.relationBasis === "inferred" ? " (inferred)" : ""}` : ""}${provision.flags?.includes("numbering-check") ? " · numbering to be checked" : ""}`;
+            item.append(cite, status);
+            list.append(item);
+          }
+          details.append(summary, list);
+          if (legislation.edition) {
+            const note = document.createElement("p");
+            note.className = "tax-chat-legislation-note";
+            note.textContent = `From ${legislation.edition.label}.${legislation.edition.warning ? ` ${legislation.edition.warning}` : ""}`;
+            details.append(note);
+          }
+          if (Array.isArray(legislation.citationCheck?.unmatched) && legislation.citationCheck.unmatched.length) {
+            const warn = document.createElement("p");
+            warn.className = "tax-chat-legislation-note";
+            warn.textContent = `Not found in TaxComp's legislative database: section ${legislation.citationCheck.unmatched.join(", ")}.`;
+            details.append(warn);
+          }
+          article.append(details);
+        }
+
         if (metadata.premiumRequired) {
           const upsell = document.createElement("p");
           upsell.className = "tax-chat-premium";
@@ -699,6 +734,7 @@
           sourceIndicators: Array.isArray(data.sourceIndicators) ? data.sourceIndicators : [],
           providerStatus: data.providerStatus || null,
           legalReferences: Array.isArray(data.legalReferences) ? data.legalReferences : [],
+          legislation: data.legislation && typeof data.legislation === "object" && Array.isArray(data.legislation.provisions) ? data.legislation : null,
           verificationRequired: data.verificationRequired === true,
           unansweredQuestionEligible: data.unansweredQuestionEligible === true,
           questionRecordStatus: data.questionRecordStatus || "not_requested",

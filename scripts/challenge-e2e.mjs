@@ -278,6 +278,9 @@ check("knowledge centre reads the case register", ((await page.textContent("#kb-
 await page.evaluate(() => { location.hash = "kb-laws"; });
 await page.waitForFunction(() => document.querySelector("#kb-law-register")?.dataset.loaded === "1", null, { timeout: 5000 }).catch(() => {});
 check("knowledge centre reads the law register", ((await page.textContent("#kb-law-register")) || "").includes("Income Tax (Amendment) Act, 2026"));
+const register = (await page.textContent("#kb-law-register")) || "";
+check("Law Register lists the five added Acts", ["Stamp Duty Act (Cap. 339)", "Lotteries and Gaming Act (Cap. 334)", "Convention on Mutual Administrative Assistance in Tax Matters (Implementation) Act (Cap. 335)", "East African Crude Oil Pipeline (Special Provisions) Act (Cap. 156)", "National Social Security Fund Act (Cap. 230)"].every((t) => register.includes(t)));
+check("Law Register shows the Tax Appeals Tribunals Act as Cap. 341", register.includes("Tax Appeals Tribunals Act (Cap. 341)") && !register.includes("Cap. 345"));
 await page.screenshot({ path: path.join(shots, "5-kb-laws-360.png"), fullPage: false });
 const paye = await page.evaluate(() => { location.hash = "home"; return true; }) && await page.textContent("#paye-preview-tax");
 check("PAYE preview still calculates", /UGX|[0-9]/.test(paye || ""));
@@ -300,19 +303,30 @@ await page.waitForTimeout(300);
 check("knowledge search says when nothing matches", ((await page.textContent("#kb-search-results")) || "").includes("Nothing found"));
 await axeScan(page, "knowledge search", "#knowledge");
 
-// Structure of the tax Acts (law-index.json): listed, and found by search.
-await page.waitForSelector("#kb-law-index details.law-index-act", { timeout: 5000 }).catch(() => {});
-check("Knowledge Centre lists the structure of 18 tax Acts and regulations", (await page.$$eval("#kb-law-index details.law-index-act", (n) => n.length)) === 18);
+// Structure of the tax Acts, from the legislative database through /api/legislation.
+await page.waitForSelector("#kb-law-index details.law-index-act", { timeout: 8000 }).catch(() => {});
+check("Knowledge Centre lists the 18 tax Acts and regulations from the database", (await page.$$eval("#kb-law-index details.law-index-act", (n) => n.length)) === 18);
+check("each Act shows its verification status (unverified)", (await page.$$eval("#kb-law-index details.law-index-act summary .law-status.is-unverified", (n) => n.length)) === 18);
+check("the 2026 amendment is flagged as not reflected", ((await page.textContent("details[data-law='ita']")) || "").includes("Not reflected here: Income Tax (Amendment) Act, 2026"));
+await page.click("details[data-law='vata'] > summary");
+await page.waitForSelector("#law-vata-s16", { timeout: 5000 }).catch(() => {});
+check("expanding the VAT Act shows its Parts, sections and schedules", ((await page.textContent("details[data-law='vata']")) || "").includes("Part IV – Supplies of Goods and Services") && (await page.textContent("#law-vata-s16"))?.includes("Place of supply of services") && ((await page.textContent("details[data-law='vata']")) || "").includes("Schedule 3 – Exempt supplies"));
+for (const [query, expected] of [["foreign tax credit", "Section 80 – Foreign tax credit"], ["international payments", "Section 82 – Tax on international payments"], ["place of supply of services", "Section 16 – Place of supply of services"]]) {
+  await page.fill("#law-search", query);
+  await page.waitForFunction((want) => document.querySelector("#law-search-results .kb-search-hit")?.textContent?.includes(want), expected, { timeout: 5000 }).catch(() => {});
+  const first = (await page.textContent("#law-search-results .kb-search-hit") || "");
+  check(`Act search "${query}" returns ${expected} first`, first.includes(expected), first);
+}
 await page.fill("#kb-search", "foreign tax credit");
-await page.waitForFunction(() => [...document.querySelectorAll("#kb-search-results .kb-search-hit")].some((b) => b.textContent.includes("80.")), null, { timeout: 5000 }).catch(() => {});
-const lawHit = page.locator("#kb-search-results .kb-search-hit", { hasText: "80." }).first();
-check("search finds Income Tax Act s.80 by its heading", (await lawHit.count()) === 1);
+await page.waitForFunction(() => [...document.querySelectorAll("#kb-search-results .kb-search-hit")].some((b) => b.textContent.includes("Section 80 – Foreign tax credit")), null, { timeout: 5000 }).catch(() => {});
+const lawHit = page.locator("#kb-search-results .kb-search-hit", { hasText: "Section 80 – Foreign tax credit" }).first();
+check("the Knowledge Centre search box also finds Income Tax Act s.80 from the database", (await lawHit.count()) === 1);
 if (await lawHit.count()) {
   await lawHit.click();
-  check("choosing it opens the Act at that section", await page.$eval("details[data-law='ita']", (d) => d.open));
+  await page.waitForSelector("#law-ita-s80", { timeout: 5000 }).catch(() => {});
+  check("choosing it opens the Act at that section", await page.$eval("details[data-law='ita']", (d) => d.open) && Boolean(await page.$("#law-ita-s80")));
 }
-await page.fill("#kb-search", "");
-await axeScan(page, "structure of the tax Acts", "#tax-laws");
+await page.fill("#kb-search", "");await axeScan(page, "structure of the tax Acts", "#tax-laws");
 
 // Guided international tax question: asks for missing facts, answers in the
 // standard order, cites a reviewed record, and hands over to the calculator.
@@ -359,6 +373,14 @@ await page.evaluate(() => { location.hash = "assistant"; });
 await page.waitForFunction(() => document.querySelector("#tax-chat-messages")?.textContent?.includes("Saved answer from an earlier visit."), null, { timeout: 5000 }).catch(() => {});
 const chatText = (await page.textContent("#tax-chat-messages")) || "";
 check("chat history comes back after a reload, marked as kept on this device", chatText.includes("Saved answer from an earlier visit.") && chatText.includes("kept on this device only"));
+// The AI assistant retrieves provisions from the legislative database.
+await page.fill("#tax-chat-input", "What is a foreign tax credit in Uganda?");
+await page.click("#tax-chat-form button[type=submit]");
+await page.waitForSelector(".tax-chat-legislation", { timeout: 8000 }).catch(() => {});
+const legBlock = (await page.textContent(".tax-chat-legislation")) || "";
+check("chat answer lists the provision retrieved from the database", legBlock.includes("Income Tax Act (Cap. 338), s.80 – Foreign tax credit") && legBlock.includes("Unverified structure only"));
+const chatAnswer = (await page.textContent("#tax-chat-messages")) || "";
+check("chat answer says only headings are held and no wording is invented", chatAnswer.includes("cannot state the conditions, rates or legal effect") && chatAnswer.includes("may not reflect the law in force"));
 await page.click("#tax-chat-clear");
 check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
 
