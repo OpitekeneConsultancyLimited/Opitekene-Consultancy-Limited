@@ -48,6 +48,8 @@ export const TAX_CATEGORIES = [
   "income-tax", "vat", "paye", "corporation-tax", "presumptive-tax", "capital-gains", "stamp-duty",
   "excise-duty", "customs", "tax-administration", "returns-filing", "registration-compliance",
   "penalties-interest", "objections-appeals",
+  // Other laws in the Uganda tax compendium
+  "petroleum", "exchange-of-information", "gaming-and-betting", "social-security",
 ] as const;
 export type TaxCategory = (typeof TAX_CATEGORIES)[number];
 

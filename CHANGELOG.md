@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-12 - Structure of the Uganda tax Acts
+
+- **`law-index.json`**: the structure of 18 Acts and regulations as in the 2024 revised edition at FY 2024/25. That is: titles, chapters, commencement dates, Parts, 701 section numbers and headings, and Schedules. The instruments are the Income Tax, VAT, Excise Duty, Stamp Duty, Tax Procedures Code, Tax Appeals Tribunals, Lotteries and Gaming, EACOP, Mutual Assistance and NSSF Acts, plus their regulations.
+  - It was built by `scripts/compendium-index.mjs` from the Arrangement of Sections in a FY 2024/25 tax-law compendium.
+  - Structure only: no section wording, footnotes or editorial marks, because the compiler claims copyright in the compilation.
+- **Knowledge Centre:** "Structure of the tax Acts", searchable by heading (for example "foreign tax credit" finds Income Tax Act s.80).
+- **Guided international answers** now cite sections by number, for example "s.80 Foreign tax credit", "s.82 Tax on international payments" and "VAT Act s.16 Place of supply of services".
+- **Migration `20261112000200`:**
+  - adds the Stamp Duty, Lotteries and Gaming, Mutual Assistance, EACOP and NSSF Acts to the law register;
+  - corrects the Tax Appeals Tribunals Act to Cap. 341 (the register had Cap. 345, its number in the 2000 edition);
+  - seeds 19 draft knowledge records, one per instrument plus a metadata-only record for the compendium.
+
+  Everything is TODO_VERIFY against the official ULRC edition (todo-verify B4, B10 to B15).
+- Service worker `taxcomp-app-v39`.
+
 ## 2026-11-12 - International tax knowledge base and guided reasoning
 
 - **Knowledge records** (migration `20261112000100`, `worker/challenge/knowledge.mts`): international principles and Uganda domestic law, each with source kind, organisation, reference, chapter, period, effective and publication dates, licence, verification status and last-reviewed date; history in `knowledge_record_events`. Users only see verified records; verified current law ranks first, then the source hierarchy (legislation → regulations → cases → guidance → treaties → international standards → textbooks → general AI knowledge).
