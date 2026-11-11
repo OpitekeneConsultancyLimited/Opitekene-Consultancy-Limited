@@ -34,8 +34,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=challenge-5">
+    <link rel="stylesheet" href="design.css?v=challenge-6">
     <script src="site-router.js?v=challenge-1" defer></script>
+    <script src="kb-search.js?v=kb-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
@@ -49,16 +50,16 @@
     <script src="app.js?v=phase3-calculators-1" defer></script>
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
-    <script src="tax-chat.js?v=claude-1" defer></script>
+    <script src="tax-chat.js?v=history-1" defer></script>
     <script src="international-tax.js?v=international-tax-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
     <script src="phase6-app.js?v=supabase-auth-1" defer></script>
-    <script src="account.js?v=landing-1" defer></script>
+    <script src="account.js?v=case-pay-1" defer></script>
     <script src="challenge-docx.js?v=challenge-2" defer></script>
     <script src="challenge-calendar.js?v=challenge-1" defer></script>
-    <script src="challenge-app.js?v=challenge-4" defer></script>
+    <script src="challenge-app.js?v=challenge-5" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -1748,8 +1749,13 @@
         <div class="page-head">
           <p class="kicker">Tax Knowledge</p>
           <h1 id="knowledge-title">Uganda tax knowledge centre</h1>
-          <p>Guides, laws, case notes, updates and compliance checklists. Search the guides below, or filter the library.</p>
+          <p>Guides, laws, case notes, updates and compliance checklists. Search the whole library, or filter it.</p>
         </div>
+        <form class="kb-search-form" role="search" aria-label="Search the knowledge centre">
+            <label for="kb-search" class="visually-hidden">Search the knowledge centre</label>
+            <input id="kb-search" class="catalogue-search" type="search" placeholder="Search guides, laws, cases and updates, e.g. rental income" autocomplete="off">
+        </form>
+        <div id="kb-search-results" class="kb-search-results" aria-live="polite" hidden></div>
         <div class="chip-row" role="group" aria-label="Filter the knowledge library">
             <button type="button" class="chip" data-kb-filter="all" aria-pressed="true">Everything</button>
             <button type="button" class="chip" data-kb-filter="guides" aria-pressed="false">Tax guides</button>
@@ -1852,7 +1858,7 @@
         </div>
         <p class="tax-chat-privacy" role="note">
           Do not enter your TIN, passwords, mobile-money PINs, account numbers or confidential documents.
-          Chat history is not saved. When AI is connected, your question and recent chat turns are sent
+          Your conversation is kept in this browser only (Clear removes it; signing out deletes it). When AI is connected, your question and recent chat turns are sent
           through Cloudflare to an AI provider (Anthropic Claude, with Google Gemini as backup) only when you opt in below. Only grounded responses are labeled as live web research;
           this chat does not accept uploaded client documents. Always check cited sources and effective dates.
         </p>
@@ -2205,7 +2211,7 @@
           <li>Calculator figures are worked out in your browser and are not uploaded.</li>
           <li>The audit and tax-health checklist saves your answers in this browser only.</li>
           <li>Your account (email and subscription) is held in our Supabase database; payments are processed by Flutterwave, and TaxComp does not see card or Mobile Money PINs.</li>
-          <li>AI questions are sent through Cloudflare to Anthropic Claude (Google Gemini as backup). Live web research runs only when you opt in. Chat history is not saved.</li>
+          <li>AI questions are sent through Cloudflare to Anthropic Claude (Google Gemini as backup). Live web research runs only when you opt in. Your conversation is kept in this browser only, separately for each account, so it is there when you come back; Clear removes it, and signing out deletes it from the device. It is not stored on TaxComp's servers.</li>
           <li>If you agree, a question TaxComp could not answer is saved for research, visible only to administrators, and deleted after 90 days.</li>
           <li>Firm workspace records are stored in the firm's private workspace and are visible only to that firm's members.</li>
           <li>Challenge an Assessment: you agree before your first upload. Notices, records and your answers are kept in TaxComp's private Supabase database and private file storage (EU, Ireland) until you delete the case; one button deletes the case and all its files. Only you and, if your case is assigned to one, an Opitekene reviewer can see them, and every reviewer view, change and download is logged. When you ask us to read a notice, it is sent to Anthropic's Claude (and to Google Gemini's paid service only if Opitekene has turned it on), neither of which uses it to train its models. Uploaded documents and case data are never stored in the app's offline cache.</li>

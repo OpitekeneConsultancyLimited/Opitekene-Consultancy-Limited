@@ -37,6 +37,8 @@
       return data?.session?.access_token || null;
     },
     isPremium: () => Boolean(account?.premium),
+    /** The signed-in user's id (used to keep each person's chat history apart on a shared device). */
+    getUserId: () => session?.user?.id || null,
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   };
   window.TaxCompAccount = api;

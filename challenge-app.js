@@ -711,6 +711,10 @@
   });
 
   // ------------------------------------------------- knowledge centre feeds
+  const BILL_STATUS_TEXT = {
+    bill: "Bill: not law, never applied by TaxComp", passed: "Passed by Parliament, awaiting assent: not yet applied",
+    returned: "Returned by the President: not yet applied", assented: "Assented", in_force: "In force",
+  };
   async function loadKnowledgePanels() {
     const lawRoot = document.querySelector("#kb-law-register");
     const caseRoot = document.querySelector("#kb-case-register");
@@ -720,7 +724,7 @@
         const law = await call("/api/challenge/law");
         lawRoot.dataset.loaded = "1";
         lawRoot.replaceChildren(h("ul", { className: "link-list" }, law.statutes.map((s) => h("li", {}, [link(`${s.title}${s.chapter ? ` (${s.chapter})` : ""}`, s.sourceUrl),
-          h("span", { text: s.kind === "amendment" ? `${s.billStatus === "in_force" ? "In force" : s.billStatus}. ${s.assentDate ? `Assented ${date(s.assentDate)}. ` : ""}${s.appliesFromPeriod ? `Applies from ${date(s.appliesFromPeriod)}.` : ""}` : "Principal Act. Section wording: being verified against ULII." })]))));
+          h("span", { text: s.kind === "amendment" ? `${BILL_STATUS_TEXT[s.billStatus] || s.billStatus}. ${s.assentDate ? `Assented ${date(s.assentDate)}. ` : ""}${s.appliesFromPeriod ? `Applies from ${date(s.appliesFromPeriod)}.` : ""}` : "Principal Act. Section wording: being verified against ULII." })]))));
       }
       if (caseRoot && !caseRoot.dataset.loaded) {
         const cases = await call("/api/challenge/case-law");

@@ -343,9 +343,50 @@
     }
   }
 
+  // ---------------------------------------------------------------- history
+  // The conversation is kept in this browser only (localStorage), separately
+  // for each signed-in user, and removed when they press Clear or sign out.
+  // Nothing extra is sent anywhere.
+  const HISTORY_PREFIX = "taxcomp-chat-history:";
+  const HISTORY_MAX = 40;
+
+  /** A storable copy of one message: text, links and calculators only. */
+  function historyEntry(role, text, sources = [], calculators = [], metadata = {}) {
+    return {
+      role: role === "assistant" ? "assistant" : "user",
+      text: String(text ?? "").slice(0, 12000),
+      sources: (Array.isArray(sources) ? sources : []).map(allowedSource).filter(Boolean).slice(0, 12),
+      calculators: (Array.isArray(calculators) ? calculators : []).filter(isKnownCalculator).slice(0, 6),
+      meta: { answerSource: typeof metadata.answerSource === "string" ? metadata.answerSource : undefined, webGrounded: metadata.webGrounded === true },
+    };
+  }
+
+  /** Keeps the newest messages, never starting on an assistant reply without its question. */
+  function trimHistory(entries, max = HISTORY_MAX) {
+    let kept = entries.slice(-max);
+    while (kept.length && kept[0].role !== "user") kept = kept.slice(1);
+    return kept;
+  }
+
+  function historyStore() {
+    try {
+      const storage = root.localStorage;
+      return {
+        read(userId) { try { const value = JSON.parse(storage.getItem(HISTORY_PREFIX + userId) || "[]"); return Array.isArray(value) ? value : []; } catch { return []; } },
+        write(userId, entries) { try { storage.setItem(HISTORY_PREFIX + userId, JSON.stringify(trimHistory(entries))); } catch { /* storage full or blocked */ } },
+        remove(userId) { try { storage.removeItem(HISTORY_PREFIX + userId); } catch { /* blocked */ } },
+      };
+    } catch {
+      return { read: () => [], write() {}, remove() {} };
+    }
+  }
+
   function initialize() {
     const form = document.querySelector("#tax-chat-form");
     if (!form) return;
+    const store = historyStore();
+    let saved = [];
+    let activeUser = null;
 
     const endpoint = document.querySelector('meta[name="taxcomp-chat-endpoint"]')?.content.trim() || "";
     const messages = document.querySelector("#tax-chat-messages");
@@ -530,6 +571,34 @@
       );
     }
 
+    function remember(role, text, sources, calculators, metadata) {
+      if (!activeUser) return;
+      saved = trimHistory([...saved, historyEntry(role, text, sources, calculators, metadata)]);
+      store.write(activeUser, saved);
+    }
+
+    /** Shows the signed-in user's saved conversation; a different (or no) user starts fresh. */
+    function syncUser() {
+      const userId = root.TaxCompAccount?.getUserId?.() || null;
+      if (userId === activeUser || busy) return;
+      // Signing out removes the previous person's history from this device.
+      if (activeUser && !userId) store.remove(activeUser);
+      activeUser = userId;
+      saved = userId ? trimHistory(store.read(userId)) : [];
+      messages.replaceChildren();
+      conversation.length = 0;
+      addWelcome();
+      if (!saved.length) return;
+      const note = document.createElement("p");
+      note.className = "tax-chat-history-note";
+      note.textContent = "Your earlier conversation, kept on this device only. Press Clear to remove it.";
+      messages.append(note);
+      for (const entry of saved) {
+        renderMessage(entry.role, entry.text, entry.sources, entry.calculators, entry.meta || {});
+        conversation.push({ role: entry.role === "assistant" ? "model" : "user", text: entry.text });
+      }
+    }
+
     async function getAnswer(question, recordUnanswered, taxPeriod, providerConsent) {
       // First, try the AI advisor service if configured
       const aiResult = await tryAIAdvisor(question, taxPeriod, undefined, undefined);
@@ -683,6 +752,8 @@
           { role: "user", text: taxPeriod ? `${question}\nTax period: FY ${taxPeriod}` : question },
           { role: "model", text: result.answer },
         );
+        remember("user", taxPeriod ? `${question}\nTax period: FY ${taxPeriod}` : question);
+        remember("assistant", result.answer, result.sources, result.calculators, result);
         if (result.answerSource === "advisor") {
           status.textContent = `Evidence-first advisor mode: ${result.advisorMode || "fallback"}. ${result.structuredAnswer?.verificationStatus?.adequateVerifiedPrimaryAuthority ? "Verify every cited source before relying on its application." : "No adequate verified authority is available; follow-up facts and source review remain necessary."}`;
         } else if (result.answerSource === "ai-advisor") {
@@ -721,6 +792,8 @@
           fallback.calculators,
           { ...fallback, consultationQuestion: question },
         );
+        remember("user", taxPeriod ? `${question}\nTax period: FY ${taxPeriod}` : question);
+        remember("assistant", `Web-enabled AI is unavailable, so I cannot verify current information. ${serviceMessage}\n\n${fallback.answer}`, fallback.sources, fallback.calculators, fallback);
         status.textContent = `The AI service did not answer. This fallback uses only reviewed local notes, not a live web search.${recordRequested ? " The question was not confirmed as saved." : ""}`;
       } finally {
         busy = false;
@@ -765,19 +838,31 @@
       if (busy) return;
       messages.replaceChildren();
       conversation.length = 0;
+      saved = [];
+      if (activeUser) store.remove(activeUser);
       document.dispatchEvent(new CustomEvent("taxcomp:cleared"));
       status.textContent = endpoint
-        ? "Chat history cleared from this browser session."
+        ? "Chat history cleared from this browser and this device."
         : "Chat history cleared. Live web search is not connected; answers use local notes only.";
       addWelcome();
       input.focus();
     });
 
     addWelcome();
+    // account.js may load after this script; follow sign-in and sign-out.
+    const followAccount = () => {
+      if (!root.TaxCompAccount) return false;
+      root.TaxCompAccount.onChange?.(syncUser);
+      syncUser();
+      return true;
+    };
+    if (!followAccount()) document.addEventListener("DOMContentLoaded", followAccount, { once: true });
   }
 
   return {
     findLocalAnswer,
+    historyEntry,
+    trimHistory,
     initialize,
   };
 });
