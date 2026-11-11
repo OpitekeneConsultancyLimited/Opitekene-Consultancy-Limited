@@ -139,10 +139,12 @@
           const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
           data = new Uint8Array(await new Response(stream).arrayBuffer());
         } else if (method !== 0) throw new Error("This Word file uses a format TaxComp cannot read. Save it as PDF instead.");
-        const docXml = decoder.decode(data);
-        return docXml
-          .replace(/<w:tab\/>/g, "\t").replace(/<w:br\/>/g, "\n").replace(/<\/w:p>\s*<\/w:tc>/g, " | ").replace(/<\/w:tr>/g, "\n").replace(/<\/w:p>/g, "\n")
-          .replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
+        let text = decoder.decode(data)
+          .replace(/<w:tab\/>/g, "\t").replace(/<w:br\/>/g, "\n").replace(/<\/w:p>\s*<\/w:tc>/g, " | ").replace(/<\/w:tr>/g, "\n").replace(/<\/w:p>/g, "\n");
+        // Strip tags until none are left, so a nested "<<x>y>" cannot survive one pass.
+        for (let previous = ""; previous !== text;) { previous = text; text = text.replace(/<[^<>]*>/g, ""); }
+        return text
+          .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&")
           .replace(/ \| \n/g, "\n").replace(/[ \t]+\n/g, "\n").trim();
       }
       at += 46 + nameLength + extraLength + commentLength;

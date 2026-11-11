@@ -56,8 +56,9 @@ test("signed-out front page and signed-in home do not repeat each other (require
   const gate = html.slice(gateStart, html.indexOf('<header class="site-header-bar">'));
   const main = html.slice(html.indexOf("<main>"), html.indexOf("</main>"));
   const homeBlocks = [...main.matchAll(/<section [^>]*data-view="home"[^>]*>[\s\S]*?<\/section>/g)].map((m) => m[0]).join("\n");
+  const stripTags = (s) => { for (let previous = ""; previous !== s;) { previous = s; s = s.replace(/<[^<>]*>/g, ""); } return s; };
   const headings = (block) => [...block.matchAll(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/g)]
-    .map((m) => m[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim().toLowerCase()).filter(Boolean);
+    .map((m) => stripTags(m[1]).replace(/\s+/g, " ").trim().toLowerCase()).filter(Boolean);
   const gateHeadings = new Set(headings(gate));
   const repeated = headings(homeBlocks).filter((heading) => gateHeadings.has(heading));
   assert.deepEqual(repeated, [], "a heading appears on both the signed-out page and the signed-in home");

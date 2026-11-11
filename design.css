@@ -1236,3 +1236,19 @@ main > [data-view]:not(.home-hero) {
   html.ch-printing #challenge-print th, html.ch-printing #challenge-print td { border: 1px solid #555; padding: 4px; }
   html.ch-printing #challenge-print .ch-cite { font-size: 9pt; font-style: italic; }
 }
+
+/* Keep anything scrolled into view or focused clear of the sticky header and,
+   on phones, the fixed "Install TaxComp" banner (WCAG 2.4.11 Focus Not Obscured). */
+html { scroll-padding-top: calc(var(--header-h) + 16px); }
+@media (max-width: 760px) {
+  html { scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
+/* Narrow phones: the header must fit even with wider system fonts (Android, Linux). */
+@media (max-width: 420px) {
+  .site-header-bar .site-header { gap: 8px; }
+  .brand { min-width: 0; flex: 1 1 auto; overflow: hidden; }
+  .brand-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .header-actions { gap: 6px; flex: 0 0 auto; }
+  .header-account { padding: 0 8px; }
+  .site-nav-toggle { flex: 0 0 auto; }
+}

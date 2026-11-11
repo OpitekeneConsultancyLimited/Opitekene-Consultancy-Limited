@@ -11,7 +11,7 @@ node scripts/challenge-e2e.mjs <shots-dir> # Edge end-to-end (needs Microsoft Ed
 node scripts/ext1-harness.mjs score text   # EXT-1 on the 20 synthetic notices (text)
 ```
 
-CI (`release-candidate.yml`, `deploy-pages.yml`) runs `npm test` and the type check. The e2e and the EXT-1 PDF/photo runs need Edge or an AI key, so they are run by hand.
+CI (`release-candidate.yml`) runs `npm test`, the type check and the end-to-end test (on Chrome). The EXT-1 PDF/photo run needs an AI key, so it is run by hand.
 
 ## Where each acceptance test lives
 

@@ -57,7 +57,8 @@ Interest at 2% per month for 6 months: UGX 2,208,000
 Total amount due: UGX 24,288,000
 Reasons: Expenses claimed were not supported by invoices.`;
 
-const browser = await chromium.launch({ channel: "msedge", headless: true });
+// Edge locally; CI sets E2E_BROWSER_CHANNEL=chrome (GitHub's Linux runners have Chrome).
+const browser = await chromium.launch({ channel: process.env.E2E_BROWSER_CHANNEL || "msedge", headless: true });
 const context = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, serviceWorkers: "block", acceptDownloads: true });
 let failNextApi = false;
 await context.route("https://cdn.jsdelivr.net/npm/@supabase/**", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: FAKE_SUPABASE_JS }));

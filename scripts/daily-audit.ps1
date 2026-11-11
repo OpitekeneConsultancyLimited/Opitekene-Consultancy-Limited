@@ -47,7 +47,7 @@ if ($homePage.Code -eq 200) {
   else { Add-Result 'Live site' 'OK' "Up; $($files.Count) key files load." }
   $sw = (Get-Status ($site + 'service-worker.js')).Content
   $cache = [regex]::Match($sw, 'taxcomp-app-v\d+').Value
-  $design = if ($homePage.Content -match 'id="lp-features"') { 'new landing page + redesign' } elseif ($homePage.Content -match 'site-router\.js') { 'redesign' } else { 'old design (redesign PR not merged)' }
+  $design = if ($homePage.Content -match 'id="lp-features"|id="lp-signin"') { 'new landing page + redesign' } elseif ($homePage.Content -match 'site-router\.js') { 'redesign' } else { 'old design (redesign PR not merged)' }
   Add-Result 'Site version' 'INFO' "$design; app cache $cache."
 } else {
   Add-Result 'Live site' 'FAIL' "Home page returned $($homePage.Code)."
@@ -83,7 +83,10 @@ try {
   $since = (Get-Date).ToUniversalTime().AddHours(-26)
   $runs = @(Get-GhJson @('run', 'list', '--repo', $repo, '--limit', '30', '--json', 'workflowName,headBranch,conclusion,createdAt') |
     Where-Object { [datetime]$_.createdAt -gt $since })
-  $failed = @($runs | Where-Object { $_.conclusion -in 'failure', 'timed_out', 'startup_failure' })
+  # Only the newest run of each workflow on each branch counts: a failure that a
+  # later run on the same branch already fixed is history, not a problem.
+  $latestRuns = @($runs | Sort-Object { [datetime]$_.createdAt } -Descending | Group-Object workflowName, headBranch | ForEach-Object { $_.Group[0] })
+  $failed = @($latestRuns | Where-Object { $_.conclusion -in 'failure', 'timed_out', 'startup_failure' })
   if ($failed.Count) { Add-Result 'GitHub checks (24h)' 'FAIL' (($failed | ForEach-Object { "$($_.workflowName) [$($_.headBranch)]" }) -join '; ') }
   else { Add-Result 'GitHub checks (24h)' 'OK' "$($runs.Count) run(s), none failed." }
   $code = @(Get-GhJson @('api', "repos/$repo/code-scanning/alerts?state=open&per_page=100"))
