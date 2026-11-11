@@ -1,0 +1,4489 @@
+{
+ "edition": "Laws of Uganda, Revised Edition 2024, as in force for FY 2024/25",
+ "extractedFrom": "The Arrangement of Sections printed at the start of each Act and regulation in a FY 2024/25 compendium of Uganda tax laws. Only statutory structure was taken: titles, chapters, commencement dates, Parts, section numbers and headings. No section wording, footnotes or editorial notes.",
+ "caveats": [
+  "Amendments made after FY 2024/25 (including the 2025 and 2026 amendment Acts) are not reflected.",
+  "Section numbers are as printed. A few sections inserted by amendment Acts carry pre-revision numbers (for example Income Tax Act 118I and Tax Procedures Code Act 40E).",
+  "Not yet checked against the Uganda Law Reform Commission's official edition."
+ ],
+ "status": "unverified",
+ "instruments": [
+  {
+   "id": "ita",
+   "taxCategory": "income-tax",
+   "title": "Income Tax Act",
+   "cap": "338",
+   "commencement": "1997-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 156,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Application of the Act"
+        },
+        {
+         "section": "2",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "3",
+         "heading": "Associate"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Imposition of Tax",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "4",
+         "heading": "Income tax imposed"
+        },
+        {
+         "section": "5",
+         "heading": "Rental tax imposed"
+        }
+       ]
+      },
+      {
+       "title": "Rates of Tax",
+       "items": [
+        {
+         "section": "6",
+         "heading": "Rates of tax for individuals"
+        },
+        {
+         "section": "7",
+         "heading": "Rate of income tax for companies"
+        },
+        {
+         "section": "8",
+         "heading": "Rate of income tax for trustees and retirement funds"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Residents and Non-Residents",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "9",
+         "heading": "Resident individual"
+        },
+        {
+         "section": "10",
+         "heading": "Resident company"
+        },
+        {
+         "section": "11",
+         "heading": "Resident trust"
+        },
+        {
+         "section": "12",
+         "heading": "Resident partnership"
+        },
+        {
+         "section": "13",
+         "heading": "Resident retirement fund"
+        },
+        {
+         "section": "14",
+         "heading": "Non-resident person"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Chargeable Income",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "15",
+         "heading": "Chargeable income"
+        },
+        {
+         "section": "16",
+         "heading": "Chargeable income arising from insurance business"
+        },
+        {
+         "section": "17",
+         "heading": "Gross income"
+        },
+        {
+         "section": "18",
+         "heading": "Business income"
+        },
+        {
+         "section": "19",
+         "heading": "Employment income"
+        },
+        {
+         "section": "20",
+         "heading": "Property income"
+        }
+       ]
+      },
+      {
+       "title": "Exempt Income",
+       "items": [
+        {
+         "section": "21",
+         "heading": "Exempt income"
+        }
+       ]
+      },
+      {
+       "title": "Deductions",
+       "items": [
+        {
+         "section": "22",
+         "heading": "Expenses of deriving income"
+        },
+        {
+         "section": "23",
+         "heading": "Meals, refreshment and entertainment expenditure"
+        },
+        {
+         "section": "24",
+         "heading": "Bad debts"
+        },
+        {
+         "section": "25",
+         "heading": "Interest"
+        },
+        {
+         "section": "26",
+         "heading": "Repairs and minor capital equipment"
+        },
+        {
+         "section": "27",
+         "heading": "Depreciable assets"
+        },
+        {
+         "section": "28",
+         "heading": "Industrial buildings"
+        },
+        {
+         "section": "29",
+         "heading": "Start-up costs"
+        },
+        {
+         "section": "30",
+         "heading": "Costs of intangible assets"
+        },
+        {
+         "section": "31",
+         "heading": "Scientific research expenditure"
+        },
+        {
+         "section": "32",
+         "heading": "Training expenditure"
+        },
+        {
+         "section": "33",
+         "heading": "Charitable donations"
+        },
+        {
+         "section": "34",
+         "heading": "Farming"
+        },
+        {
+         "section": "35",
+         "heading": "Apportionment of deductions"
+        },
+        {
+         "section": "36",
+         "heading": "Carry forward losses"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Tax Accounting Principles",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "37",
+         "heading": "Substituted year of income"
+        },
+        {
+         "section": "38",
+         "heading": "Method of accounting"
+        },
+        {
+         "section": "39",
+         "heading": "Cash-basis taxpayer"
+        },
+        {
+         "section": "40",
+         "heading": "Accrual-basis taxpayer"
+        },
+        {
+         "section": "41",
+         "heading": "Prepayments"
+        },
+        {
+         "section": "42",
+         "heading": "Claim of right"
+        },
+        {
+         "section": "43",
+         "heading": "Long-term contracts"
+        },
+        {
+         "section": "44",
+         "heading": "Trading Stock"
+        },
+        {
+         "section": "45",
+         "heading": "Debt obligations with discount or premium"
+        },
+        {
+         "section": "46",
+         "heading": "Foreign currency debt gains and losses"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Gains and Losses on Disposal of Assets",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "47",
+         "heading": "Application of Part"
+        },
+        {
+         "section": "48",
+         "heading": "Gains and losses on disposal of assets"
+        },
+        {
+         "section": "49",
+         "heading": "Disposals"
+        },
+        {
+         "section": "50",
+         "heading": "Cost base"
+        },
+        {
+         "section": "51",
+         "heading": "Special rules for consideration received"
+        },
+        {
+         "section": "52",
+         "heading": "Non-recognition of gain or loss"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Miscellaneous Rules for Determining Chargeable Income",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "53",
+         "heading": "Income of joint owners"
+        },
+        {
+         "section": "54",
+         "heading": "Valuation"
+        },
+        {
+         "section": "55",
+         "heading": "Other methods of allocating costs and revenue"
+        },
+        {
+         "section": "56",
+         "heading": "Currency conversion"
+        },
+        {
+         "section": "57",
+         "heading": "Indirect payments and benefits"
+        },
+        {
+         "section": "58",
+         "heading": "Finance leases"
+        },
+        {
+         "section": "59",
+         "heading": "Exclusion of doctrine of mutuality"
+        },
+        {
+         "section": "60",
+         "heading": "Compensation receipts"
+        },
+        {
+         "section": "61",
+         "heading": "Recouped expenditure"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Persons Assessable",
+     "divisions": [
+      {
+       "title": "Taxation of Individuals",
+       "items": [
+        {
+         "section": "62",
+         "heading": "Taxation of individuals"
+        },
+        {
+         "section": "63",
+         "heading": "Income splitting"
+        }
+       ]
+      },
+      {
+       "title": "Taxation of Partnerships and Partners",
+       "items": [
+        {
+         "section": "64",
+         "heading": "Principles of taxation for partnerships"
+        },
+        {
+         "section": "65",
+         "heading": "Calculation of partnership income or loss"
+        },
+        {
+         "section": "66",
+         "heading": "Taxation of partners"
+        },
+        {
+         "section": "67",
+         "heading": "Formation, reconstitution or dissolution of partnership"
+        },
+        {
+         "section": "68",
+         "heading": "Cost base of interest of partner"
+        }
+       ]
+      },
+      {
+       "title": "Taxation of Trusts and Beneficiaries",
+       "items": [
+        {
+         "section": "69",
+         "heading": "Interpretation of provisions relating to taxation of trusts and beneficiaries"
+        },
+        {
+         "section": "70",
+         "heading": "Principles of taxation for trusts"
+        },
+        {
+         "section": "71",
+         "heading": "Taxation of trustees and beneficiaries"
+        },
+        {
+         "section": "72",
+         "heading": "Taxation of estates of deceased persons"
+        }
+       ]
+      },
+      {
+       "title": "Taxation of Companies and Shareholders",
+       "items": [
+        {
+         "section": "73",
+         "heading": "Principles of taxation for companies"
+        },
+        {
+         "section": "74",
+         "heading": "Change in control of companies"
+        },
+        {
+         "section": "75",
+         "heading": "Dividend stripping"
+        },
+        {
+         "section": "76",
+         "heading": "Roll-over relief"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IX",
+     "title": "International Taxation",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "77",
+         "heading": "Interpretation of Part"
+        },
+        {
+         "section": "78A",
+         "heading": "Permanent establishment"
+        },
+        {
+         "section": "78B",
+         "heading": "Calculation of chargeable income of permanent establishment"
+        },
+        {
+         "section": "78",
+         "heading": "Source of income"
+        },
+        {
+         "section": "79",
+         "heading": "Foreign source employment income"
+        },
+        {
+         "section": "80",
+         "heading": "Foreign tax credit"
+        },
+        {
+         "section": "81",
+         "heading": "Taxation of permanent establishment [branch] profits"
+        },
+        {
+         "section": "82",
+         "heading": "Tax on international payments"
+        },
+        {
+         "section": "83",
+         "heading": "Tax on payments to non-resident public entertainers or sports persons"
+        },
+        {
+         "section": "84",
+         "heading": "Tax on payments to non-resident contractors or professionals"
+        },
+        {
+         "section": "85",
+         "heading": "Taxation of non-residents providing shipping, air transport or telecommunications services in Uganda"
+        },
+        {
+         "section": "86",
+         "heading": "Taxation of non-residents providing digital services"
+        },
+        {
+         "section": "87",
+         "heading": "General provisions relating to taxes imposed under Sections 83, 84, 85, and 86"
+        },
+        {
+         "section": "88",
+         "heading": "International agreements"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "X",
+     "title": "Special Provisions for Taxation of Petroleum Operations",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "89",
+         "heading": "Interpretation of Part"
+        }
+       ]
+      },
+      {
+       "title": "Mining Operations",
+       "items": [
+        {
+         "section": "90",
+         "heading": "Taxation of mining licensees"
+        },
+        {
+         "section": "91",
+         "heading": "Limitations of deductions relating to mining operations"
+        },
+        {
+         "section": "92",
+         "heading": "Mining exploration expenditure"
+        },
+        {
+         "section": "93",
+         "heading": "Mining extraction expenditure"
+        },
+        {
+         "section": "94",
+         "heading": "Rehabilitation expenditure"
+        }
+       ]
+      },
+      {
+       "title": "Petroleum Operations",
+       "items": [
+        {
+         "section": "95",
+         "heading": "Taxation of petroleum licensees"
+        },
+        {
+         "section": "96",
+         "heading": "Limitation on deductions relating to petroleum operations"
+        },
+        {
+         "section": "97",
+         "heading": "Petroleum exploration expenditure"
+        },
+        {
+         "section": "98",
+         "heading": "Petroleum development expenditure"
+        },
+        {
+         "section": "99",
+         "heading": "Decommissioning expenditure"
+        },
+        {
+         "section": "100",
+         "heading": "Windfall tax"
+        }
+       ]
+      },
+      {
+       "title": "Rules applicable to Mining and Petroleum Operations",
+       "items": [
+        {
+         "section": "101",
+         "heading": "Farm-outs"
+        },
+        {
+         "section": "102",
+         "heading": "Indirect transfers of interest"
+        },
+        {
+         "section": "103",
+         "heading": "Taxation of contractors"
+        },
+        {
+         "section": "104",
+         "heading": "Withholding tax"
+        },
+        {
+         "section": "105",
+         "heading": "Tax accounting principles"
+        },
+        {
+         "section": "106",
+         "heading": "Allocation of costs and expenses"
+        },
+        {
+         "section": "107",
+         "heading": "Valuation and measurement of petroleum"
+        },
+        {
+         "section": "108",
+         "heading": "Application of sections 121, 122 and 123 and the Tax Procedures Code Act"
+        },
+        {
+         "section": "109",
+         "heading": "Returns"
+        },
+        {
+         "section": "110",
+         "heading": "Assessments, objections and appeals"
+        },
+        {
+         "section": "111",
+         "heading": "Collection and recovery"
+        },
+        {
+         "section": "112",
+         "heading": "Failure to furnish returns"
+        },
+        {
+         "section": "113",
+         "heading": "Making false or misleading statements"
+        },
+        {
+         "section": "114",
+         "heading": "Penal tax and tax offences"
+        },
+        {
+         "section": "115",
+         "heading": "Right of Commissioner to execute mandate"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XI",
+     "title": "Anti-Avoidance",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "116",
+         "heading": "Transactions between associates"
+        },
+        {
+         "section": "117",
+         "heading": "Re-characterisation of income and deductions"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XII",
+     "title": "Procedure Relating to Income Tax",
+     "divisions": [
+      {
+       "title": "Returns",
+       "items": [
+        {
+         "section": "118",
+         "heading": "Furnishing of return of income"
+        },
+        {
+         "section": "119",
+         "heading": "Cases where returns of income not required"
+        },
+        {
+         "section": "120",
+         "heading": "Due date for payment of tax"
+        }
+       ]
+      },
+      {
+       "title": "Provisional Tax",
+       "items": [
+        {
+         "section": "121",
+         "heading": "Payment of provisional tax"
+        },
+        {
+         "section": "122",
+         "heading": "Estimated tax payable"
+        }
+       ]
+      },
+      {
+       "title": "Refund of Tax",
+       "items": [
+        {
+         "section": "123",
+         "heading": "Refunds"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XIII",
+     "title": "Procedure Relating to Rental Tax",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "124",
+         "heading": "Rental tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XIV",
+     "title": "Withholding of Tax at the Source",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "125",
+         "heading": "Interpretation of Part"
+        },
+        {
+         "section": "126",
+         "heading": "Withholding of tax by employers"
+        },
+        {
+         "section": "127",
+         "heading": "Payment of interest to resident persons"
+        },
+        {
+         "section": "128",
+         "heading": "Payment of dividends to resident shareholders"
+        },
+        {
+         "section": "129",
+         "heading": "Withholding tax from professional fees"
+        },
+        {
+         "section": "130",
+         "heading": "Withholding tax by purchaser of asset"
+        },
+        {
+         "section": "131",
+         "heading": "Withholding of tax on payments for winnings of betting"
+        },
+        {
+         "section": "132",
+         "heading": "Withholding tax on payments of re-insurance or re-takaful premiums"
+        },
+        {
+         "section": "133",
+         "heading": "Withholding tax on commission paid by telecommunications service providers on airtime distribution and mobile money"
+        },
+        {
+         "section": "134",
+         "heading": "Withholding of tax on commission paid to insurance agent"
+        },
+        {
+         "section": "135",
+         "heading": "Withholding of tax on commission paid to advertising agent"
+        },
+        {
+         "section": "118I",
+         "heading": "Withholding Tax on Commission paid to Payment Service Provider"
+        },
+        {
+         "section": "136",
+         "heading": "Payment for goods and services"
+        },
+        {
+         "section": "137",
+         "heading": "International payments"
+        },
+        {
+         "section": "138",
+         "heading": "Non-resident services contract"
+        },
+        {
+         "section": "139",
+         "heading": "Withholding as final tax"
+        },
+        {
+         "section": "140",
+         "heading": "Payment of tax withheld"
+        },
+        {
+         "section": "141",
+         "heading": "Advance tax for transport services"
+        },
+        {
+         "section": "142",
+         "heading": "Failure to withhold tax"
+        },
+        {
+         "section": "143",
+         "heading": "Tax credit certificates"
+        },
+        {
+         "section": "144",
+         "heading": "Record of payments and tax withheld"
+        },
+        {
+         "section": "145",
+         "heading": "Priority of tax withheld"
+        },
+        {
+         "section": "146",
+         "heading": "Adjustment on assessment and withholding agent’s indemnity"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XV",
+     "title": "Information Collection",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "147",
+         "heading": "Business information returns"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XVI",
+     "title": "Interest",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "148",
+         "heading": "Interest on unpaid tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XVII",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "149",
+         "heading": "Interpretation of Part"
+        },
+        {
+         "section": "150",
+         "heading": "Re-characterisation of arrangements under Islamic financial business"
+        },
+        {
+         "section": "151",
+         "heading": "Regulations"
+        },
+        {
+         "section": "152",
+         "heading": "Power to amend monetary amounts and Schedules"
+        },
+        {
+         "section": "153",
+         "heading": "Application of certain laws, etc"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "Schedule 1 Currency Point",
+    "Schedule 2 Listed Institutions",
+    "Schedule 3 Small Business Taxpayers Tax Rates",
+    "Schedule 4 Rates of tax",
+    "Schedule 5 Chargeable Income Arising from Insurance Business or General Takaful",
+    "Schedule 6 Valuation of Benefits",
+    "Schedule 7 Depreciation Rates and Vehicle Depreciation Ceiling"
+   ]
+  },
+  {
+   "id": "ita-reg-exporters-2009",
+   "taxCategory": "income-tax",
+   "title": "Income Tax (Tax Incentives for Exporters of Finished Consumer and Capital Goods) Regulations, 2009",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under sections 21(1)(z)(ii)(B) and 151 of the Income Tax Act",
+   "statutoryInstrument": "34 of 2009",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 12,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Title"
+        },
+        {
+         "section": "2",
+         "heading": "Commencement and application"
+        },
+        {
+         "section": "3",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "4",
+         "heading": "Application and grant of certificate of Entitlement to Exemption"
+        },
+        {
+         "section": "5",
+         "heading": "Validity of Certificate of Entitlement to Exemption"
+        },
+        {
+         "section": "6",
+         "heading": "Conditions for grant of exemption"
+        },
+        {
+         "section": "7",
+         "heading": "Obligations of the certificate holder"
+        },
+        {
+         "section": "8",
+         "heading": "Revocation of the Certificate of Entitlement to Exemption"
+        },
+        {
+         "section": "9",
+         "heading": "Appeals"
+        },
+        {
+         "section": "10",
+         "heading": "Records"
+        },
+        {
+         "section": "11",
+         "heading": "Filing returns"
+        },
+        {
+         "section": "12",
+         "heading": "Register"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  },
+  {
+   "id": "ita-reg-transfer-pricing-2011",
+   "taxCategory": "transfer-pricing",
+   "title": "Income Tax (Transfer Pricing) Regulations, 2011",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under sections 116 and 151 of the Income Tax Act",
+   "statutoryInstrument": "30 of 2011",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 10,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Title and commencement"
+        },
+        {
+         "section": "2",
+         "heading": "Application of regulations"
+        },
+        {
+         "section": "3",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Compartibility Factors, Branch Person and Oecd Documents",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "4",
+         "heading": "Compatibility factors"
+        },
+        {
+         "section": "5",
+         "heading": "Branch person and headquarter person"
+        },
+        {
+         "section": "6",
+         "heading": "Application of OECD documents"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Consistency with Arm’s Length Principle, Documentation, Advanced Pricing Agreements and Corresponding Adjustments",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "7",
+         "heading": "Consistency with arm’s length principles"
+        },
+        {
+         "section": "8",
+         "heading": "Documentation"
+        },
+        {
+         "section": "9",
+         "heading": "Advanced pricing agreements"
+        },
+        {
+         "section": "10",
+         "heading": "Corresponding adjustments"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  },
+  {
+   "id": "vata",
+   "taxCategory": "vat",
+   "title": "Value Added Tax Act",
+   "cap": "344",
+   "commencement": "1996-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 53,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "2",
+         "heading": "Interpretation of fair market value"
+        },
+        {
+         "section": "3",
+         "heading": "Interpretation of associate"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Charge of Tax",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "4",
+         "heading": "Charge of tax"
+        },
+        {
+         "section": "5",
+         "heading": "Person liable to pay tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Taxable Persons",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "6",
+         "heading": "Taxable person"
+        },
+        {
+         "section": "7",
+         "heading": "Persons required or permitted to register"
+        },
+        {
+         "section": "8",
+         "heading": "Registration"
+        },
+        {
+         "section": "9",
+         "heading": "Cancellation of registration"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Supplies of Goods and Services",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "10",
+         "heading": "Supply of goods"
+        },
+        {
+         "section": "11",
+         "heading": "Supply of services"
+        },
+        {
+         "section": "12",
+         "heading": "Mixed supplies"
+        },
+        {
+         "section": "13",
+         "heading": "Supply by agent"
+        },
+        {
+         "section": "14",
+         "heading": "Time of supply"
+        },
+        {
+         "section": "15",
+         "heading": "Place of supply of goods"
+        },
+        {
+         "section": "16",
+         "heading": "Place of supply of services"
+        },
+        {
+         "section": "17",
+         "heading": "Imports"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Taxable Supplies",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "18",
+         "heading": "Taxable supply"
+        },
+        {
+         "section": "19",
+         "heading": "Exempt supply"
+        },
+        {
+         "section": "20",
+         "heading": "Exempt import"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Taxable Value",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "21",
+         "heading": "Taxable value of taxable supply"
+        },
+        {
+         "section": "22",
+         "heading": "Adjustments"
+        },
+        {
+         "section": "23",
+         "heading": "Taxable value of import of goods"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Calculation of Tax Payable",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "24",
+         "heading": "Calculation of tax payable on taxable transaction"
+        },
+        {
+         "section": "25",
+         "heading": "Calculation of tax payable by taxable person for tax period"
+        },
+        {
+         "section": "26",
+         "heading": "Cash basis accounting"
+        },
+        {
+         "section": "27",
+         "heading": "Consequences of change in accounting basis"
+        },
+        {
+         "section": "28",
+         "heading": "Credit for input tax"
+        },
+        {
+         "section": "29",
+         "heading": "Tax invoices"
+        },
+        {
+         "section": "30",
+         "heading": "Credit and Debit notes"
+        },
+        {
+         "section": "31",
+         "heading": "Returns"
+        },
+        {
+         "section": "32",
+         "heading": "Due date for payment of tax"
+        }
+       ]
+      },
+      {
+       "title": "Collection and Recovery of Tax",
+       "items": [
+        {
+         "section": "33",
+         "heading": "Duties of receivers"
+        }
+       ]
+      },
+      {
+       "title": "Refund of Tax",
+       "items": [
+        {
+         "section": "34",
+         "heading": "Refund of overpaid tax"
+        },
+        {
+         "section": "35",
+         "heading": "Refund of tax for bad debts"
+        },
+        {
+         "section": "36",
+         "heading": "Interest on overpayments and late refunds"
+        },
+        {
+         "section": "37",
+         "heading": "Refund of tax to diplomats and diplomatic and consular missions and international organizations"
+        },
+        {
+         "section": "38",
+         "heading": "Refund of Tax for use of Electronic Receipt or Invoice"
+        }
+       ]
+      },
+      {
+       "title": "Penal Tax",
+       "items": [
+        {
+         "section": "39",
+         "heading": "Penal tax"
+        },
+        {
+         "section": "40",
+         "heading": "Interest on unpaid tax"
+        },
+        {
+         "section": "41",
+         "heading": "Recovery of penal tax"
+        },
+        {
+         "section": "42",
+         "heading": "Remission of tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "General",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "43",
+         "heading": "Application of Act to partnerships and unincorporated associations"
+        },
+        {
+         "section": "44",
+         "heading": "Trustee"
+        },
+        {
+         "section": "45",
+         "heading": "Currency conversion"
+        },
+        {
+         "section": "46",
+         "heading": "Prices quoted to include tax"
+        },
+        {
+         "section": "47",
+         "heading": "Schemes for obtaining undue tax benefits"
+        },
+        {
+         "section": "48",
+         "heading": "Re-characterisation of arrangements under Islamic financial business"
+        },
+        {
+         "section": "49",
+         "heading": "International agreements"
+        },
+        {
+         "section": "50",
+         "heading": "Priority of Schedules"
+        },
+        {
+         "section": "51",
+         "heading": "Regulations"
+        },
+        {
+         "section": "52",
+         "heading": "Supremacy of Act"
+        },
+        {
+         "section": "53",
+         "heading": "Power to amend Schedules"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 Currency point",
+    "SCHEDULE 2 Public international organizations",
+    "SCHEDULE 3 Exempt supplies",
+    "SCHEDULE 4 Zero-rated supplies",
+    "SCHEDULE 5 Formulae, tax invoices, credit notes & debit notes",
+    "SCHEDULE 6 Calculation of interest penalty"
+   ]
+  },
+  {
+   "id": "vat-reg-deferment-2013",
+   "taxCategory": "vat",
+   "title": "Value Added Tax (Deferment of Tax on Plant and Machinery) Regulations, 2013",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under section 32(7) of the Value Added Tax Act",
+   "statutoryInstrument": "2013 No. 28",
+   "kind": "regulations",
+   "source": "headings in the text",
+   "sectionCount": 10,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Title"
+        },
+        {
+         "section": "2",
+         "heading": "Commencement"
+        },
+        {
+         "section": "3",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "4",
+         "heading": "Application for deferment"
+        },
+        {
+         "section": "5",
+         "heading": "Period of deferment"
+        },
+        {
+         "section": "6",
+         "heading": "Conditions for approval"
+        },
+        {
+         "section": "7",
+         "heading": "Sale of plant and machinery during or after the deferment period"
+        },
+        {
+         "section": "8",
+         "heading": "Inspection"
+        },
+        {
+         "section": "9",
+         "heading": "Termination of deferment"
+        },
+        {
+         "section": "10",
+         "heading": "Payment of tax due"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  },
+  {
+   "id": "eacop",
+   "taxCategory": "petroleum",
+   "title": "East African Crude Oil Pipeline (Special Provisions) Act",
+   "cap": "156",
+   "commencement": "2021-12-24",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 45,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Application of Act"
+        },
+        {
+         "section": "2",
+         "heading": "Purpose of Act"
+        },
+        {
+         "section": "3",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Transportation Tariff",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "4",
+         "heading": "Transportation tariff"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Security",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "5",
+         "heading": "Security"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Title to Petroleum and Payment-in-Kind",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "6",
+         "heading": "Title to petroleum"
+        },
+        {
+         "section": "7",
+         "heading": "Payment-in-kind"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Anti-Trust and Other Competition Related Matters",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "8",
+         "heading": "Anti-trust and other competition related matters"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Project Authorisations",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "9",
+         "heading": "Project authorisations"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Land Rights",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "10",
+         "heading": "Land rights"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "National Content Requirements",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "11",
+         "heading": "National content requirements under the EACOP project"
+        },
+        {
+         "section": "12",
+         "heading": "National content plan"
+        },
+        {
+         "section": "13",
+         "heading": "Principles for developing and implementing national content plans"
+        },
+        {
+         "section": "14",
+         "heading": "Registration on the national supplier data base"
+        },
+        {
+         "section": "15",
+         "heading": "Selection of contractors during the construction phase"
+        },
+        {
+         "section": "16",
+         "heading": "Award of contracts during the construction phase"
+        },
+        {
+         "section": "17",
+         "heading": "Recruitment and training during the construction phase"
+        },
+        {
+         "section": "18",
+         "heading": "Selection of contractors during the operations phase"
+        },
+        {
+         "section": "19",
+         "heading": "Award of contracts during the operations phase"
+        },
+        {
+         "section": "20",
+         "heading": "Procurement of critical intragroup expertise"
+        },
+        {
+         "section": "21",
+         "heading": "Procurement of international project finance services"
+        },
+        {
+         "section": "22",
+         "heading": "Procurements for everyday business purposes"
+        },
+        {
+         "section": "23",
+         "heading": "Reserved contracts"
+        },
+        {
+         "section": "24",
+         "heading": "Joint ventures with local partners"
+        },
+        {
+         "section": "25",
+         "heading": "Unbundling of contracts"
+        },
+        {
+         "section": "26",
+         "heading": "Mobilisation of staff"
+        },
+        {
+         "section": "27",
+         "heading": "Recruitment and training during the operations phase"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IX",
+     "title": "Insurance and Reinsurance",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "28",
+         "heading": "Insurance and reinsurance of the EACOP project"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "X",
+     "title": "Non-Interruption of Project Activities",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "29",
+         "heading": "Non-interruption of project activities"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XI",
+     "title": "Third Party Access",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "30",
+         "heading": "Third party access"
+        },
+        {
+         "section": "31",
+         "heading": "Third party access to the transportation system"
+        },
+        {
+         "section": "32",
+         "heading": "Available capacity"
+        },
+        {
+         "section": "33",
+         "heading": "Tariff calculation methodology for third party access"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XII",
+     "title": "Decommissioning",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "34",
+         "heading": "Applicable regime for decommissioning"
+        },
+        {
+         "section": "35",
+         "heading": "Decommissioning fund"
+        },
+        {
+         "section": "36",
+         "heading": "Completion of decommissioning"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XIII",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "37",
+         "heading": "Early project activities"
+        },
+        {
+         "section": "38",
+         "heading": "Import and export"
+        },
+        {
+         "section": "39",
+         "heading": "Force majeure"
+        },
+        {
+         "section": "40",
+         "heading": "Transfer of rights and obligations"
+        },
+        {
+         "section": "41",
+         "heading": "Provision of electricity"
+        },
+        {
+         "section": "42",
+         "heading": "Fibre optic network"
+        },
+        {
+         "section": "43",
+         "heading": "Fiscal regime"
+        },
+        {
+         "section": "44",
+         "heading": "Regulations"
+        },
+        {
+         "section": "45",
+         "heading": "Supremacy of this Act"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 - Insurances",
+    "SCHEDULE 2 - Agreed Fiscal Regime"
+   ]
+  },
+  {
+   "id": "cmaa",
+   "taxCategory": "exchange-of-information",
+   "title": "Convention on Mutual Administrative Assistance in Tax Matters (Implementation) Act",
+   "cap": "335",
+   "commencement": "2023-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 11,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "2",
+         "heading": "Convention to have force of law in Uganda"
+        },
+        {
+         "section": "3",
+         "heading": "Agreement on Automatic Exchange of Financial Account Information to have force of law in Uganda"
+        },
+        {
+         "section": "4",
+         "heading": "Common Reporting Standard to have force of law in Uganda"
+        },
+        {
+         "section": "5",
+         "heading": "Due diligence"
+        },
+        {
+         "section": "6",
+         "heading": "Reporting obligations"
+        },
+        {
+         "section": "7",
+         "heading": "Offences relating to automatic exchange of information"
+        },
+        {
+         "section": "8",
+         "heading": "Anti-avoidance provisions"
+        },
+        {
+         "section": "9",
+         "heading": "Amendments to Convention or Agreement"
+        },
+        {
+         "section": "10",
+         "heading": "Regulations"
+        },
+        {
+         "section": "11",
+         "heading": "Power to amend Schedule 1"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "Schedule 1 - Currency point",
+    "Schedule 2 - Convention on Mutual Administrative Assistance in Tax Matters",
+    "Schedule 3 - Multilateral Competent Authority Agreement on Automatic",
+    "Schedule 4 - Common Reporting Standard"
+   ]
+  },
+  {
+   "id": "eda",
+   "taxCategory": "excise-duty",
+   "title": "Excise Duty Act",
+   "cap": "336",
+   "commencement": "2014-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 18,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        },
+        {
+         "section": "2",
+         "heading": "Associate"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Imposition, Liability and Payment of Excise Duty",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "3",
+         "heading": "Imposition of excise duty"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Registration of Manufacturers, Importers and Providers of Excisable Goods and Services",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "4",
+         "heading": "Registration of manufacturers, importers and providers of excisable goods and services"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Control of Excisable Goods",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "5",
+         "heading": "Provision of facilities for excise control"
+        },
+        {
+         "section": "6",
+         "heading": "Entry"
+        },
+        {
+         "section": "7",
+         "heading": "Storage of excisable goods after manufacture"
+        },
+        {
+         "section": "8",
+         "heading": "Deficiency or excess in stock"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Payment of Excise Duty, Returns, Assessments and Appeals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "9",
+         "heading": "Payment of excise duty"
+        },
+        {
+         "section": "10",
+         "heading": "Application of information technology"
+        },
+        {
+         "section": "11",
+         "heading": "Refunds"
+        },
+        {
+         "section": "12",
+         "heading": "Liability to duty on re-importation"
+        },
+        {
+         "section": "13",
+         "heading": "Excisable goods or excisable services granted remission liable to duty on disposal"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "14",
+         "heading": "Prices quoted to include duty"
+        },
+        {
+         "section": "15",
+         "heading": "General Penalty"
+        },
+        {
+         "section": "16",
+         "heading": "Regulations"
+        },
+        {
+         "section": "17",
+         "heading": "Power to amend Schedule 1"
+        },
+        {
+         "section": "18",
+         "heading": "Repeal and savings"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 – Currency point",
+    "SCHEDULE 2 – Excise Duty in respect of Excisable Goods and Services",
+    "SCHEDULE 3 – Goods Exempt from Excise Duty"
+   ]
+  },
+  {
+   "id": "sda",
+   "taxCategory": "stamp-duty",
+   "title": "Stamp Duty Act",
+   "cap": "339",
+   "commencement": "2014-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 66,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Interpretation",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Stamp Duty",
+     "divisions": [
+      {
+       "title": "Liability of instruments to duty",
+       "items": [
+        {
+         "section": "2",
+         "heading": "Instruments chargeable with duty"
+        },
+        {
+         "section": "3",
+         "heading": "Several instruments used in single transaction of sale, mortgage or settlement"
+        },
+        {
+         "section": "4",
+         "heading": "Instruments relating to several distinct matters"
+        },
+        {
+         "section": "5",
+         "heading": "Instruments coming within several descriptions in Schedule 2"
+        },
+        {
+         "section": "6",
+         "heading": "Marine insurance contract to be expressed in marine policy"
+        },
+        {
+         "section": "7",
+         "heading": "Persons carrying on insurance business to file returns"
+        },
+        {
+         "section": "8",
+         "heading": "Stamp duty on capital of companies"
+        }
+       ]
+      },
+      {
+       "title": "Duty by whom payable",
+       "items": [
+        {
+         "section": "9",
+         "heading": "Expense of providing proper stamp"
+        }
+       ]
+      },
+      {
+       "title": "Stamps and mode of using them",
+       "items": [
+        {
+         "section": "10",
+         "heading": "Duties, how to be paid"
+        },
+        {
+         "section": "11",
+         "heading": "Denoting duty"
+        },
+        {
+         "section": "12",
+         "heading": "Provisions relating to duplicates and counterparts"
+        }
+       ]
+      },
+      {
+       "title": "Time of stamping documents",
+       "items": [
+        {
+         "section": "13",
+         "heading": "Instruments executed in Uganda"
+        },
+        {
+         "section": "14",
+         "heading": "Instruments executed outside Uganda"
+        },
+        {
+         "section": "15",
+         "heading": "Bills and notes drawn outside Uganda"
+        }
+       ]
+      },
+      {
+       "title": "Valuations of duty",
+       "items": [
+        {
+         "section": "16",
+         "heading": "Conversion of amount expressed in foreign currencies"
+        },
+        {
+         "section": "17",
+         "heading": "Stock and marketable securities, how to be valued"
+        },
+        {
+         "section": "18",
+         "heading": "Effect of statement of rate of exchange or average price"
+        },
+        {
+         "section": "19",
+         "heading": "Instruments reserving interest"
+        },
+        {
+         "section": "20",
+         "heading": "Certain instruments connected with mortgages of marketable securities to be chargeable as agreements"
+        },
+        {
+         "section": "21",
+         "heading": "How transfer in consideration of debt or subject to future payment to be charged"
+        },
+        {
+         "section": "22",
+         "heading": "Valuation in case of annuity"
+        },
+        {
+         "section": "23",
+         "heading": "Facts affecting duty to be set forth in instrument"
+        },
+        {
+         "section": "24",
+         "heading": "Direction as to duty in case of certain conveyances"
+        },
+        {
+         "section": "25",
+         "heading": "Reconstruction or amalgamation of companies"
+        },
+        {
+         "section": "26",
+         "heading": "Transfers between associated companies"
+        },
+        {
+         "section": "27",
+         "heading": "Transfers during lifetime of person transferring"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Determination As to Stamps",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "28",
+         "heading": "Determination as to proper stamp"
+        },
+        {
+         "section": "29",
+         "heading": "Certificate by Uganda Revenue Authority"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Instruments Not Duly Stamped",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "30",
+         "heading": "Examination and impounding of instruments"
+        },
+        {
+         "section": "31",
+         "heading": "Instruments not duly stamped inadmissible in evidence"
+        },
+        {
+         "section": "32",
+         "heading": "Where admission of instrument not to be questioned"
+        },
+        {
+         "section": "33",
+         "heading": "Instruments impounded, how dealt with"
+        },
+        {
+         "section": "34",
+         "heading": "Power of Commissioner to stamp instruments impounded"
+        },
+        {
+         "section": "35",
+         "heading": "Instruments unduly stamped by accident"
+        },
+        {
+         "section": "36",
+         "heading": "Endorsement of instruments on which duty has been paid"
+        },
+        {
+         "section": "37",
+         "heading": "Prosecution for offence under Act"
+        },
+        {
+         "section": "38",
+         "heading": "Persons paying duty or penalty may recover it in certain cases"
+        },
+        {
+         "section": "39",
+         "heading": "Power of Commissioner to refund penalty or excess duty in certain cases"
+        },
+        {
+         "section": "40",
+         "heading": "Non-liability for loss of instruments"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Allowances for Spoiled Stamps in Certain Cases",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "41",
+         "heading": "Allowance for spoiled stamps"
+        },
+        {
+         "section": "42",
+         "heading": "Allowance in case of printed forms no longer required by corporations"
+        },
+        {
+         "section": "43",
+         "heading": "Allowance for misused stamps"
+        },
+        {
+         "section": "44",
+         "heading": "Allowance for spoiled or misused stamps, how to be made"
+        },
+        {
+         "section": "45",
+         "heading": "Allowance on renewal of certain debentures"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Objections and Appeals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "46",
+         "heading": "Objection to decision"
+        },
+        {
+         "section": "47",
+         "heading": "Appeal to Tribunal"
+        },
+        {
+         "section": "48",
+         "heading": "Appeal to High Court"
+        },
+        {
+         "section": "49",
+         "heading": "Appeal to Court of Appeal"
+        },
+        {
+         "section": "50",
+         "heading": "Burden of proof"
+        },
+        {
+         "section": "51",
+         "heading": "Duty as a debt due to the Government"
+        },
+        {
+         "section": "52",
+         "heading": "Recovery of duty from other persons"
+        },
+        {
+         "section": "53",
+         "heading": "Collection of duty by distraint"
+        },
+        {
+         "section": "54",
+         "heading": "Duties of receivers"
+        },
+        {
+         "section": "55",
+         "heading": "Security on property for unpaid duty"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Criminal Offences and Procedure",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "56",
+         "heading": "Penalty for executing instrument not duly stamped"
+        },
+        {
+         "section": "57",
+         "heading": "Penalty for failure to cancel adhesive stamp"
+        },
+        {
+         "section": "58",
+         "heading": "Penalty for not making out policy, or making one not duly stamped"
+        },
+        {
+         "section": "59",
+         "heading": "Penalty for not drawing full number of bills or marine policies purporting to be in sets"
+        },
+        {
+         "section": "60",
+         "heading": "Penalty for postdating bills, and for other devices to defraud Government of revenue"
+        },
+        {
+         "section": "61",
+         "heading": "Offences in relation to stamps"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "62",
+         "heading": "Books to be open to inspection"
+        },
+        {
+         "section": "63",
+         "heading": "Re-characterisation of instruments under Islamic financial business"
+        },
+        {
+         "section": "64",
+         "heading": "Power of Minister to amend Schedules"
+        },
+        {
+         "section": "65",
+         "heading": "Regulations"
+        },
+        {
+         "section": "66",
+         "heading": "Saving"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "Schedule 1 - Currency Point",
+    "Schedule 2 - Stamp Duty on Instruments.",
+    "Schedule 3 - Expense of Providing Proper Stamp"
+   ]
+  },
+  {
+   "id": "tpca",
+   "taxCategory": "tax-administration",
+   "title": "Tax Procedures Code Act",
+   "cap": "343",
+   "commencement": "2016-07-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 99,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Application"
+        },
+        {
+         "section": "2",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Registration of Taxpayers",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "3",
+         "heading": "Registration"
+        },
+        {
+         "section": "4",
+         "heading": "Tax identification number"
+        },
+        {
+         "section": "5",
+         "heading": "Deregistration"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Tax Agents and Tax Representatives",
+     "divisions": [
+      {
+       "title": "Registration of Tax Agents",
+       "items": [
+        {
+         "section": "6",
+         "heading": "Tax Agents Registration Committee"
+        },
+        {
+         "section": "7",
+         "heading": "Tax Agents"
+        },
+        {
+         "section": "8",
+         "heading": "Registration of tax agents"
+        },
+        {
+         "section": "9",
+         "heading": "Renewal of registration"
+        },
+        {
+         "section": "10",
+         "heading": "Registration of additional or substituted tax agents"
+        },
+        {
+         "section": "11",
+         "heading": "Notice of change in registered particulars"
+        },
+        {
+         "section": "12",
+         "heading": "Cancellation of registration of tax agent"
+        }
+       ]
+      },
+      {
+       "title": "Tax Representatives",
+       "items": [
+        {
+         "section": "13",
+         "heading": "Liabilities and obligations of tax representative"
+        },
+        {
+         "section": "14",
+         "heading": "Recovery of tax from successor and duty to notify discontinuance of business"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Record-Keeping",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "15",
+         "heading": "Accounts and records"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Tax Returns",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "16",
+         "heading": "Furnishing of tax returns"
+        },
+        {
+         "section": "17",
+         "heading": "Certification of tax return by tax agent"
+        },
+        {
+         "section": "18",
+         "heading": "Power of the Commissioner General to require tax returns in certain cases"
+        },
+        {
+         "section": "18A",
+         "heading": "Destruction of goods"
+        },
+        {
+         "section": "19",
+         "heading": "Extension of time to furnish a tax return"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Tax Stamps",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "20",
+         "heading": "Tax stamps"
+        },
+        {
+         "section": "21",
+         "heading": "Penal tax relating to tax stamps"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Tax Assessments",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "22",
+         "heading": "Self-assessment"
+        },
+        {
+         "section": "23",
+         "heading": "Default assessment"
+        },
+        {
+         "section": "24",
+         "heading": "Advance assessment"
+        },
+        {
+         "section": "25",
+         "heading": "Additional Assessment"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Objections and Appeals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "26",
+         "heading": "Objection to tax decision"
+        },
+        {
+         "section": "27",
+         "heading": "Review of objection decision"
+        },
+        {
+         "section": "28",
+         "heading": "Burden of proof"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IX",
+     "title": "Collection and Recovery of Tax",
+     "divisions": [
+      {
+       "title": "Tax Collection",
+       "items": [
+        {
+         "section": "29",
+         "heading": "Payment of Tax"
+        },
+        {
+         "section": "30",
+         "heading": "Tax liability of statutory corporations"
+        },
+        {
+         "section": "31",
+         "heading": "Extension of time to pay tax"
+        },
+        {
+         "section": "32",
+         "heading": "Tax as debt due to Government of Uganda"
+        }
+       ]
+      },
+      {
+       "title": "Enforced Tax Collection",
+       "items": [
+        {
+         "section": "33",
+         "heading": "Collection of tax from persons leaving Uganda permanently"
+        },
+        {
+         "section": "34",
+         "heading": "Recovery of tax through persons owing money to taxpayer"
+        },
+        {
+         "section": "35",
+         "heading": "Distress proceedings"
+        },
+        {
+         "section": "36",
+         "heading": "Temporary closure of business"
+        },
+        {
+         "section": "37",
+         "heading": "Charge over immovable property"
+        },
+        {
+         "section": "38",
+         "heading": "Seizure of goods"
+        },
+        {
+         "section": "39",
+         "heading": "Security for unpaid tax"
+        },
+        {
+         "section": "40",
+         "heading": "Priority of withholding tax and value added tax"
+        },
+        {
+         "section": "41",
+         "heading": "Order of payment"
+        }
+       ]
+      },
+      {
+       "title": "Interest on Late Payments",
+       "items": [
+        {
+         "section": "42",
+         "heading": "Recovery of interest on unpaid tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "X",
+     "title": "Remission of Tax",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "43",
+         "heading": "Remission of tax"
+        },
+        {
+         "section": "44",
+         "heading": "Tax due and payable by Government"
+        },
+        {
+         "section": "45",
+         "heading": "Deferment of payment of tax"
+        },
+        {
+         "section": "46",
+         "heading": "Waiver of interest and penalty"
+        },
+        {
+         "section": "47",
+         "heading": "Waiver of interest and penalty on payment of principal tax"
+        },
+        {
+         "section": "40E",
+         "heading": "Waiver of interest and penalty on payment of principal tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XI",
+     "title": "Investigations",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "48",
+         "heading": "Access to premises, records and data storage devices"
+        },
+        {
+         "section": "49",
+         "heading": "Notice to obtain information or evidence"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XII",
+     "title": "Certificates",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "50",
+         "heading": "Tax clearance certificate"
+        },
+        {
+         "section": "51",
+         "heading": "Uganda Revenue Authority to issue Certificates of Origin"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XIII",
+     "title": "Practice Notes and Rulings",
+     "divisions": [
+      {
+       "title": "Practice Notes",
+       "items": [
+        {
+         "section": "52",
+         "heading": "Practice notes"
+        }
+       ]
+      },
+      {
+       "title": "Private Rulings",
+       "items": [
+        {
+         "section": "53",
+         "heading": "Private rulings"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XIV",
+     "title": "Tax Officers",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "54",
+         "heading": "Delegation"
+        },
+        {
+         "section": "55",
+         "heading": "Confidentiality"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XV",
+     "title": "Penal Tax",
+     "divisions": [
+      {
+       "title": "Penal Tax",
+       "items": [
+        {
+         "section": "56",
+         "heading": "Penal tax for default in furnishing tax return"
+        },
+        {
+         "section": "57",
+         "heading": "Penal tax for failing to maintain proper records"
+        },
+        {
+         "section": "58",
+         "heading": "Penal Tax for Failure to Provide Information"
+        },
+        {
+         "section": "59",
+         "heading": "Penal tax for making false or misleading statements"
+        },
+        {
+         "section": "60",
+         "heading": "Penal tax for understating provisional tax estimates"
+        },
+        {
+         "section": "61",
+         "heading": "Penalty for failing to apply for registration"
+        },
+        {
+         "section": "62",
+         "heading": "Recovery of penal tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XVI",
+     "title": "Offences",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "63",
+         "heading": "Failing to furnish tax return"
+        },
+        {
+         "section": "64",
+         "heading": "Failure to comply with obligations under Act"
+        },
+        {
+         "section": "65",
+         "heading": "Failure to maintain proper records"
+        },
+        {
+         "section": "66",
+         "heading": "Use of false Tax Identification Number"
+        },
+        {
+         "section": "67",
+         "heading": "Making false or misleading statements"
+        },
+        {
+         "section": "68",
+         "heading": "Obstructing tax officer"
+        },
+        {
+         "section": "69",
+         "heading": "Aiding and abetting tax offence"
+        },
+        {
+         "section": "70",
+         "heading": "Offences relating to recovery of tax"
+        },
+        {
+         "section": "71",
+         "heading": "Offences relating to registration"
+        },
+        {
+         "section": "72",
+         "heading": "Offence relating to acting as Tax Agent without Registration"
+        },
+        {
+         "section": "73",
+         "heading": "Failure to affix or activate tax stamps"
+        },
+        {
+         "section": "74",
+         "heading": "Printing over or defacing of tax stamps"
+        },
+        {
+         "section": "75",
+         "heading": "Forgery of tax stamps"
+        },
+        {
+         "section": "76",
+         "heading": "Failure to use electronic receipting or invoicing"
+        },
+        {
+         "section": "77",
+         "heading": "Forgery of electronic receipt or invoice"
+        },
+        {
+         "section": "78",
+         "heading": "Interfering with electronic fiscal device and electronic dispensing control device"
+        },
+        {
+         "section": "79",
+         "heading": "Offences relating to automatic exchange of information"
+        },
+        {
+         "section": "80",
+         "heading": "Fixing tax stamp on wrong goods, brand or volume"
+        },
+        {
+         "section": "81",
+         "heading": "Offences in relation to tax officers"
+        },
+        {
+         "section": "82",
+         "heading": "Offences by bodies of persons"
+        },
+        {
+         "section": "83",
+         "heading": "Tax officer may appear on behalf of Commissioner General"
+        },
+        {
+         "section": "84",
+         "heading": "Compounding of offences"
+        },
+        {
+         "section": "85",
+         "heading": "Tax charged to be paid despite prosecution"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "XVII",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "86",
+         "heading": "Validity of tax decision"
+        },
+        {
+         "section": "87",
+         "heading": "Rectification of mistake"
+        },
+        {
+         "section": "88",
+         "heading": "Forms, notices, and authentication of documents"
+        },
+        {
+         "section": "89",
+         "heading": "Approved or prescribed form"
+        },
+        {
+         "section": "90",
+         "heading": "Manner of furnishing documents or service of notices"
+        },
+        {
+         "section": "91",
+         "heading": "Electronic returns and notices"
+        },
+        {
+         "section": "92",
+         "heading": "Electronic receipting and electronic invoicing"
+        },
+        {
+         "section": "93",
+         "heading": "Penal tax relating to electronic receipting and electronic invoicing"
+        },
+        {
+         "section": "94",
+         "heading": "Payment of informers"
+        },
+        {
+         "section": "95",
+         "heading": "Regulations"
+        },
+        {
+         "section": "96",
+         "heading": "Power to amend Schedules"
+        },
+        {
+         "section": "97",
+         "heading": "Transitional provisions"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 - Currency point",
+    "SCHEDULE 2 - Tax laws",
+    "SCHEDULE 3 - Tax returns filed with Commissioner General",
+    "SCHEDULE 4 - Amount of turnover in respect of which audited financial statements are"
+   ]
+  },
+  {
+   "id": "tpc-reg-einvoicing-2020",
+   "taxCategory": "tax-administration",
+   "title": "Tax Procedures Code (E-Invoicing and E-Receipting) Regulations, 2020",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under section 95 of the Tax Procedures Code Act",
+   "statutoryInstrument": "82 of 2020",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 10,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Title"
+        },
+        {
+         "section": "2",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "E-Invoicing and E-Recepting",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "3",
+         "heading": "Centralised invoicing and receipting system·"
+        },
+        {
+         "section": "4",
+         "heading": "Issuance of fiscal documents"
+        },
+        {
+         "section": "5",
+         "heading": "Fiscal devices"
+        },
+        {
+         "section": "6",
+         "heading": "Issuance of manual receipts or invoices"
+        },
+        {
+         "section": "7",
+         "heading": "Electronic dispenser controller"
+        },
+        {
+         "section": "8",
+         "heading": "Maintenance of fiscal devices"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "General",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "9",
+         "heading": "Obligations of taxpayer"
+        },
+        {
+         "section": "10",
+         "heading": "Reports"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 - Electronic Invoice or E-Receipt",
+    "SCHEDULE 2 - Reports"
+   ]
+  },
+  {
+   "id": "tpc-reg-adr-2023",
+   "taxCategory": "objections-appeals",
+   "title": "Tax Procedures Code (Alternative Dispute Resolution Procedure) Regulations, 2023",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under section 26(11) and (12) of the Tax Procedures Code Act",
+   "statutoryInstrument": "28 of 2023",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 16,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Title"
+        },
+        {
+         "section": "2",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Alternative Dispute Resolution Procedure",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "3",
+         "heading": "Alternative dispute resolution procedure to be voluntarily"
+        },
+        {
+         "section": "4",
+         "heading": "Application for alternative dispute resolution procedure"
+        },
+        {
+         "section": "5",
+         "heading": "Methods of alternative dispute resolution procedure"
+        },
+        {
+         "section": "6",
+         "heading": "Disputes eligible for alternative dispute resolution"
+        },
+        {
+         "section": "7",
+         "heading": "Pre-alternative dispute resolution procedure meeting"
+        },
+        {
+         "section": "8",
+         "heading": "Conduct of the alternative dispute resolution procedure"
+        },
+        {
+         "section": "9",
+         "heading": "Withdrawal from alternative dispute resolution proceedings"
+        },
+        {
+         "section": "10",
+         "heading": "Representation"
+        },
+        {
+         "section": "11",
+         "heading": "Settlement agreement"
+        },
+        {
+         "section": "12",
+         "heading": "Alteration of assessment upon signing of settlement"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Enforcement of Settlement Agreement",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "13",
+         "heading": "Recognition and enforcement of settlement agreement"
+        },
+        {
+         "section": "14",
+         "heading": "Violation of settlement agreement"
+        },
+        {
+         "section": "15",
+         "heading": "Alternative dispute resolution procedure register"
+        },
+        {
+         "section": "16",
+         "heading": "Maintenance of records"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE FORM"
+   ]
+  },
+  {
+   "id": "lga",
+   "taxCategory": "gaming-and-betting",
+   "title": "Lotteries and Gaming Act",
+   "cap": "334",
+   "commencement": "2016-04-08",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 70,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Preliminary",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "National Lotteries and Gaming Regulatory Board",
+     "divisions": [
+      {
+       "title": "National Lotteries and Gaming Regulatory Board",
+       "items": [
+        {
+         "section": "2",
+         "heading": "Establishment of the National Lotteries and Gaming Regulatory Board"
+        },
+        {
+         "section": "3",
+         "heading": "Objective of Board"
+        },
+        {
+         "section": "4",
+         "heading": "Functions of Board"
+        },
+        {
+         "section": "5",
+         "heading": "Powers of Board"
+        },
+        {
+         "section": "6",
+         "heading": "Composition of Board"
+        },
+        {
+         "section": "7",
+         "heading": "Tenure of office of members of Board"
+        },
+        {
+         "section": "8",
+         "heading": "Meetings of Board"
+        },
+        {
+         "section": "9",
+         "heading": "Remuneration of members of Board"
+        }
+       ]
+      },
+      {
+       "title": "Staff of Board",
+       "items": [
+        {
+         "section": "10",
+         "heading": "Secretariat of Board"
+        },
+        {
+         "section": "11",
+         "heading": "Chief Executive Officer"
+        },
+        {
+         "section": "12",
+         "heading": "Functions of Chief Executive officer"
+        },
+        {
+         "section": "13",
+         "heading": "Tenure of office of Chief Executive officer"
+        },
+        {
+         "section": "14",
+         "heading": "Exemption from personal liability"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Financial and Other Matters",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "15",
+         "heading": "Funds of Board"
+        },
+        {
+         "section": "16",
+         "heading": "Power to open bank accounts"
+        },
+        {
+         "section": "17",
+         "heading": "Borrowing powers"
+        },
+        {
+         "section": "18",
+         "heading": "Estimates of income and expenditure"
+        },
+        {
+         "section": "19",
+         "heading": "Financial year"
+        },
+        {
+         "section": "20",
+         "heading": "Accounts"
+        },
+        {
+         "section": "21",
+         "heading": "Audit of accounts"
+        },
+        {
+         "section": "22",
+         "heading": "Annual report"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Licensing and Regulation of Lotteries",
+     "divisions": [
+      {
+       "title": "National Lottery",
+       "items": [
+        {
+         "section": "23",
+         "heading": "Licence to conduct national lottery"
+        }
+       ]
+      },
+      {
+       "title": "Public Lotteries",
+       "items": [
+        {
+         "section": "24",
+         "heading": "Licence to conduct public lottery"
+        }
+       ]
+      },
+      {
+       "title": "Regulation of Lotteries",
+       "items": [
+        {
+         "section": "25",
+         "heading": "Lottery rules"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Casino, Gaming or Betting Licences",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "26",
+         "heading": "Casino, gaming or betting licence"
+        },
+        {
+         "section": "27",
+         "heading": "Board to issue licences"
+        },
+        {
+         "section": "28",
+         "heading": "Licence to operate casino"
+        },
+        {
+         "section": "29",
+         "heading": "Suitability of premises"
+        },
+        {
+         "section": "30",
+         "heading": "Specific licence conditions"
+        },
+        {
+         "section": "31",
+         "heading": "Licensing of certain casino employees"
+        },
+        {
+         "section": "32",
+         "heading": "Casino games and rules"
+        },
+        {
+         "section": "33",
+         "heading": "Gaming or betting equipment within casinos"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Specific Provisions on Gaming or Betting Machines",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "34",
+         "heading": "Specific conditions for gaming or betting machines licence"
+        },
+        {
+         "section": "35",
+         "heading": "Registration of gaming or betting machines or devices"
+        },
+        {
+         "section": "36",
+         "heading": "National register of gaming or betting machines or devices"
+        },
+        {
+         "section": "37",
+         "heading": "Technical standards for gaming or betting machines"
+        },
+        {
+         "section": "38",
+         "heading": "Gaming or betting software standards"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "General Provisions on Licencing",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "39",
+         "heading": "Minimum capital requirements"
+        },
+        {
+         "section": "40",
+         "heading": "Bond"
+        },
+        {
+         "section": "41",
+         "heading": "Application for licence"
+        },
+        {
+         "section": "42",
+         "heading": "Processing of application by Board"
+        },
+        {
+         "section": "43",
+         "heading": "General licence conditions"
+        },
+        {
+         "section": "44",
+         "heading": "Form of licence"
+        },
+        {
+         "section": "45",
+         "heading": "Duration of licence"
+        },
+        {
+         "section": "46",
+         "heading": "Suspension and revocation of licence"
+        },
+        {
+         "section": "47",
+         "heading": "Renewal of licence"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Taxation of Casinos, Gaming or Betting Activities",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "48",
+         "heading": "Tax on casinos, gaming or betting"
+        },
+        {
+         "section": "49",
+         "heading": "Interest on unpaid tax"
+        },
+        {
+         "section": "50",
+         "heading": "Returns"
+        },
+        {
+         "section": "51",
+         "heading": "Assessment"
+        },
+        {
+         "section": "52",
+         "heading": "Objection to assessment"
+        },
+        {
+         "section": "53",
+         "heading": "Remission of tax"
+        },
+        {
+         "section": "54",
+         "heading": "Recovery of unpaid tax and interest"
+        },
+        {
+         "section": "55",
+         "heading": "Penal tax"
+        },
+        {
+         "section": "56",
+         "heading": "Commissioner to collect tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IX",
+     "title": "General",
+     "divisions": [
+      {
+       "title": "Restrictions on Minors",
+       "items": [
+        {
+         "section": "57",
+         "heading": "Licensee or agent not to accept entry or payment from minors"
+        },
+        {
+         "section": "58",
+         "heading": "Adults not to enter or subscribe to public lottery on behalf of minors"
+        },
+        {
+         "section": "59",
+         "heading": "Display of notice prohibiting minors from entering lottery"
+        },
+        {
+         "section": "60",
+         "heading": "Prohibited items"
+        }
+       ]
+      },
+      {
+       "title": "Electronic Monitoring System",
+       "items": [
+        {
+         "section": "61",
+         "heading": "National central electronic monitoring system"
+        },
+        {
+         "section": "62",
+         "heading": "Display of licence"
+        }
+       ]
+      },
+      {
+       "title": "Appeals",
+       "items": [
+        {
+         "section": "63",
+         "heading": "Appeals"
+        }
+       ]
+      },
+      {
+       "title": "Offences and Penalties",
+       "items": [
+        {
+         "section": "64",
+         "heading": "Conducting lottery or related competition without licence"
+        },
+        {
+         "section": "65",
+         "heading": "Promoting or advertising unlicensed lottery"
+        },
+        {
+         "section": "66",
+         "heading": "Forging tickets or selling forged tickets"
+        },
+        {
+         "section": "67",
+         "heading": "Offences relating to casinos, gaming or betting"
+        },
+        {
+         "section": "68",
+         "heading": "Offences relating to tax"
+        },
+        {
+         "section": "69",
+         "heading": "Power to amend Schedules"
+        },
+        {
+         "section": "70",
+         "heading": "Regulations"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "SCHEDULE 1 - Currency point",
+    "SCHEDULE 2 - Meetings of Board and related matters",
+    "SCHEDULE 3 - Matters to be provided for by lottery rules",
+    "SCHEDULE 4 - Rate of tax",
+    "SCHEDULE 5 - Prohibited items"
+   ]
+  },
+  {
+   "id": "tata",
+   "taxCategory": "objections-appeals",
+   "title": "Tax Appeals Tribunals Act",
+   "cap": "341",
+   "commencement": "1998-08-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 43,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Interpretation",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Establishment of Tax Appeals Tribunals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "2",
+         "heading": "Establishment of tax appeals tribunals"
+        },
+        {
+         "section": "3",
+         "heading": "Appointment of chairperson of tribunal"
+        },
+        {
+         "section": "4",
+         "heading": "Appointment of other members of tribunal"
+        },
+        {
+         "section": "5",
+         "heading": "Qualifications for appointment"
+        },
+        {
+         "section": "6",
+         "heading": "Term of appointment"
+        },
+        {
+         "section": "7",
+         "heading": "Conditions of appointment"
+        },
+        {
+         "section": "8",
+         "heading": "Oath of office"
+        },
+        {
+         "section": "9",
+         "heading": "Termination of appointment"
+        },
+        {
+         "section": "10",
+         "heading": "Disclosure of interest"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Organisation of Tribunals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "11",
+         "heading": "Official seal"
+        },
+        {
+         "section": "12",
+         "heading": "Arrangement of business"
+        },
+        {
+         "section": "13",
+         "heading": "Constitution of tribunal for exercise of powers"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Review by Tribunals of Taxation Decisions",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "14",
+         "heading": "Tribunal to review taxation decisions"
+        },
+        {
+         "section": "15",
+         "heading": "Deposit of portion of tax pending determination of objection"
+        },
+        {
+         "section": "16",
+         "heading": "Application for review of taxation decision"
+        },
+        {
+         "section": "17",
+         "heading": "Lodging of material documents with tribunal"
+        },
+        {
+         "section": "18",
+         "heading": "Mediation"
+        },
+        {
+         "section": "19",
+         "heading": "Burden of proof"
+        },
+        {
+         "section": "20",
+         "heading": "Review by tribunal"
+        },
+        {
+         "section": "21",
+         "heading": "Hearings"
+        },
+        {
+         "section": "22",
+         "heading": "Powers of tribunal"
+        },
+        {
+         "section": "23",
+         "heading": "Procedure"
+        },
+        {
+         "section": "24",
+         "heading": "Representation before tribunal"
+        },
+        {
+         "section": "25",
+         "heading": "Opportunity to make submissions concerning evidence"
+        },
+        {
+         "section": "26",
+         "heading": "Discontinuance, dismissal or reinstatement of application"
+        },
+        {
+         "section": "27",
+         "heading": "Power of tribunal if parties reach agreement"
+        },
+        {
+         "section": "28",
+         "heading": "Appeals to High Court from decisions of tribunal"
+        },
+        {
+         "section": "29",
+         "heading": "Appeals to Court of Appeal from decisions of High Court"
+        },
+        {
+         "section": "30",
+         "heading": "Appeals to Supreme Court from decisions of Court of Appeal"
+        },
+        {
+         "section": "31",
+         "heading": "Operation and implementation of decision subject to review or appeal"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Management of Tribunals",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "32",
+         "heading": "Management of administrative affairs of tribunal"
+        },
+        {
+         "section": "33",
+         "heading": "Registrar of tribunal"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Offences and Penalties",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "34",
+         "heading": "Failure to comply with summons"
+        },
+        {
+         "section": "35",
+         "heading": "Failure to answer questions"
+        },
+        {
+         "section": "36",
+         "heading": "False or misleading evidence"
+        },
+        {
+         "section": "37",
+         "heading": "Contempt of tribunal"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Financial Matters",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "38",
+         "heading": "Funds, accounts and audit"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "39",
+         "heading": "Immunity from suit"
+        },
+        {
+         "section": "40",
+         "heading": "Delegation"
+        },
+        {
+         "section": "41",
+         "heading": "Service of notices and other documents"
+        },
+        {
+         "section": "42",
+         "heading": "Regulations"
+        },
+        {
+         "section": "43",
+         "heading": "Power to amend Schedule"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "Schedule - Currency point"
+   ]
+  },
+  {
+   "id": "nssf",
+   "taxCategory": "social-security",
+   "title": "National Social Security Fund Act",
+   "cap": "230",
+   "commencement": "1985-12-01",
+   "enablingProvision": null,
+   "statutoryInstrument": null,
+   "kind": "act",
+   "source": "arrangement of sections",
+   "sectionCount": 55,
+   "parts": [
+    {
+     "part": "I",
+     "title": "Interpretation",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Interpretation"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "II",
+     "title": "Establishment and Management of National Social Security Fund",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "2",
+         "heading": "Establishment of the National Social Security Fund"
+        },
+        {
+         "section": "3",
+         "heading": "Board of Directors"
+        },
+        {
+         "section": "4",
+         "heading": "General functions and duties of Board"
+        },
+        {
+         "section": "5",
+         "heading": "Meetings of Board"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "III",
+     "title": "Eligibility, Membership and Registration",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "6",
+         "heading": "Eligible employee"
+        },
+        {
+         "section": "7",
+         "heading": "Compulsory registration of employers and eligible employees"
+        },
+        {
+         "section": "8",
+         "heading": "Excepted employment"
+        },
+        {
+         "section": "9",
+         "heading": "Cancellation of registration"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IV",
+     "title": "Contributions",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "10",
+         "heading": "Payment of standard contribution by employers"
+        },
+        {
+         "section": "11",
+         "heading": "Employee’s share of standard contribution"
+        },
+        {
+         "section": "12",
+         "heading": "Special contribution by contributing employers"
+        },
+        {
+         "section": "13",
+         "heading": "Voluntary contributions"
+        },
+        {
+         "section": "14",
+         "heading": "Penalty for delay of payment of contribution"
+        },
+        {
+         "section": "15",
+         "heading": "Certificate of exemption"
+        },
+        {
+         "section": "16",
+         "heading": "Supplementary payment"
+        },
+        {
+         "section": "17",
+         "heading": "Payment in respect of certain Government employees"
+        },
+        {
+         "section": "18",
+         "heading": "Provisions for persons formerly in excepted employment"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "V",
+     "title": "Benefits",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "19",
+         "heading": "Description of benefits"
+        },
+        {
+         "section": "20",
+         "heading": "Age benefit"
+        },
+        {
+         "section": "21",
+         "heading": "Midterm access to benefits"
+        },
+        {
+         "section": "22",
+         "heading": "Withdrawal benefit"
+        },
+        {
+         "section": "23",
+         "heading": "Invalidity benefit"
+        },
+        {
+         "section": "24",
+         "heading": "Emigration grant"
+        },
+        {
+         "section": "25",
+         "heading": "Survivor’s benefit"
+        },
+        {
+         "section": "26",
+         "heading": "Regulations regarding benefits"
+        },
+        {
+         "section": "27",
+         "heading": "Determination of claims and questions"
+        },
+        {
+         "section": "28",
+         "heading": "Correction of erroneous decision otherwise than by appeal"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VI",
+     "title": "Finance",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "29",
+         "heading": "Financial resources of Fund"
+        },
+        {
+         "section": "30",
+         "heading": "Annual and supplementary budget"
+        },
+        {
+         "section": "31",
+         "heading": "Investment"
+        },
+        {
+         "section": "32",
+         "heading": "Borrowing powers"
+        },
+        {
+         "section": "33",
+         "heading": "Accounts and audit"
+        },
+        {
+         "section": "34",
+         "heading": "Annual report"
+        },
+        {
+         "section": "35",
+         "heading": "Member’s account"
+        },
+        {
+         "section": "36",
+         "heading": "Interest on accounts"
+        },
+        {
+         "section": "37",
+         "heading": "Reserve account"
+        },
+        {
+         "section": "38",
+         "heading": "Exemption from stamp duty"
+        },
+        {
+         "section": "39",
+         "heading": "Exemption from income tax"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VII",
+     "title": "Administration",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "40",
+         "heading": "Managing Director"
+        },
+        {
+         "section": "41",
+         "heading": "Deputy Managing Director"
+        },
+        {
+         "section": "42",
+         "heading": "Secretary to Fund"
+        },
+        {
+         "section": "43",
+         "heading": "Staff"
+        },
+        {
+         "section": "44",
+         "heading": "Inspectors"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "VIII",
+     "title": "Legal Proceedings",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "45",
+         "heading": "Offences and penalties"
+        },
+        {
+         "section": "46",
+         "heading": "General punishment"
+        },
+        {
+         "section": "47",
+         "heading": "Institution and conduct of cases"
+        },
+        {
+         "section": "48",
+         "heading": "Jurisdiction of magistrates"
+        },
+        {
+         "section": "49",
+         "heading": "Recovery of sums due to Fund"
+        },
+        {
+         "section": "50",
+         "heading": "Evidence"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "part": "IX",
+     "title": "Miscellaneous",
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "51",
+         "heading": "Existing schemes"
+        },
+        {
+         "section": "52",
+         "heading": "Reciprocal agreements"
+        },
+        {
+         "section": "53",
+         "heading": "Regulations"
+        },
+        {
+         "section": "54",
+         "heading": "Forms"
+        },
+        {
+         "section": "55",
+         "heading": "Power to amend Schedules"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": [
+    "Schedule 1 Currency point",
+    "Schedule 2 Excepted employment.",
+    "Schedule 3 Certificate of exemption."
+   ]
+  },
+  {
+   "id": "nssf-reg-registration-records",
+   "taxCategory": "social-security",
+   "title": "National Social Security Fund (Registration and Records) Regulations",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under section 53 of the Act",
+   "statutoryInstrument": "222—2",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 9,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Citation"
+        },
+        {
+         "section": "2",
+         "heading": "Registration of contributing employers"
+        },
+        {
+         "section": "3",
+         "heading": "Employer’s registration number and certificate of registration"
+        },
+        {
+         "section": "4",
+         "heading": "Registration of eligible employees"
+        },
+        {
+         "section": "5",
+         "heading": "Membership card"
+        },
+        {
+         "section": "6",
+         "heading": "Duplicate membership card, etc"
+        },
+        {
+         "section": "7",
+         "heading": "Notification of changes"
+        },
+        {
+         "section": "8",
+         "heading": "Employer’s records"
+        },
+        {
+         "section": "9",
+         "heading": "Offences and penalties"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  },
+  {
+   "id": "nssf-reg-contributions",
+   "taxCategory": "social-security",
+   "title": "National Social Security Fund (Contributions) Regulations",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under sections 12 and 53 of the Act",
+   "statutoryInstrument": "222—3",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 4,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Citation"
+        },
+        {
+         "section": "2",
+         "heading": "Payments into the Fund"
+        },
+        {
+         "section": "3",
+         "heading": "Place of payments"
+        },
+        {
+         "section": "4",
+         "heading": "Payment not by cash"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  },
+  {
+   "id": "nssf-reg-voluntary",
+   "taxCategory": "social-security",
+   "title": "National Social Security Fund (Voluntary Registration and Contributions) Regulations",
+   "cap": null,
+   "commencement": null,
+   "enablingProvision": "Under sections [10] and 53 of the Act",
+   "statutoryInstrument": "222—4",
+   "kind": "regulations",
+   "source": "arrangement of sections",
+   "sectionCount": 14,
+   "parts": [
+    {
+     "part": null,
+     "title": null,
+     "divisions": [
+      {
+       "title": null,
+       "items": [
+        {
+         "section": "1",
+         "heading": "Citation"
+        },
+        {
+         "section": "2",
+         "heading": "Voluntary registration of employer"
+        },
+        {
+         "section": "3",
+         "heading": "Employer not liable to pay contribution in respect of an unregistered employee"
+        },
+        {
+         "section": "4",
+         "heading": "Employer to pay standard contribution for registered employees"
+        },
+        {
+         "section": "5",
+         "heading": "Month in which standard contributions are to be paid"
+        },
+        {
+         "section": "6",
+         "heading": "Period within which an employer may register"
+        },
+        {
+         "section": "7",
+         "heading": "Employer of a minister of religion"
+        },
+        {
+         "section": "8",
+         "heading": "Employer’s registration number and other requirements"
+        },
+        {
+         "section": "9",
+         "heading": "Employer of minister of religion not liable to pay contribution for other persons"
+        },
+        {
+         "section": "10",
+         "heading": "Employer of minister of religion may pay a supplementary payment for twelve months"
+        },
+        {
+         "section": "11",
+         "heading": "Voluntary registration of eligible employees and ministers of religion"
+        },
+        {
+         "section": "12",
+         "heading": "Membership number"
+        },
+        {
+         "section": "13",
+         "heading": "Voluntary contributions by members who have ceased to be eligible employees"
+        },
+        {
+         "section": "14",
+         "heading": "Rate of voluntary contributions"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "schedules": []
+  }
+ ]
+}

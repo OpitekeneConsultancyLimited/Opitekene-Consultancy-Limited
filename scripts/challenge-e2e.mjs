@@ -300,6 +300,20 @@ await page.waitForTimeout(300);
 check("knowledge search says when nothing matches", ((await page.textContent("#kb-search-results")) || "").includes("Nothing found"));
 await axeScan(page, "knowledge search", "#knowledge");
 
+// Structure of the tax Acts (law-index.json): listed, and found by search.
+await page.waitForSelector("#kb-law-index details.law-index-act", { timeout: 5000 }).catch(() => {});
+check("Knowledge Centre lists the structure of 18 tax Acts and regulations", (await page.$$eval("#kb-law-index details.law-index-act", (n) => n.length)) === 18);
+await page.fill("#kb-search", "foreign tax credit");
+await page.waitForFunction(() => [...document.querySelectorAll("#kb-search-results .kb-search-hit")].some((b) => b.textContent.includes("80.")), null, { timeout: 5000 }).catch(() => {});
+const lawHit = page.locator("#kb-search-results .kb-search-hit", { hasText: "80." }).first();
+check("search finds Income Tax Act s.80 by its heading", (await lawHit.count()) === 1);
+if (await lawHit.count()) {
+  await lawHit.click();
+  check("choosing it opens the Act at that section", await page.$eval("details[data-law='ita']", (d) => d.open));
+}
+await page.fill("#kb-search", "");
+await axeScan(page, "structure of the tax Acts", "#tax-laws");
+
 // Guided international tax question: asks for missing facts, answers in the
 // standard order, cites a reviewed record, and hands over to the calculator.
 await pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified', reviewed_by = 'e2e-approver', reviewed_at = $1, review_note = 'e2e' WHERE id = 'intl.foreign-tax-credit'", [new Date().toISOString()]);
@@ -318,6 +332,7 @@ const answerText = (await page.textContent("#intl-guide-answer")) || "";
 check("guided answer follows the standard order", ["What we understood", "Short answer", "The rules", "In plain terms", "What to do", "Sources", "Assumptions"].every((h, i, all) => answerText.indexOf(h) >= 0 && (i === 0 || answerText.indexOf(all[i - 1]) < answerText.indexOf(h))), answerText.slice(0, 300));
 check("guided answer cites the reviewed record and the Primer by chapter only", answerText.includes("Reviewed") && /Chapter 4: Double Taxation Relief/.test(answerText) && !/\bp\.\s*\d/.test(answerText));
 check("guided answer states no tax rate", !/\d\s?%/.test(answerText));
+check("guided answer cites the Income Tax Act by section", answerText.includes("s.80 Foreign tax credit") && answerText.includes("s.88 International agreements"));
 await axeScan(page, "guided international question", "#intl-guide");
 await page.locator("#intl-guide").screenshot({ path: path.join(shots, "intl-guide.png") });
 await page.getByRole("button", { name: "Work out my figures" }).click();

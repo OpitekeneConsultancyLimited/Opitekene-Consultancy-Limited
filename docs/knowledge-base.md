@@ -31,6 +31,54 @@ How TaxComp holds tax knowledge, reasons with it, and keeps it lawful and curren
   - Stamp duty and customs have no register entry yet, and TaxComp says so rather than naming an Act.
   - The register's chapter numbers and links are themselves still marked TODO_VERIFY (see `docs/challenge-assessment/todo-verify.md`).
 
+## Structure of the Uganda tax Acts (`law-index.json`)
+
+`law-index.json` holds the structure of 18 Acts and regulations as in the 2024 revised edition at FY 2024/25: titles, chapters, commencement dates, Parts, 701 section numbers and headings, and Schedules. The instruments are:
+
+- the Income Tax Act;
+- the VAT Act;
+- the Excise Duty Act;
+- the Stamp Duty Act;
+- the Tax Procedures Code Act;
+- the Tax Appeals Tribunals Act;
+- the Lotteries and Gaming Act;
+- the EACOP Act;
+- the Convention on Mutual Administrative Assistance (Implementation) Act;
+- the NSSF Act;
+- their regulations: transfer pricing, exporters, VAT deferment, e-invoicing, ADR and NSSF.
+
+**How it was built.** `scripts/compendium-index.mjs` reads the "Arrangement of Sections" printed in a private FY 2024/25 compendium of Uganda tax laws. Acts of Parliament carry no copyright, but the compiler claims copyright in his compilation: its selection, arrangement, tracked amendments and footnotes. So:
+
+- only statutory structure was taken;
+- no section wording, footnotes or editorial marks were taken (bracketed numbers such as "(94)" are dropped);
+- the compendium is a metadata-only, `restricted_no_text` record.
+
+The owner chose this "structure only" scope on 2026-11-12.
+
+**How it is used:**
+
+- The Knowledge Centre lists it under "Structure of the tax Acts" (`law-index.js`), where Knowledge Centre search finds sections by heading.
+- Guided answers cite sections by number and heading, for example "Income Tax Act (Cap. 338): s.80 Foreign tax credit".
+- Migration `20261112000200` records the instruments in the database:
+  - It adds the five Acts that were missing from the law register.
+  - It corrects the Tax Appeals Tribunals Act to Cap. 341. The register had Cap. 345, its number in the 2000 edition.
+  - It seeds one draft knowledge record per instrument (`ug.law.*`).
+
+**Caveats** (listed in the file itself):
+
+- Amendments made after FY 2024/25 are not reflected.
+- A few inserted sections carry pre-revision numbers (Income Tax Act 118I, Tax Procedures Code Act 40E).
+- Nothing has been checked against the Uganda Law Reform Commission's (ULRC) official edition yet (todo-verify B4 and B10 to B15).
+
+**For a later edition:**
+
+```
+npm i --no-save pdfjs-dist@4.10.38
+node scripts/compendium-index.mjs "<compendium.pdf>" law-index.json
+```
+
+Then regenerate the migration's records. Do not add section wording.
+
 ## Copyright and licensing
 
 TaxComp holds **no licence** for the *International Tax Primer*, which is © 2019 Kluwer Law International, all rights reserved. Therefore:

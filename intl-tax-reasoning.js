@@ -74,14 +74,14 @@
       { category: "corporation-tax", label: "Corporation tax", statute: "Income Tax Act" },
       { category: "presumptive-tax", label: "Presumptive tax", statute: "Income Tax Act" },
       { category: "capital-gains", label: "Capital gains", statute: "Income Tax Act" },
-      { category: "stamp-duty", label: "Stamp duty", statute: null },
+      { category: "stamp-duty", label: "Stamp duty", statute: "Stamp Duty Act" },
       { category: "excise-duty", label: "Excise duty", statute: "Excise Duty Act" },
       { category: "customs", label: "Customs", statute: null },
       { category: "tax-administration", label: "Tax administration", statute: "Tax Procedures Code Act" },
       { category: "returns-filing", label: "Returns and filing", statute: "Tax Procedures Code Act" },
       { category: "registration-compliance", label: "Registration and compliance", statute: "Tax Procedures Code Act" },
       { category: "penalties-interest", label: "Penalties and interest", statute: "Tax Procedures Code Act" },
-      { category: "objections-appeals", label: "Objections and appeals", statute: "Tax Procedures Code Act; Tax Appeals Tribunal Act" },
+      { category: "objections-appeals", label: "Objections and appeals", statute: "Tax Procedures Code Act; Tax Appeals Tribunals Act" },
     ],
   };
 
@@ -216,7 +216,31 @@
    * Worker (optional); they are listed first among the sources because the
    * source hierarchy puts verified law above the framework notes.
    */
-  function analyse(facts, records = []) {
+  function lawIndexApi() {
+    if (typeof module === "object" && module.exports && typeof require === "function") return require("./law-index.js");
+    return (typeof globalThis !== "undefined" && globalThis.taxCompLawIndex) || null;
+  }
+
+  // Sections to cite, by heading as printed in law-index.json.
+  const REFS = {
+    residence: [["ita", /^Resident individual$/], ["ita", /^Resident company$/], ["ita", /^Non-resident person$/]],
+    source: [["ita", /^Source of income$/], ["ita", /^Exempt income$/]],
+    foreignEmployment: [["ita", /^Foreign source employment income$/]],
+    foreignTaxCredit: [["ita", /^Foreign tax credit$/]],
+    treaties: [["ita", /^International agreements$/]],
+    returns: [["ita", /^Furnishing of return of income$/], ["tpca", /^Furnishing of tax returns$/]],
+    provisional: [["ita", /^Payment of provisional tax$/]],
+    nonresidentPayments: [["ita", /^Tax on international payments$/], ["ita", /^International payments$/]],
+    contractors: [["ita", /^Tax on payments to non-resident contractors or professionals$/], ["ita", /^Non-resident services contract$/]],
+    digital: [["ita", /^Taxation of non-residents providing digital services$/]],
+    permanentEstablishment: [["ita", /^Permanent establishment$/], ["ita", /^Calculation of chargeable income of permanent establishment$/], ["ita", /^Taxation of permanent establishment/]],
+    importedServices: [["vata", /^Person liable to pay tax$/], ["vata", /^Place of supply of services$/]],
+    transferPricing: [["ita", /^Transactions between associates$/], ["ita-reg-transfer-pricing-2011", /^(?:Consistency with arm.s length principles|Documentation)$/]],
+    registration: [["tpca", /^Registration$/]],
+    antiAvoidance: [["ita", /^Re-characterisation of income and deductions$/], ["ita", /^Transactions between associates$/]],
+  };
+
+  function analyse(facts, records = [], lawIndex = null) {
     const kind = scenario(facts);
     const other = facts.country || "the other country";
     const what = transactionLabel(facts.transaction);
@@ -233,10 +257,16 @@
     let calculation = null;
 
     const principle = (topicId, text) => { topics.add(topicId); rules.push({ layer: LAYER.principle, text, topic: topic(topicId) }); };
-    const law = (category, text) => {
+    const citations = [];
+    const law = (category, text, refs = []) => {
       const entry = DOMESTIC.UG.find((d) => d.category === category);
       domestic.push(entry);
-      rules.push({ layer: LAYER.domestic, text: entry.statute ? `${text} See the ${entry.statute}.` : `${text} TaxComp's law register has no entry for this yet.` });
+      const cited = lawIndex && refs.length ? lawIndexApi()?.cite(lawIndex, refs) : "";
+      if (cited) citations.push(cited);
+      rules.push({
+        layer: LAYER.domestic,
+        text: cited ? `${text} See ${cited}.` : entry.statute ? `${text} See the ${entry.statute}.` : `${text} TaxComp's law register has no entry for this yet.`,
+      });
     };
 
     if (kind === "resident-inbound") {
@@ -252,8 +282,10 @@
         calculation = "taxableIncome";
       }
       principle("intl.treaties", `A Uganda–${other} tax treaty, if one is in force for the period, may limit which country taxes this income.`);
-      law("income-tax", "Whether a Uganda resident is taxed on this foreign income, and any exemption for it, is set by the charging, residence and source provisions.");
-      law("returns-filing", "The income and any relief claimed are reported in the return of income for the year.");
+      law("income-tax", "Whether a Uganda resident is taxed on this foreign income, and any exemption for it, is set by the residence, source and exemption provisions.", [...REFS.residence.slice(0, 2), ...REFS.source, ...(facts.transaction === "employment" ? REFS.foreignEmployment : [])]);
+      if (facts.foreignTax === "yes") law("income-tax", "Relief for tax paid abroad is given by the foreign tax credit provision, within its limits.", REFS.foreignTaxCredit);
+      law("income-tax", "A treaty takes effect in Uganda through the Act's provision on international agreements.", REFS.treaties);
+      law("returns-filing", "The income and any relief claimed are reported in the return of income for the year.", [...REFS.returns, ...(facts.regularity === "regular" ? REFS.provisional : [])]);
       compliance.push(`Keep the contract or payslips, bank records showing the money arriving, and any certificate or receipt for tax paid in ${other}.`);
       compliance.push(`Include the income in your Uganda return of income for ${period}, and claim any foreign tax credit there if the law allows it.`);
       compliance.push(`Check URA's list of tax treaties in force to see whether Uganda has an effective treaty with ${other}.`);
@@ -263,12 +295,13 @@
       shortAnswer = `A payment from Uganda to a nonresident in ${other} for ${what} may require the payer to withhold Uganda tax and pay it to URA, unless the law exempts it or a Uganda–${other} treaty reduces it.${["services", "business"].includes(facts.transaction) ? ` If the payee has a permanent establishment in Uganda (${facts.presence === "yes" ? "you said it has a presence here" : "check its presence here"}), its profits here may be taxed by assessment instead.` : ""}`;
       principle("intl.nonresidents", "A country generally taxes nonresidents only on income sourced in that country.");
       principle("intl.withholding", "Tax on payments to nonresidents is often collected by the payer withholding it from the payment.");
-      law("withholding", "Which payments to nonresidents need withholding, the rate and the deadline for paying it to URA are set by the Act.");
+      law("withholding", "Which payments to nonresidents need withholding, the rate and the deadline for paying it to URA are set by the Act.", [...REFS.nonresidentPayments, ...(facts.transaction === "services" ? REFS.contractors : []), ...(/\b(?:digital|software|subscription|online)\b/i.test(facts.question || "") ? REFS.digital : [])]);
       if (["services", "business"].includes(facts.transaction)) {
         principle("intl.permanent-establishment", "Business profits of a nonresident are usually taxable in the source country only through a permanent establishment there.");
+        law("income-tax", "When a nonresident has a permanent establishment in Uganda, and how its income is worked out, is set by the Act.", REFS.permanentEstablishment);
       }
       if (["services", "royalty"].includes(facts.transaction) || /\b(?:digital|software|subscription|online)\b/i.test(facts.question || "")) {
-        law("vat", "Services imported from abroad may give rise to VAT for the Uganda recipient (often called reverse charge); check whether and how it applies.");
+        law("vat", "Services imported from abroad may give rise to VAT for the Uganda recipient (often called reverse charge); check whether and how it applies.", REFS.importedServices);
       }
       principle("intl.treaties", `A Uganda–${other} treaty, if in force, may lower the withholding rate; the payee usually must be the beneficial owner and prove residence.`);
       reliefs.push("Treaty-reduced withholding, if a treaty is in force and its conditions are met", "Any exemption in the Act for this kind of payment");
@@ -284,11 +317,12 @@
       principle("intl.withholding", "Tax on payments to nonresidents is often collected by withholding.");
       if (business) {
         principle("intl.permanent-establishment", "A fixed place of business, a dependent agent or a long project can create a permanent establishment; treaties often set a minimum duration for projects.");
-        law("registration-compliance", "A business with a taxable presence in Uganda may need to register with URA and file returns.");
+        law("income-tax", "Whether there is a permanent establishment, and how its income is worked out, is set by the Act.", REFS.permanentEstablishment);
+        law("registration-compliance", "A business with a taxable presence in Uganda may need to register with URA and file returns.", REFS.registration);
         compliance.push("Count how long the project or presence in Uganda lasts, and check the time limit in any treaty with your country.");
       }
       principle("intl.double-taxation", "Your country of residence usually gives the relief for tax paid at source.");
-      law("withholding", "Withholding on payments to nonresidents is set by the Act.");
+      law("withholding", "Withholding on payments to nonresidents is set by the Act.", [["ita", /^Non-resident person$/], ...REFS.nonresidentPayments, ...(facts.transaction === "services" ? REFS.contractors : [])]);
       compliance.push("Keep the withholding tax certificate from the Ugandan payer as proof of tax paid in Uganda.", "Claim relief in your home country's return as its law allows.");
       calculation = "withholdingGrossUp";
       explanation = "The country where income arises usually gets the first chance to tax it; the country where you live then decides how much relief to give.";
@@ -297,7 +331,8 @@
       principle("intl.residence-individuals", "Residence tests look at facts such as a permanent home, days present and where personal and economic ties are strongest.");
       principle("intl.residence-companies", "A company may be resident where it is incorporated or where it is managed and controlled.");
       principle("intl.treaties", "Treaties contain tie-breaker rules for persons resident in both countries.");
-      law("income-tax", "Uganda's residence tests for individuals and companies are in the Act.");
+      law("income-tax", "Uganda's residence tests for individuals and companies are in the Act.", REFS.residence);
+      law("income-tax", "Treaty tie-breakers apply in Uganda through the Act's provision on international agreements.", REFS.treaties);
       compliance.push("Record days spent in each country, where your home and family are, and where the business is managed.");
       uncertainty.push("Residence must be settled before the rest of the answer can be relied on.");
       explanation = "Residence is the gateway question in international tax: it decides whether a country taxes all your income or only what arises there.";
@@ -312,7 +347,7 @@
 
     if (facts.related === "yes" && kind !== "general") {
       principle("intl.transfer-pricing", "Prices between related parties may be adjusted to what independent parties would have agreed (the arm's length principle).");
-      law("income-tax", "Uganda's transfer pricing rules for transactions between associates are in the Act and its regulations.");
+      law("income-tax", "Uganda's transfer pricing rules for transactions between associates are in the Act and its regulations.", REFS.transferPricing);
       compliance.push("Keep transfer pricing documentation showing how the price was set and why it is arm's length.");
       calculation = calculation || "transferPricingAdjustment";
     }
@@ -324,6 +359,7 @@
       shortAnswer = conduct.text;
     } else if (facts.conduct === "avoidance") {
       topics.add("intl.planning-avoidance-evasion");
+      law("income-tax", "The Act lets the Commissioner General re-characterise arrangements and adjust transactions between associates.", REFS.antiAvoidance);
       conduct = { kind: "avoidance", text: "Arranging your affairs lawfully is tax planning. Arrangements whose main purpose is a tax result the law did not intend are tax avoidance, and anti-avoidance rules can cancel the benefit. TaxComp explains the rules and compares options; it does not design avoidance schemes." };
     }
 
@@ -335,6 +371,7 @@
     if (facts.presence === "unknown") assumptions.push("It is not known whether the foreign party has a presence in Uganda (permanent establishment).");
     uncertainty.push("No rate or threshold is given here: TaxComp does not state rates it has not verified for the period. Use the calculator with the rate from the Act, treaty or URA notice.");
     uncertainty.push("Treaty status and the exact Uganda provisions must be confirmed for the period; the register's chapter numbers and links are still being verified.");
+    if (citations.length) uncertainty.push("Section numbers and headings are from the 2024 revised edition as at FY 2024/25 and have not yet been checked against the official edition; amendments since then may have changed them.");
     if (!records.length) uncertainty.push("No reviewed knowledge record was available for this answer; the concept notes are general principles, not Uganda law.");
 
     const sources = [];
@@ -530,8 +567,8 @@
       }
       submit.disabled = true;
       try {
-        const records = await verifiedRecords(root, question);
-        renderAnswer(answerBox, analyse(facts, records), { onCalculate });
+        const [records, lawIndex] = await Promise.all([verifiedRecords(root, question), root.taxCompLawIndex ? root.taxCompLawIndex.load() : null]);
+        renderAnswer(answerBox, analyse(facts, records, lawIndex), { onCalculate });
         answerBox.querySelector("h4")?.scrollIntoView({ block: "nearest" });
       } finally {
         submit.disabled = false;

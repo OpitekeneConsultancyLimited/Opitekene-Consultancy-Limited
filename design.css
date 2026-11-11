@@ -1313,3 +1313,14 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 /* Contrast (WCAG AA) on the International tax page */
 .advisory-heading p:last-child { color: var(--muted); }
 .international-tax-topics article > span { color: #7a5518; }
+
+/* Structure of the tax Acts (law-index.js) */
+.law-index { display: grid; gap: 8px; margin: 8px 0 20px; }
+.law-index-act { border: 1px solid var(--line); border-radius: 10px; padding: 4px 14px; background: #fff; }
+.law-index-act > summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; color: var(--ink); }
+.law-index-meta { margin: 0 0 8px; color: var(--muted); font-size: .85rem; }
+.law-index-part { margin: 12px 0 4px; font-size: .95rem; color: var(--navy-600); }
+.law-index-division { margin: 8px 0 2px; font-weight: 600; font-size: .9rem; color: var(--ink); }
+.law-index-sections { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 2px; }
+.law-index-sections li { line-height: 1.5; overflow-wrap: anywhere; }
+.law-index-number { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; color: var(--muted); }

@@ -29,12 +29,18 @@ Code and seed data never set `approved_for_computation = true`. A reviewer with 
 | B1 | Income Tax Act | Cap. 338 | Chapter in the Laws of Uganda 2024 Revised Edition; exact ULII link (ULII's sitemap lists `/en/akn/ug/act/1997/11/…`, but its pages could not be opened automatically) |
 | B2 | Value Added Tax Act | Cap. 344 | The same |
 | B3 | Tax Procedures Code Act | Cap. 343 | The same (sitemap lists `/en/akn/ug/act/2014/14/…`) |
-| B4 | Tax Appeals Tribunal Act | Cap. 345 | The same |
+| B4 | Tax Appeals Tribunals Act | Cap. 341 (changed from Cap. 345, its 2000 edition number, on the evidence of a FY 2024/25 compendium of the 2024 revised laws) | The same |
 | B5 | VAT (Amendment) Act 2026 | Assented 18 May 2026; commenced 1 July 2026 (from the owner's brief) | Act number, Gazette reference and ULII link |
 | B6 | Tax Procedures Code (Amendment) Act 2026 | Same dates as B5 | The same |
 | B7 | Income Tax (Amendment) Act 2026 | Bill returned 14 July 2026; assented 20 August 2026; applied by URA from 1 July 2026 | The same, plus the retrospective application. The app tells the user a professional should consider whether applying it before assent can be questioned. |
 | B8 | Excise Duty Act | Cap. 336 (as stated by Parliament's Bill Tracker, bill 561) | Chapter in the Laws of Uganda 2024 Revised Edition; exact ULII link |
 | B9 | Excise Duty (Amendment) Act 2026 | Seeded as **passed, not assented** (never applied). Parliament's Bill Tracker (https://bills.parliament.ug/user_bill_stage.php?billid=561) shows third reading on 21 April 2026 and no assent date. | Assent and commencement dates, Act number, Gazette reference. Statutes are owner-managed: once confirmed, run in the Supabase SQL editor, for example `UPDATE taxcomp.law_statutes SET bill_status = 'in_force', assent_date = 'YYYY-MM-DD', commencement_date = 'YYYY-MM-DD', applies_from_period = 'YYYY-MM-DD' WHERE id = 'eda-amendment-2026';` |
+| B10 | Stamp Duty Act | Cap. 339; commenced 1 July 2014 (as printed in a FY 2024/25 compendium) | Chapter in the 2024 Revised Edition; exact ULII link |
+| B11 | Lotteries and Gaming Act | Cap. 334; commenced 8 April 2016 (same source) | The same |
+| B12 | Convention on Mutual Administrative Assistance in Tax Matters (Implementation) Act | Cap. 335; commenced 1 July 2023 (same source) | The same |
+| B13 | East African Crude Oil Pipeline (Special Provisions) Act | Cap. 156; commenced 24 December 2021 (same source) | The same |
+| B14 | National Social Security Fund Act | Cap. 230 (same source) | The same |
+| B15 | Section structure of 18 Acts and regulations (`law-index.json`, 701 section headings) | Taken from the Arrangement of Sections printed in the compendium, as at FY 2024/25 | Check each Act's Parts, section numbers and headings against the ULRC edition, then mark its `ug.law.*` knowledge record verified. Later amendments (2025, 2026) are not reflected. Inserted sections with pre-revision numbers: Income Tax Act 118I, Tax Procedures Code Act 40E. |
 
 Evidence found 2026-11-11 (to help, not to replace, the check): Parliament's Bill Tracker describes the 2026 amendment Bills as amending the Income Tax Act **Cap. 338** (bill 564), the VAT Act **Cap. 344** (bill 562) and the Tax Procedures Code Act **Cap. 343** (bill 563), matching B1 to B3. It records third readings on 21 April (VAT, TPC, Excise) and 23 April 2026 (Income Tax), and no assent dates. TaxComp's legislative watch (Law and cases admin) now follows the tracker daily.
 
