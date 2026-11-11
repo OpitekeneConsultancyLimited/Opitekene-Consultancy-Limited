@@ -66,3 +66,19 @@ test("guided answers cite the sections when the index is loaded", () => {
   const withoutIndex = JSON.stringify(analyse(consultant));
   assert.ok(!withoutIndex.includes("s.80"), "without the index the answer names the Act only");
 });
+
+test("2026 amendments: grouped by amending Act, with both figures shown when they differ", () => {
+  const data = {
+    acts: [{ id: "vata-amendment-2026", title: "Value Added Tax (Amendment) Act, 2026" }, { id: "eda-amendment-2026", title: "Excise Duty (Amendment) Act, 2026" }, { id: "unused", title: "No changes" }],
+    amendments: [
+      { amendingStatuteId: "eda-amendment-2026", amendingTitle: "Excise Duty (Amendment) Act, 2026", id: "eda-2026-cement", previousFigure: "UGX 500 per 50 kg", billFigure: "UGX 1,000 per 50 kg", reportedFigure: "UGX 750 per 50 kg", figuresDiffer: true },
+      { amendingStatuteId: "vata-amendment-2026", amendingTitle: "Value Added Tax (Amendment) Act, 2026", id: "vat-2026-s5", previousFigure: null, billFigure: null, reportedFigure: null, figuresDiffer: false },
+      { amendingStatuteId: "other-2026", amendingTitle: "Other (Amendment) Act, 2026", id: "x", previousFigure: null, billFigure: "1", reportedFigure: null, figuresDiffer: false },
+    ],
+  };
+  const groups = lawIndex.groupAmendments(data);
+  assert.deepEqual(groups.map((g) => g.act.id), ["vata-amendment-2026", "eda-amendment-2026", "other-2026"], "register order; Acts without changes dropped; unknown Acts kept");
+  assert.deepEqual(lawIndex.figureLines(data.amendments[0]), [["Before", "UGX 500 per 50 kg"], ["Published Bill", "UGX 1,000 per 50 kg"], ["Reported as enacted", "UGX 750 per 50 kg"]]);
+  assert.deepEqual(lawIndex.figureLines(data.amendments[1]), []);
+  assert.deepEqual(lawIndex.groupAmendments(null), []);
+});

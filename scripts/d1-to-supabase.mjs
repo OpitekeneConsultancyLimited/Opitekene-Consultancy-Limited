@@ -43,7 +43,7 @@ export const TABLE_ORDER = Object.freeze([
   "law_watch_bills", "law_watch_events", "law_watch_runs", "knowledge_records", "knowledge_record_events",
   // Legislative database: editions and laws before their versions, sections and links; history last.
   "legislation_editions", "legislation_laws", "legislation_law_versions", "legislation_sections", "legislation_schedules",
-  "legislation_relations", "legislation_coverage_gaps", "legislation_history",
+  "legislation_relations", "legislation_coverage_gaps", "legislation_amendments", "legislation_history",
   // Phase 12: personalised dashboard profiles.
   "user_profiles",
 ]);

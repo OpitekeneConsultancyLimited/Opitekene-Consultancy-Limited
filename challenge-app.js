@@ -701,6 +701,25 @@
         }, "Saved."), text: "Save" }),
       ]);
     };
+    const amendmentRow = (a) => {
+      const label = `${a.principalAct}, ${a.provision}`;
+      const status = statusSelect(a.verificationStatus, `Status of ${label}`);
+      const note = h("input", { type: "text", "aria-label": `Note for ${label}`, placeholder: "What was checked, against which Act" });
+      const source = h("input", { type: "url", "aria-label": `Official source for ${label}`, placeholder: "https://… enacted Act", value: a.officialSourceUrl || "" });
+      const figures = [a.previousFigure ? `Previous: ${a.previousFigure}` : null, a.billFigure ? `Bill: ${a.billFigure}` : null, a.reportedFigure ? `Reported enacted: ${a.reportedFigure}` : null].filter(Boolean).join(" · ");
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: label }),
+        h("span", { className: "ch-muted", text: ` · ${a.amendingTitle} · ${a.verificationLabel}${a.figuresDiffer ? " · figures differ" : ""}` }),
+        h("p", { text: a.summary }),
+        figures ? h("p", { className: "ch-muted", text: figures }) : null,
+        h("p", { className: "ch-muted", text: `${a.evidenceLabel}. ${a.billReference}.${a.note ? ` ${a.note}` : ""}` }),
+        h("div", { className: "ch-fields" }, [status, note, source].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
+          await call(`/api/challenge/review/legislation/amendments/${a.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined } });
+          await reload();
+        }, "Saved."), text: "Save" }),
+      ]);
+    };
     const lawFilter = h("select", { "aria-label": "Law" }, [h("option", { value: "", text: "All laws" }), ...leg.laws.map((l) => h("option", { value: l.id, text: l.officialTitle, selected: filters.law === l.id ? "" : null }))]);
     const statusFilter = h("select", { "aria-label": "Status" }, [h("option", { value: "", text: "Any status" }), ...Object.entries(leg.statuses).map(([v, t]) => h("option", { value: v, text: t, selected: filters.status === v ? "" : null }))]);
     const flagged = h("input", { type: "checkbox", "aria-label": "Flagged only" });
@@ -721,6 +740,11 @@
         h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { Object.assign(filters, { law: lawFilter.value, status: statusFilter.value, flagged: flagged.checked }); await reload(); }), text: "Show" }),
         h("ul", { className: "ch-law-list" }, leg.sections.length ? leg.sections.map(sectionRow) : [h("li", { className: "ch-muted", text: "No sections match." })]),
       ]),
+      (leg.amendments || []).length ? h("details", {}, [
+        h("summary", { text: `2026 amendments register (${leg.amendments.length}; ${leg.amendments.filter((a) => a.figuresDiffer).length} with differing figures)` }),
+        h("p", { className: "ch-muted", text: "Check each change against the enacted 2026 Act. Where the Bill and the reported enactment differ, record which figure the Act contains in the note." }),
+        h("ul", { className: "ch-law-list" }, leg.amendments.map(amendmentRow)),
+      ]) : null,
       leg.editions.length > 1 ? h("details", {}, [
         h("summary", { text: "Compare editions" }),
         h("div", { className: "ch-fields" }, Object.values(compare).map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),

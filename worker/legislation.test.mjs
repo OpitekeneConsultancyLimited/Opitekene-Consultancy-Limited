@@ -29,7 +29,7 @@ test("import: 18 laws, 701 sections, schedules and relations, all unverified, wi
     (SELECT count(*)::int FROM taxcomp.legislation_sections) sections, (SELECT count(*)::int FROM taxcomp.legislation_schedules) schedules,
     (SELECT count(*)::int FROM taxcomp.legislation_sections WHERE verification_status <> 'unverified') touched,
     (SELECT count(*)::int FROM taxcomp.legislation_sections WHERE wording IS NOT NULL) worded,
-    (SELECT count(*)::int FROM taxcomp.legislation_history WHERE action = 'imported') history`);
+    (SELECT count(*)::int FROM taxcomp.legislation_history WHERE action = 'imported' AND entity_type <> 'amendment') history`);
   const expectedSchedules = index.instruments.reduce((n, i) => n + i.schedules.length, 0);
   assert.deepEqual(counts, { laws: 18, versions: 18, sections: 701, schedules: expectedSchedules, touched: 0, worded: 0, history: 1 + 18 + 701 + expectedSchedules });
   // Every section count agrees with the captured index, per law.
@@ -92,7 +92,9 @@ test("public API: list, Act, sections, schedules, related, verification, search,
   assert.equal(list.json.edition.match, "latest-captured");
   assert.match(list.json.edition.warning, /may not reflect the law in force on 2026-11-12/);
   const ita = list.json.laws.find((l) => l.id === "ita");
-  assert.deepEqual([ita.chapter, ita.sectionCount, ita.verificationStatus, ita.commencementDate], ["Cap. 338", 156, "unverified", "1997-07-01"]);
+  // Amended from 1 July 2026, so the 2024 version is flagged for amendment review.
+  assert.deepEqual([ita.chapter, ita.sectionCount, ita.verificationStatus, ita.commencementDate], ["Cap. 338", 156, "requires_amendment_review", "1997-07-01"]);
+  assert.equal(list.json.laws.find((l) => l.id === "nssf").verificationStatus, "unverified", "laws without 2026 amendments are unchanged");
   assert.ok(ita.laterAmendments.some((a) => a.statuteId === "ita-amendment-2026"), "2026 amendment flagged as not captured");
   assert.equal(list.json.laws.find((l) => l.id === "tata").chapter, "Cap. 341");
   assert.equal((await get(env, "/api/legislation?category=regulations&pageSize=5")).json.total, 8);
@@ -183,7 +185,8 @@ test("verification workflow: owners cannot; reviewers mark under review; only ap
   assert.equal(pub.json.section.evidenceLevel, "verified_wording");
 
   const history = await call("/api/challenge/review/legislation/history?id=ug-rev-2024/ita", reviewer.token);
-  assert.deepEqual(history.json.history.map((h) => h.action).sort(), ["imported", "status_changed", "status_changed"], "confirming the same chapter and date is not a content change");
+  // imported; flagged by the 2026 amendments migration; under review; verified.
+  assert.deepEqual(history.json.history.map((h) => h.action).sort(), ["imported", "status_changed", "status_changed", "status_changed"], "confirming the same chapter and date is not a content change");
   assert.ok(history.json.history.some((h) => h.toStatus === "verified" && h.actor === reviewer.userId));
   const audit = (await pg.query("SELECT action FROM taxcomp.challenge_audit_log WHERE action LIKE 'legislation.%'")).rows.length;
   assert.equal(audit, 4);
@@ -243,6 +246,80 @@ test("AI retrieval: the three example questions retrieve real records and disclo
   assert.deepEqual(checked.unmatched, ["999"]);
   assert.match(checked.answer, /could not match section 999/);
   assert.equal(chooseEdition([], { today }).match, "none");
+  await pg.close();
+});
+
+test("2026 amendments register: Bill and reported figures side by side, conflicts flagged, retrieval, review", async () => {
+  clearSupabaseKeyCache();
+  const { pg, db } = await createMigratedDatabase();
+  const counts = await one(pg, `SELECT count(*)::int total, count(*) FILTER (WHERE figures_differ = 1)::int differ, count(*) FILTER (WHERE verification_status <> 'unverified')::int touched,
+    count(*) FILTER (WHERE evidence = 'bill_only')::int bill_only FROM taxcomp.legislation_amendments`);
+  assert.deepEqual(counts, { total: 53, differ: 5, touched: 0, bill_only: 8 });
+  // Every record names its Bill; every record with a law link points at a captured law.
+  assert.equal((await one(pg, "SELECT count(*)::int n FROM taxcomp.legislation_amendments WHERE bill_reference = '' OR bill_url IS NULL")).n, 0);
+  assert.equal((await one(pg, "SELECT count(*)::int n FROM taxcomp.legislation_history WHERE entity_type = 'amendment' AND action = 'imported'")).n, 53);
+  // The VAT conflict is recorded both ways, never resolved.
+  const vat = await one(pg, "SELECT bill_figure, reported_figure, figures_differ FROM taxcomp.legislation_amendments WHERE id = 'vat-2026-s7-registration-threshold'");
+  assert.deepEqual(vat, { bill_figure: "UGX 250,000,000", reported_figure: "UGX 300,000,000", figures_differ: 1 });
+  // The register: chapters from the Bills; the Excise Act is not promoted to assented.
+  assert.equal((await one(pg, "SELECT chapter FROM taxcomp.law_statutes WHERE id = 'eta'")).chapter, "Cap. 69");
+  assert.equal((await one(pg, "SELECT bill_status FROM taxcomp.law_statutes WHERE id = 'eda-amendment-2026'")).bill_status, "passed");
+  assert.match((await one(pg, "SELECT note FROM taxcomp.law_statutes WHERE id = 'vata-amendment-2026'")).note, /Cap\. 344 \(not Cap\. 349/);
+  // Re-running the migration does not duplicate the notes it appends.
+  await pg.exec(readFileSync(new URL("../supabase/migrations/20261112000500_amendments_2026.sql", import.meta.url), "utf8"));
+  assert.equal(((await one(pg, "SELECT note FROM taxcomp.law_statutes WHERE id = 'eda-amendment-2026'")).note.match(/Web check/g) || []).length, 1);
+  assert.equal((await one(pg, "SELECT count(*)::int n FROM taxcomp.legislation_amendments")).n, 53);
+
+  // Public API.
+  const env = envFor(db);
+  const all = await get(env, "/api/legislation/amendments");
+  assert.equal(all.status, 200);
+  assert.equal(all.json.total, 53);
+  assert.deepEqual(all.json.acts.map((a) => a.id), ["ita-amendment-2026", "vata-amendment-2026", "eda-amendment-2026", "sda-amendment-2026", "tpca-amendment-2026", "lga-amendment-2026", "eta-amendment-2026", "trsa-amendment-2026"]);
+  assert.equal(all.json.acts.find((a) => a.id === "eda-amendment-2026").conflicts, 2);
+  const differ = await get(env, "/api/legislation/amendments?differ=1");
+  assert.deepEqual(differ.json.amendments.map((a) => a.id).sort(), ["eda-2026-cement", "eda-2026-sugar", "sda-2026-item67-vehicles", "tpc-2026-s47d-waiver-2025", "vat-2026-s7-registration-threshold"]);
+  assert.equal((await get(env, "/api/legislation/amendments?law=vata")).json.total, 9);
+  assert.equal((await get(env, "/api/legislation/amendments?law=BAD!")).status, 400);
+
+  // Retrieval: the threshold question gets the change with both figures; a Bill-only change is labelled as such.
+  const threshold = await retrieveLegislation(db, "What is the VAT registration threshold?", { today: "2026-11-12" });
+  assert.equal(threshold.amendments[0].id, "vat-2026-s7-registration-threshold");
+  const evidence = legislationEvidence(threshold);
+  assert.match(evidence, /\[A1\] 2026 change: Value Added Tax Act, Cap\. 344, s\.7\(2\)/);
+  assert.match(evidence, /Published Bill: UGX 250,000,000\. Reported as enacted: UGX 300,000,000\. The Bill and the reported enactment differ/);
+  assert.match(evidence, /never pick one/);
+  assert.match(legislationSummary(threshold), /Changes made in 2026/);
+  const loss = await retrieveLegislation(db, "Is there a minimum tax on assessed losses carried forward under the income tax?", { today: "2026-11-12" });
+  assert.ok(loss.amendments.some((a) => a.id === "ita-2026-s36-loss-minimum-tax"));
+  assert.match(legislationSummary(loss), /published Bill only and may not have been enacted/);
+  const worn = await retrieveLegislation(db, "What levy applies to imported worn clothing?", { today: "2026-11-12" });
+  assert.equal(worn.amendments[0]?.id, "eta-2026-worn-clothing-levy", "laws outside the database are still found");
+  // [A#] markers become citations; section numbers from the register are known.
+  const checked = checkCitations("The threshold was raised [A1] by section 7.", threshold);
+  assert.match(checked.answer, /\(Value Added Tax Act, Cap\. 344, s\.7\(2\), as amended in 2026; unverified\)/);
+  assert.deepEqual(checked.unmatched, []);
+
+  // Review: reviewers mark under review; only approvers verify, with the source; logged.
+  const supabase = await createFakeSupabase(pg);
+  const renv = envFor(db, { SUPABASE_URL: supabase.url, SUPABASE_FETCH: supabase.fetch });
+  const reviewer = await supabase.issueToken({ email: "reviewer@example.com" });
+  await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, 'reviewer@example.com', now()::text)", [reviewer.userId]);
+  const post = async (path, body) => {
+    const response = await handleRequest(new Request(`https://worker.example${path}`, { method: "POST", headers: { Origin: origin, Authorization: `Bearer ${reviewer.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }), renv);
+    return { status: response.status, json: await response.json() };
+  };
+  const path = "/api/challenge/review/legislation/amendments/vat-2026-s7-registration-threshold/status";
+  assert.equal((await post(path, { status: "under_review", note: "Waiting for the gazetted Act." })).status, 200);
+  assert.equal((await post(path, { status: "verified", note: "Checked.", officialSourceUrl: "https://example.org/act" })).status, 403);
+  assert.equal((await post("/api/challenge/review/legislation/amendments/no-such-change/status", { status: "under_review" })).status, 404);
+  await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  assert.equal((await post(path, { status: "verified", note: "Section 7(2) as enacted reads 300 million; checked.", officialSourceUrl: "https://example.org/vat-amendment-act-2026" })).status, 200);
+  const statuses = (await pg.query("SELECT to_status FROM taxcomp.legislation_history WHERE entity_id = 'vat-2026-s7-registration-threshold' AND action = 'status_changed' ORDER BY occurred_at, to_status")).rows.map((r) => r.to_status);
+  assert.deepEqual(statuses.sort(), ["under_review", "verified"]);
+  // A reviewed record is not overwritten by re-running the migration.
+  await pg.exec(readFileSync(new URL("../supabase/migrations/20261112000500_amendments_2026.sql", import.meta.url), "utf8"));
+  assert.equal((await one(pg, "SELECT verification_status FROM taxcomp.legislation_amendments WHERE id = 'vat-2026-s7-registration-threshold'")).verification_status, "verified");
   await pg.close();
 });
 
