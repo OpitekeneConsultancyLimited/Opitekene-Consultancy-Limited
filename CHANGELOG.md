@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-12 - International tax knowledge base and guided reasoning
+
+- **Knowledge records** (migration `20261112000100`, `worker/challenge/knowledge.mts`): international principles and Uganda domestic law, each with source kind, organisation, reference, chapter, period, effective and publication dates, licence, verification status and last-reviewed date; history in `knowledge_record_events`. Users only see verified records; verified current law ranks first, then the source hierarchy (legislation → regulations → cases → guidance → treaties → international standards → textbooks → general AI knowledge).
+- **Copyright**: *International Tax Primer* (4th ed.) is used as a conceptual framework only — metadata record, chapter references, TaxComp's own notes. No book text or page numbers are stored; restricted sources cannot hold excerpts, long quotations are rejected, and the database enforces the licence rules too. The 23 topic notes are AI-written drafts awaiting legal review.
+- **Review**: Law and cases admin → Knowledge base. Reviewers add or edit (always back to draft); legal approvers verify (AI notes need a note of what they were checked against), reject, mark outdated with the replacing record, or reopen.
+- **Guided question** on the International tax page (`intl-tax-reasoning.js`): asks for missing facts (residence, payment type, country, period, foreign tax, presence, related parties), then answers in order — understanding, short answer, rules (labelled international principle or Uganda law), plain explanation, example, calculation, actions, sources, assumptions — with the 12 reasoning steps. Evasion is refused; avoidance is explained with the anti-avoidance rules. No rates are stated.
+- **Calculations with working**: taxable income, foreign tax credit, double tax relief (credit/exemption/deduction compared), withholding with gross-up, transfer pricing adjustment, two-structure comparison. Each shows figures, rule, formula, steps and assumptions, and needs the user's rate with its source.
+- Contrast fixes on the International tax page (WCAG AA). Service worker `taxcomp-app-v38`. See `docs/knowledge-base.md`.
+
 ## 2026-11-11 - Legislative watch (Master Directive phase 7)
 
 - `worker/challenge/lawwatch.mts`: every morning (the existing 02:15 cron) the Worker reads Parliament of Uganda's Bill Tracker (bills.parliament.ug), picks out tax Bills, reads each Bill's stage page and records the stage (introduced, debated, passed, assented, withdrawn), its dates and the Acts it amends (e.g. "Cap. 336").

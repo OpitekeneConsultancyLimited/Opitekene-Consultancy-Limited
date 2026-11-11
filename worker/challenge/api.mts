@@ -20,6 +20,10 @@ import {
   findCasesByReference, loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
 import { runLawWatch, STAGE_LABEL, type LawWatchEnv } from "./lawwatch.mts";
+import {
+  authorityRank, CONTENT_KINDS, decide, LICENCES, loadKnowledge, loadRecord, parseRecordInput, publicRecord, rankRecords, recordEvent,
+  saveRecordStatements, SOURCE_KINDS, TAX_CATEGORIES,
+} from "./knowledge.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
@@ -536,6 +540,25 @@ async function route(ctx: Ctx): Promise<Response> {
     return json({ total: all.length, results }, 200, ctx.cors);
   }
 
+  if (path === "/api/challenge/knowledge" && method === "GET") {
+    // Knowledge records for an answer: verified current law first, then by the source hierarchy.
+    const onDate = url.searchParams.get("onDate");
+    if (onDate && !isIsoDate(onDate)) throw new HttpError(400, "onDate must be YYYY-MM-DD.");
+    const staff = ctx.reviewer && url.searchParams.get("include") === "drafts";
+    const country = url.searchParams.get("country");
+    const ranked = rankRecords(await loadKnowledge(db, { staff }), {
+      q: (url.searchParams.get("q") ?? "").slice(0, 300),
+      country: country && /^(?:[A-Z]{2}|INTL)$/.test(country) ? country : null,
+      category: url.searchParams.get("category"),
+      layer: url.searchParams.get("layer"),
+      onDate,
+    }, 30);
+    return json({
+      hierarchy: SOURCE_KINDS.map((kind) => ({ kind, rank: authorityRank(kind, country ?? "INTL") })).sort((a, b) => a.rank - b.rank),
+      results: ranked.map((match) => ({ ...publicRecord(match.record, onDate), inPeriod: match.inPeriod })),
+    }, 200, ctx.cors);
+  }
+
   // ------------------------------------------------------------ reviewers
   if (path.startsWith("/api/challenge/review")) {
     if (!ctx.reviewer) throw new HttpError(403, "Reviewer access only.");
@@ -629,6 +652,48 @@ async function route(ctx: Ctx): Promise<Response> {
         audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
       ]);
       return json({ saved: id }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/knowledge" && method === "GET") {
+      const [records, events] = await Promise.all([
+        loadKnowledge(db, { staff: true }),
+        db.prepare(`SELECT record_id AS "recordId", occurred_at AS "occurredAt", action, from_status AS "fromStatus", to_status AS "toStatus", note
+          FROM knowledge_record_events ORDER BY occurred_at DESC LIMIT 50`).all<Record<string, unknown>>(),
+      ]);
+      return json({ records, events: events.results, options: { sourceKinds: SOURCE_KINDS, contentKinds: CONTENT_KINDS, licences: LICENCES, categories: TAX_CATEGORIES } }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/knowledge" && method === "POST") {
+      // Any reviewer may add or edit a record; it is (re)saved as a draft for a legal approver.
+      const { input, problems } = parseRecordInput(await readJson(request));
+      if (problems.length) throw new HttpError(400, problems.join(" "), { problems });
+      if (input.body) assertSafe(input.body, "knowledge note");
+      if (input.statuteId && !(await db.prepare(`SELECT 1 AS ok FROM law_statutes WHERE id = ?`).bind(input.statuteId).first())) throw new HttpError(400, "That statute is not in the law register.");
+      const existing = await loadRecord(db, input.id);
+      await db.batch([
+        ...saveRecordStatements(db, input, existing, ctx.userId, ctx.nowIso),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: existing ? "knowledge.edit" : "knowledge.create", details: { id: input.id }, at: ctx.nowIso }),
+      ]);
+      return json({ saved: input.id, status: "draft" }, 200, ctx.cors);
+    }
+    if ((m = path.match(/^\/api\/challenge\/review\/knowledge\/([a-z0-9][a-z0-9.-]{2,119})\/decision$/)) && method === "POST") {
+      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can verify, reject or retire knowledge records.");
+      const id = m[1] as string;
+      const record = await loadRecord(db, id);
+      if (!record) throw new HttpError(404, "Record not found.");
+      const body = await readJson(request);
+      const next = decide(record.status, String(body.decision ?? ""));
+      if (!next) throw new HttpError(409, `A ${record.status} record cannot be given that decision.`);
+      const note = cleanText(body.note, 2000) ?? "";
+      if (next === "verified" && record.aiGenerated && note.length < 10) throw new HttpError(400, "This note was written by AI. Say what you checked it against before verifying it.");
+      const supersededBy = next === "outdated" ? cleanText(body.supersededBy, 120) ?? null : record.supersededBy;
+      if (supersededBy && (supersededBy === id || !(await loadRecord(db, supersededBy)))) throw new HttpError(400, "The replacing record does not exist.");
+      const action = next === "verified" ? "verified" : next === "rejected" ? "rejected" : next === "outdated" ? "outdated" : "reopened";
+      await db.batch([
+        db.prepare(`UPDATE knowledge_records SET status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ?, superseded_by = ?, updated_at = ? WHERE id = ? AND status = ?`)
+          .bind(next, next === "draft" ? null : ctx.userId, next === "draft" ? null : ctx.nowIso, note, supersededBy, ctx.nowIso, id, record.status),
+        recordEvent(db, { recordId: id, at: ctx.nowIso, actor: ctx.userId, action, from: record.status, to: next, note }),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: `knowledge.${action}`, details: { id, note }, at: ctx.nowIso }),
+      ]);
+      return json({ id, status: next }, 200, ctx.cors);
     }
     if (path === "/api/challenge/review/lawwatch" && method === "GET") {
       const [bills, events, lastRun] = await Promise.all([

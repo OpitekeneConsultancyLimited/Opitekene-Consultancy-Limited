@@ -1275,3 +1275,41 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .ch-watch-new { border-left: 4px solid var(--teal-600); padding-left: 10px; }
 .ch-watch-stage { margin: 4px 0; font-weight: 600; color: var(--ink); }
 .ch-watch-enacted { color: #7a4b00; }
+
+/* Guided international tax question (intl-tax-reasoning.js) */
+.intl-guide { display: grid; gap: 14px; margin: 0 0 18px; padding: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.intl-guide h3 { margin: 0 0 6px; font-size: 1.35rem; font-weight: 600; }
+.intl-guide p { margin: 0; color: var(--muted); line-height: 1.6; }
+#intl-guide-form { display: grid; gap: 12px; max-width: 760px; }
+#intl-guide-form textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; resize: vertical; }
+#intl-guide-form select, #intl-guide-form input { width: 100%; min-height: 44px; }
+#intl-guide-form > button { justify-self: start; min-height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--green); color: #fff; font-weight: 700; cursor: pointer; }
+#intl-guide-form > button:hover { background: var(--green-dark); }
+#intl-guide-form > button:disabled { opacity: .6; cursor: wait; }
+.intl-guide-questions { display: grid; gap: 12px; }
+.intl-guide-questions:empty { display: none; }
+.intl-guide-answer { display: grid; gap: 14px; max-width: 820px; padding-top: 6px; border-top: 1px solid var(--line); }
+.intl-answer-part h4 { margin: 0 0 6px; font-size: 1rem; color: var(--ink); }
+.intl-answer-part ul, .intl-answer-part ol, .intl-steps ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.55; }
+.intl-answer-lead { color: var(--ink) !important; font-weight: 600; }
+.intl-answer-warning { color: #8a1c1c !important; font-weight: 600; }
+.intl-layer, .intl-source-kind { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--slate-100); color: var(--navy-600); }
+.intl-layer.is-domestic, .intl-source-kind.is-legislation, .intl-source-kind.is-verified { background: var(--teal-50); color: var(--teal-700); }
+.intl-muted { color: var(--muted); font-size: .85rem; }
+.intl-steps summary, .intl-framework summary { cursor: pointer; font-weight: 600; color: var(--navy-600); min-height: 44px; display: flex; align-items: center; }
+.intl-framework-list { display: grid; gap: 6px; padding-left: 20px; }
+.intl-working { display: grid; gap: 6px; margin: 12px 0; padding: 12px 14px; border-radius: 8px; background: var(--slate-50); border: 1px solid var(--line); }
+.intl-working h5 { margin: 6px 0 0; font-size: .85rem; color: var(--navy-600); text-transform: uppercase; letter-spacing: .04em; }
+.intl-working dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 4px 12px; margin: 0; }
+.intl-working dd { margin: 0; overflow-wrap: anywhere; }
+.intl-working ol, .intl-working ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.intl-formula { font-family: ui-monospace, Consolas, monospace; font-size: .9rem; overflow-wrap: anywhere; }
+
+/* Knowledge base (Law and cases admin) */
+.ch-kb { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin: 0 0 20px; }
+.ch-kb-draft { border-left: 4px solid #b38331; padding-left: 10px; }
+.ch-kb-outdated, .ch-kb-rejected { opacity: .75; }
+.ch-kb-body { margin: 6px 0; white-space: pre-wrap; }
+/* Contrast (WCAG AA) on the International tax page */
+.advisory-heading p:last-child { color: var(--muted); }
+.international-tax-topics article > span { color: #7a5518; }

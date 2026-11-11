@@ -300,6 +300,39 @@ await page.waitForTimeout(300);
 check("knowledge search says when nothing matches", ((await page.textContent("#kb-search-results")) || "").includes("Nothing found"));
 await axeScan(page, "knowledge search", "#knowledge");
 
+// Guided international tax question: asks for missing facts, answers in the
+// standard order, cites a reviewed record, and hands over to the calculator.
+await pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified', reviewed_by = 'e2e-approver', reviewed_at = $1, review_note = 'e2e' WHERE id = 'intl.foreign-tax-credit'", [new Date().toISOString()]);
+await page.evaluate(() => { location.hash = "international-tax"; });
+await page.fill("#intl-guide-question", "I received consulting fees from a client in Kenya and tax was withheld there");
+await page.click("#intl-guide-form button[type=submit]");
+const asked = await page.$$eval("#intl-guide-questions label", (nodes) => nodes.map((n) => n.textContent));
+check("guided question asks only for the missing facts", asked.length >= 2 && asked.some((q) => q.includes("live for tax purposes")) && !asked.some((q) => q.includes("Which other country")), asked.join(" | "));
+for (const select of await page.$$("#intl-guide-questions select")) {
+  const values = await select.$$eval("option", (options) => options.map((o) => o.value).filter(Boolean));
+  await select.selectOption(values.includes("UG") ? "UG" : values.includes("2026/27") ? "2026/27" : values[0]);
+}
+await page.click("#intl-guide-form button[type=submit]");
+await page.waitForSelector("#intl-guide-answer:not([hidden])", { timeout: 5000 }).catch(() => {});
+const answerText = (await page.textContent("#intl-guide-answer")) || "";
+check("guided answer follows the standard order", ["What we understood", "Short answer", "The rules", "In plain terms", "What to do", "Sources", "Assumptions"].every((h, i, all) => answerText.indexOf(h) >= 0 && (i === 0 || answerText.indexOf(all[i - 1]) < answerText.indexOf(h))), answerText.slice(0, 300));
+check("guided answer cites the reviewed record and the Primer by chapter only", answerText.includes("Reviewed") && /Chapter 4: Double Taxation Relief/.test(answerText) && !/\bp\.\s*\d/.test(answerText));
+check("guided answer states no tax rate", !/\d\s?%/.test(answerText));
+await axeScan(page, "guided international question", "#intl-guide");
+await page.locator("#intl-guide").screenshot({ path: path.join(shots, "intl-guide.png") });
+await page.getByRole("button", { name: "Work out my figures" }).click();
+check("calculator opens on the foreign tax credit", (await page.inputValue("#international-tax-method")) === "foreignTaxCredit");
+await page.fill("#international-foreignIncomeUGX", "10000000");
+await page.fill("#international-foreignTaxPaidUGX", "1500000");
+await page.fill("#international-ratePercent", "30");
+await page.click("#international-tax-form button[type=submit]");
+check("a rate without its source is refused", ((await page.textContent("#international-tax-error")) || "").length > 0 || await page.$eval("#international-rateSource", (el) => !el.validity.valid));
+await page.fill("#international-rateSource", "Rate typed in for the e2e test");
+await page.click("#international-tax-form button[type=submit]");
+const working = (await page.textContent("#international-tax-result")) || "";
+check("calculation shows figures, rule, formula, steps and assumptions", ["Figures used", "Rule", "Formula", "Steps", "Assumptions", "UGX 3,000,000", "UGX 1,500,000"].every((s) => working.includes(s)), working.slice(0, 300));
+await axeScan(page, "calculation with working", "#international-tax");
+
 // Chat history: kept on this device for this user, and Clear removes it.
 await page.evaluate((id) => localStorage.setItem(`taxcomp-chat-history:${id}`, JSON.stringify([
   { role: "user", text: "What is the VAT registration threshold?", sources: [], calculators: [], meta: {} },
