@@ -283,6 +283,35 @@ test("reviewers cannot approve law or rules without approver rights; text must b
   await t.pg.close();
 });
 
+test("A3: seeded holidays start unverified; reviewers add them, only approvers confirm them, with a source; all audited", async () => {
+  const t = await setup();
+  const owner = await t.user("owner@example.com");
+  const law = await t.call("/api/challenge/law", { token: owner.token });
+  assert.equal(law.status, 200);
+  const christmas = law.body.holidays.find((day) => day.date === "2026-12-25");
+  assert.deepEqual({ name: christmas.name, verified: christmas.verified }, { name: "Christmas Day", verified: false });
+  assert.ok(law.body.holidays.every((day) => !day.verified), "nothing seeded is verified");
+  assert.ok(!law.body.holidays.some((day) => /Eid/.test(day.name)), "Eid dates are gazetted yearly, never seeded");
+
+  assert.equal((await t.call("/api/challenge/review/holidays", { method: "POST", token: owner.token, body: { date: "2027-03-10", name: "Eid al-Fitr" } })).status, 403, "owners are not reviewers");
+  const reviewer = await t.user("reviewer@example.com");
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, $2, $3)", [reviewer.userId, "reviewer@example.com", NOW.toISOString()]);
+  assert.equal((await t.call("/api/challenge/review/holidays", { method: "POST", token: reviewer.token, body: { date: "2027-3-10", name: "Eid al-Fitr" } })).status, 400);
+  assert.equal((await t.call("/api/challenge/review/holidays", { method: "POST", token: reviewer.token, body: { date: "2027-03-10", name: "Eid al-Fitr" } })).status, 200);
+  const verify = (body) => t.call("/api/challenge/review/holidays/verify", { method: "POST", token: reviewer.token, body });
+  assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 403, "confirming needs approver rights");
+  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr" })).status, 400, "a source link is required");
+  assert.equal((await verify({ date: "2027-03-11", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 404);
+  assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 200);
+
+  const row = await t.pg.query("SELECT verified_by AS v, source_url AS s, added_by AS a FROM taxcomp.public_holidays WHERE holiday_date = '2027-03-10'");
+  assert.deepEqual(row.rows[0], { v: reviewer.userId, s: "https://example.org/gazette", a: reviewer.userId });
+  const actions = await t.pg.query("SELECT action FROM taxcomp.challenge_audit_log WHERE action LIKE 'holiday.%' ORDER BY occurred_at, action");
+  assert.deepEqual(actions.rows.map((r) => r.action).sort(), ["holiday.add", "holiday.verify"]);
+  await t.pg.close();
+});
+
 test("CASE-1 (harness): reviewer-curated decisions are found by a plain-English search, each with a ULII link", async () => {
   const t = await setup();
   const reviewer = await t.user("reviewer@example.com");

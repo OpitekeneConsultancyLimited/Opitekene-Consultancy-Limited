@@ -1,7 +1,7 @@
 // F2 Deadline engine. Pure: rule data in, banners out. Every date names the
 // rule that produced it; nothing is computed from the issue date.
 import { addDays, daysBetween, formatDate, formatUgx, isWeekend } from "./dates.mts";
-import type { IsoDate, ProcedureRule, RuleSet } from "./types.mts";
+import type { IsoDate, ProcedureRule, PublicHoliday, RuleSet } from "./types.mts";
 
 export type BannerState = "unknown" | "on_track" | "urgent" | "possibly_lapsed";
 
@@ -19,6 +19,12 @@ export interface Banner {
   provisional: boolean;
   /** Counting assumptions shown in the professional view (TODO_VERIFY flags). */
   assumptions: string[];
+  /**
+   * Set when the last day falls on a weekend or a listed public holiday:
+   * offices may be closed, so the user is told to lodge by the working day
+   * before. This only ever moves the user earlier.
+   */
+  closedDay: { reason: string; lodgeBy: IsoDate } | null;
 }
 
 export interface DeadlineInput {
@@ -30,6 +36,8 @@ export interface DeadlineInput {
   taxAssessed: number | null;
   /** Tax the taxpayer accepts (not in dispute). */
   taxNotInDispute: number | null;
+  /** Listed public holidays (verified or not); see dueDateFor and closedDayFor. */
+  holidays?: readonly PublicHoliday[];
 }
 
 export interface DeadlineResult {
@@ -59,24 +67,55 @@ function assumptionsFor(item: ProcedureRule): string[] {
       : "The day the notice was received counts as day 1.",
     item.weekendHolidayRule === "calendar"
       ? "Calendar days: weekends and public holidays are counted, and a deadline on a weekend is not moved."
-      : "A deadline that falls on a weekend moves to the next Monday (public holidays are not yet included).",
+      : "A deadline that falls on a weekend or a public holiday moves to the next working day (only holidays a reviewer has checked count).",
   ];
   if (item.countingTodoVerify) list.push("TODO_VERIFY: these counting conventions have not been confirmed by a legal reviewer.");
   return list;
 }
 
-/** The last day to act, counting `periodDays` from the trigger under the rule's conventions. */
-export function dueDateFor(item: ProcedureRule, trigger: IsoDate): IsoDate {
+function holidayOn(date: IsoDate, holidays: readonly PublicHoliday[], verifiedOnly: boolean): PublicHoliday | undefined {
+  return holidays.find((day) => day.date === date && (!verifiedOnly || day.verified));
+}
+
+/**
+ * The last day to act, counting `periodDays` from the trigger under the rule's
+ * conventions. Under "next_business_day" a deadline on a weekend or a VERIFIED
+ * public holiday moves to the next working day; unverified holidays never
+ * extend a deadline.
+ */
+export function dueDateFor(item: ProcedureRule, trigger: IsoDate, holidays: readonly PublicHoliday[] = []): IsoDate {
   if (!item.periodDays) throw new RangeError(`Rule ${item.ruleKey} has no period.`);
   let due = addDays(trigger, item.excludeTriggerDay ? item.periodDays : item.periodDays - 1);
   if (item.weekendHolidayRule === "next_business_day") {
-    while (isWeekend(due)) due = addDays(due, 1);
+    while (isWeekend(due) || holidayOn(due, holidays, true)) due = addDays(due, 1);
   }
   return due;
 }
 
-function countdown(item: ProcedureRule, ruleSet: RuleSet, key: Banner["key"], trigger: IsoDate, today: IsoDate): Banner {
-  const dueDate = dueDateFor(item, trigger);
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/**
+ * When the last day is a weekend or a listed public holiday (verified or not),
+ * the working day before it. Moving earlier is always safe, so unverified
+ * holidays count here. Returns null on an ordinary working day.
+ */
+export function closedDayFor(dueDate: IsoDate, holidays: readonly PublicHoliday[] = []): Banner["closedDay"] {
+  const holiday = holidayOn(dueDate, holidays, false);
+  if (!holiday && !isWeekend(dueDate)) return null;
+  const reason = holiday
+    ? `${holiday.name}, a public holiday${holiday.verified ? "" : " (date not yet confirmed)"}`
+    : `a ${WEEKDAYS[new Date(`${dueDate}T00:00:00Z`).getUTCDay()]}`;
+  let lodgeBy = addDays(dueDate, -1);
+  while (isWeekend(lodgeBy) || holidayOn(lodgeBy, holidays, false)) lodgeBy = addDays(lodgeBy, -1);
+  return { reason, lodgeBy };
+}
+
+function countdown(item: ProcedureRule, ruleSet: RuleSet, key: Banner["key"], trigger: IsoDate, today: IsoDate, holidays: readonly PublicHoliday[]): Banner {
+  const dueDate = dueDateFor(item, trigger, holidays);
+  const closedDay = closedDayFor(dueDate, holidays);
+  const closedNote = closedDay
+    ? ` That day is ${closedDay.reason}, when offices may be closed, so aim to lodge it by ${formatDate(closedDay.lodgeBy)}.`
+    : "";
   const daysLeft = daysBetween(today, dueDate);
   const urgentAt = item.urgentDays ?? 10;
   const state: BannerState = daysLeft < 0 ? "possibly_lapsed" : daysLeft <= urgentAt ? "urgent" : "on_track";
@@ -98,34 +137,37 @@ function countdown(item: ProcedureRule, ruleSet: RuleSet, key: Banner["key"], tr
   };
   const messages: Record<BannerState, string> = {
     unknown: "",
-    on_track: `The last day is ${formatDate(dueDate)}.`,
-    urgent: `The last day is ${formatDate(dueDate)}. Lodge it as soon as you can.`,
+    on_track: `The last day is ${formatDate(dueDate)}.${closedNote}`,
+    urgent: `The last day is ${formatDate(dueDate)}. Lodge it as soon as you can.${closedNote}`,
     possibly_lapsed: `The last day appears to have been ${formatDate(dueDate)}. You can still ask URA to accept a late objection if you have a good reason; a professional should review this.`,
   };
   return {
     key, state, title: titles[key][state], message: messages[state], dueDate, daysLeft,
     ruleKey: item.ruleKey, ruleLabel: item.label, ruleSetVersion: ruleSet.version, sourceUrl: item.sourceUrl,
     provisional: !ruleSet.approvedForComputation, assumptions: assumptionsFor(item),
+    closedDay: state === "possibly_lapsed" ? null : closedDay,
   };
 }
 
 export function computeDeadlines(input: DeadlineInput, ruleSet: RuleSet): DeadlineResult {
   const provisional = !ruleSet.approvedForComputation;
+  const holidays = input.holidays ?? [];
   const objectionRule = rule(ruleSet, "objection");
 
   const objection: Banner = input.dateServed
-    ? countdown(objectionRule, ruleSet, "objection", input.dateServed, input.today)
+    ? countdown(objectionRule, ruleSet, "objection", input.dateServed, input.today, holidays)
     : {
       key: "objection", state: "unknown", title: "Deadline unknown: tell us when you received this",
       message: "The time to object counts from the day you received the assessment, not the date printed on it.",
       dueDate: null, daysLeft: null, ruleKey: "objection", ruleLabel: objectionRule.label, ruleSetVersion: ruleSet.version,
-      sourceUrl: objectionRule.sourceUrl, provisional, assumptions: assumptionsFor(objectionRule),
+      sourceUrl: objectionRule.sourceUrl, provisional, assumptions: assumptionsFor(objectionRule), closedDay: null,
     };
   // Once an objection is lodged the objection countdown no longer applies.
   if (input.objectionFiledOn && objection.state !== "unknown") {
     objection.state = "on_track";
     objection.title = `Objection lodged on ${formatDate(input.objectionFiledOn)}`;
     objection.message = "Keep proof of the date you lodged it.";
+    objection.closedDay = null;
   }
 
   const late = rule(ruleSet, "late_objection");
@@ -134,7 +176,7 @@ export function computeDeadlines(input: DeadlineInput, ruleSet: RuleSet): Deadli
   let decision: Banner | null = null;
   if (input.objectionFiledOn) {
     const decisionRule = rule(ruleSet, "objection_decision");
-    const day = dueDateFor(decisionRule, input.objectionFiledOn);
+    const day = dueDateFor(decisionRule, input.objectionFiledOn, holidays);
     const left = daysBetween(input.today, day);
     const passed = left < 0 && !input.decisionServedOn;
     decision = {
@@ -144,13 +186,13 @@ export function computeDeadlines(input: DeadlineInput, ruleSet: RuleSet): Deadli
       message: passed ? "URA's time to decide has passed. Tell your reviewer; a professional should advise on the next step."
         : input.decisionServedOn ? "Upload the decision so the Tribunal countdown can start." : `${left} days until URA's time to decide ends.`,
       dueDate: day, daysLeft: left, ruleKey: "objection_decision", ruleLabel: decisionRule.label, ruleSetVersion: ruleSet.version,
-      sourceUrl: decisionRule.sourceUrl, provisional, assumptions: assumptionsFor(decisionRule),
+      sourceUrl: decisionRule.sourceUrl, provisional, assumptions: assumptionsFor(decisionRule), closedDay: null,
     };
   }
 
   const tatRule = rule(ruleSet, "tat_application");
   const tatApplication = input.decisionServedOn
-    ? countdown(tatRule, ruleSet, "tat_application", input.decisionServedOn, input.today)
+    ? countdown(tatRule, ruleSet, "tat_application", input.decisionServedOn, input.today, holidays)
     : null;
 
   const payRule = rule(ruleSet, "tat_payment");

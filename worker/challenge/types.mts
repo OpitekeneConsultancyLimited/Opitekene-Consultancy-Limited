@@ -35,6 +35,16 @@ export interface ProcedureRule {
   sourceUrl: string | null;
 }
 
+/** A Uganda public holiday (taxcomp.public_holidays). */
+export interface PublicHoliday {
+  date: IsoDate;
+  name: string;
+  /** Checked by a reviewer. Only verified holidays can move a deadline later. */
+  verified: boolean;
+  sourceUrl: string | null;
+  note: string;
+}
+
 export interface RuleSet {
   version: string;
   title: string;

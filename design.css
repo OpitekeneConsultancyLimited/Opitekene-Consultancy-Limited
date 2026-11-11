@@ -1206,7 +1206,8 @@ main > [data-view]:not(.home-hero) {
 .ch-table-wrap { overflow-x: auto; }
 .ch-table { border-collapse: collapse; width: 100%; font-size: .9rem; }
 .ch-table th, .ch-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
-.ch-table th { background: var(--slate-50); }
+.ch-table th { background: var(--slate-50); color: var(--ink); }
+.ch-table-wrap:focus-visible { outline: 2px solid var(--navy-600); outline-offset: 2px; }
 .ch-note { border-left: 3px solid #b07827; padding-left: 10px; }
 .ch-research { border-top: 1px solid var(--line); padding-top: 8px; }
 .ch-checklist { list-style: none; padding: 0; display: grid; gap: 8px; }

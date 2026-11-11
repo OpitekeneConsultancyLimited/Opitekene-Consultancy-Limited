@@ -12,6 +12,7 @@
 // error states, accessibility basics, a 360 px phone layout and every
 // existing route.
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
@@ -31,6 +32,21 @@ const daysAgo = (n) => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(
 
 const results = [];
 const check = (name, ok, detail = "") => { results.push({ name, ok: Boolean(ok) }); console.log(`${ok ? "PASS" : "FAIL"} ${name}${!ok && detail ? ` (${detail})` : ""}`); };
+
+// axe-core (WCAG 2.0/2.1 A and AA rules) on each screen of #challenge-root.
+// Serious and critical problems fail the run; minor and moderate ones are
+// written to axe-report.json for the screen-reader pass.
+const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
+const axeFindings = [];
+async function axeScan(page, label) {
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: AXE_SOURCE });
+  const violations = await page.evaluate(async () => (await window.axe.run("#challenge-root", {
+    runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
+  })).violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) })));
+  axeFindings.push({ screen: label, violations });
+  const blocking = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+  check(`axe (WCAG 2.1 AA): no serious problems on ${label}`, blocking.length === 0, blocking.map((v) => `${v.id}: ${v.nodes.join(", ")}`).join("; "));
+}
 
 clearSupabaseKeyCache();
 const { pg, db } = await createMigratedDatabase();
@@ -95,6 +111,7 @@ check("sign-in gate opens through account.js", true);
 await page.waitForSelector(`${root$} >> text=Before you upload anything`, { timeout: 15_000 });
 check("consent screen before the first upload", (await text()).includes("Who can see it"));
 await page.screenshot({ path: path.join(shots, "1-consent-360.png"), fullPage: true });
+await axeScan(page, "consent");
 await clickButton("I agree, continue");
 await clickButton("Start a new case");
 check("new case opens on the notice step", (await text()).includes("Add your assessment notice"));
@@ -113,6 +130,7 @@ await clickButton("Read the text");
 check("notice read into figures to confirm", (await text()).includes("Check every figure against your notice"), (await text()).slice(0, 400));
 check("figures are not used before confirmation", (await page.inputValue("#ch-f-principal")) === "18400000");
 await page.screenshot({ path: path.join(shots, "2-confirm-360.png"), fullPage: true });
+await axeScan(page, "check the figures");
 await clickButton("Save and continue");
 check("figures confirmed, dates step shown", (await text()).includes("When did you receive the notice?"));
 await page.fill("#ch-served", daysAgo(40));
@@ -141,11 +159,13 @@ check("CLS-2 owner wording shows the difference", owner.includes("We found a dif
 check("LAW-1 note about the 20 August assent", owner.includes("assented on 20 August 2026"));
 check("research links a TAT decision", owner.includes("[2023] UGTAT 2"));
 await page.screenshot({ path: path.join(shots, "3-results-owner-360.png"), fullPage: true });
+await axeScan(page, "where you stand (owner view)");
 await page.getByRole("button", { name: "Professional" }).click();
 const pro = await text();
 check("professional view shows the classification table", pro.includes("Computational error (arithmetic, rate, period or credit mismatch)") && pro.includes("1,472,000"));
 check("professional view shows counting assumptions", pro.includes("TODO_VERIFY"));
 await page.screenshot({ path: path.join(shots, "4-results-pro-360.png"), fullPage: true });
+await axeScan(page, "where you stand (professional view)");
 const wide = await page.evaluate(() => [`scrollWidth=${document.documentElement.scrollWidth}`, ...[...document.body.querySelectorAll("*")].filter((el) => el.getBoundingClientRect().right > 362 && !el.parentElement?.closest(".ch-table-wrap") && getComputedStyle(el).display !== "none").slice(0, 8).map((el) => `${el.tagName}.${el.className} ${Math.round(el.getBoundingClientRect().right)}: ${(el.textContent || "").slice(0, 50)}`)]);
 check("no sideways scroll at 360 px", await page.evaluate(() => document.documentElement.scrollWidth <= 361), wide.join(" | "));
 
@@ -169,6 +189,7 @@ writeFileSync(path.join(shots, "pack.txt"), packText);
 check("pack downloads: objection letter first, then checklist, schedules, briefing", /^Provisional[\s\S]*Notice of objection[\s\S]*Evidence checklist[\s\S]*Supporting schedules[\s\S]*Management briefing/.test(packText));
 check("pack lists every arguable ground", packText.includes("Ground 1: Expenses URA disallowed") && packText.includes("Ground 2: Interest on the notice"));
 check("pack contains no banned phrase", !/assessment is invalid|you will win|URA is wrong|guarantee/i.test(packText));
+await axeScan(page, "your pack");
 
 // Accessibility basics on every step.
 const a11y = await page.evaluate(() => {
@@ -204,6 +225,22 @@ await page.getByRole("button", { name: "Delete this case" }).click();
 await clickButton("Yes, delete it");
 check("one-click deletion removes the case", (await text()).includes("No cases yet") && (await pg.query("SELECT count(*)::int AS n FROM taxcomp.challenge_cases")).rows[0].n === 0);
 
+// Reviewer screens: make this user a legal approver, reload, open Law and cases admin.
+await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'e2e-owner@example.com', 1, now()::text)", [userId]);
+await page.reload();
+await page.waitForFunction(() => document.documentElement.dataset.auth === "in", null, { timeout: 15_000 });
+await page.getByRole("tab", { name: "Law and cases admin" }).or(page.getByRole("button", { name: "Law and cases admin" })).first().click();
+await page.waitForSelector(`${root$} >> text=Public holidays`, { timeout: 10_000 });
+check("A3: holiday list starts folded", !(await page.isVisible(`${root$} .ch-holidays .ch-law-list`)));
+await page.click(`${root$} .ch-holidays > summary`);
+const admin = await text();
+const listedDates = [...admin.matchAll(/(\d{4}-\d{2}-\d{2}) · /g)].map((m) => m[1]);
+check("A3: law admin lists upcoming holidays only, as not yet confirmed",
+  admin.includes("Christmas Day") && admin.includes("not yet confirmed") && listedDates.length > 0 && listedDates.every((d) => d >= today), listedDates.slice(0, 3).join(", "));
+await page.screenshot({ path: path.join(shots, "6-law-admin-360.png"), fullPage: true });
+await axeScan(page, "law and cases admin");
+check("no sideways scroll on law admin at 360 px", await page.evaluate(() => document.documentElement.scrollWidth <= 361));
+
 // Existing routes still work.
 for (const [hash, selector] of [["home", "#paye-preview"], ["tools", "#tools"], ["calc-paye", "#estimator"], ["knowledge", "#knowledge"], ["kb-laws", "#kb-law-register"], ["kb-cases", "#kb-case-register"], ["assistant", "#tax-chat"], ["workspace", "#workspace"], ["ws-assessments", "#ws-assessments-root"], ["about", "#about"], ["privacy", "#privacy"]]) {
   await page.evaluate((h) => { location.hash = h; }, hash);
@@ -223,6 +260,7 @@ const paye = await page.evaluate(() => { location.hash = "home"; return true; })
 check("PAYE preview still calculates", /UGX|[0-9]/.test(paye || ""));
 check("no script errors", errors.length === 0, errors.join(" | "));
 
+writeFileSync(path.join(shots, "axe-report.json"), JSON.stringify(axeFindings, null, 2));
 await browser.close();
 await pg.close();
 const failed = results.filter((r) => !r.ok);

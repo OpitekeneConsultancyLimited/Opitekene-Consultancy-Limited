@@ -9,7 +9,7 @@ import { approvedFormula, resolveLaw, TOPICS_FOR_CATEGORY, type Citation, type L
 import { packAccess, reviewGate, type PackAccess, type ReviewGate, type Tier } from "./review.mts";
 import { scrubSentences } from "./safety.mts";
 import { searchCases, TAGS_FOR_CATEGORY } from "./search.mts";
-import type { CaseLaw, CaseRow, ConfirmableField, DisputedItem, FieldConfirmation, IsoDate, ProvisionVersion, RuleSet, Statute } from "./types.mts";
+import type { CaseLaw, CaseRow, ConfirmableField, DisputedItem, FieldConfirmation, IsoDate, ProvisionVersion, PublicHoliday, RuleSet, Statute } from "./types.mts";
 import { STANDING_DISCLAIMER, TAX_HEAD_PLAIN, joinList } from "./wording.mts";
 
 export const REQUIRED_FIELDS: ConfirmableField[] = ["tax_head", "period_start", "period_end", "principal"];
@@ -58,6 +58,8 @@ export interface ViewInputs {
   statutes: Statute[];
   versions: ProvisionVersion[];
   ruleSet: RuleSet;
+  /** Listed public holidays; optional so older callers keep working. */
+  holidays?: PublicHoliday[];
   caseLaw: CaseLaw[];
   tier: Tier;
   today: IsoDate;
@@ -147,6 +149,7 @@ export function buildCaseView(input: ViewInputs): CaseView {
     decisionServedOn: row.decisionServedOn,
     taxAssessed: row.principal,
     taxNotInDispute: row.taxAccepted,
+    holidays: input.holidays ?? [],
   }, input.ruleSet);
   const review = reviewGate(row, deadlines, reconciliation, input.confirmations, input.reviewThresholdUgx);
 

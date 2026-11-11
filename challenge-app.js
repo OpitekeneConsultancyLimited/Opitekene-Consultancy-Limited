@@ -386,7 +386,8 @@
     if (v.reconciliation.items.length) {
       if (state.pro) {
         parts.push(h("h4", { text: "Reconciliation and classification" }));
-        parts.push(h("div", { className: "ch-table-wrap" }, h("table", { className: "ch-table" }, [
+        // Focusable and labelled so keyboard users can scroll it on a phone (WCAG 2.1.1).
+        parts.push(h("div", { className: "ch-table-wrap", tabindex: "0", role: "region", "aria-label": "Reconciliation and classification table" }, h("table", { className: "ch-table" }, [
           h("thead", {}, h("tr", {}, ["Item", "URA", "Records", "Difference", "Outcome", "Schedule", "Reason"].map((t) => h("th", { scope: "col", text: t })))),
           h("tbody", {}, v.reconciliation.items.map((i) => h("tr", {}, [i.description, ugx(i.uraAmount), ugx(i.taxpayerAmount), i.difference === null ? "—" : ugx(i.difference), `${i.outcomeLabel}${i.setByReviewer ? " (reviewer)" : ""}`, i.schedule, `${i.reason}${i.recomputation ? ` Working: ${i.recomputation.workings}` : ""}`].map((t) => h("td", { text: t }))))),
         ])));
@@ -563,11 +564,32 @@
         state.me.canApproveLaw ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/law/${p.id}/approve`, { method: "POST", body: formula.value ? { computation: JSON.parse(formula.value) } : {} }); state.law = await call("/api/challenge/law"); }, "Approved for computation."), text: "Approve for computation" }) : null,
       ]);
     });
+    const reloadLaw = async () => { state.law = await call("/api/challenge/law"); };
+    const todayIso = new Date(Date.now() + 3 * 3_600_000).toISOString().slice(0, 10); // Kampala date
+    const upcoming = (law.holidays || []).filter((day) => day.date >= todayIso);
+    const holidayRows = upcoming.map((day) => {
+      const source = h("input", { type: "url", "aria-label": `Source link confirming ${day.name} ${day.date}`, value: day.sourceUrl || "", placeholder: "https://… (Gazette notice or Act)" });
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: `${day.date} · ${day.name}` }),
+        h("span", { className: "ch-muted", text: day.verified ? " · confirmed" : " · not yet confirmed" }),
+        state.me.canApproveLaw && !day.verified ? source : null,
+        state.me.canApproveLaw && !day.verified ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call("/api/challenge/review/holidays/verify", { method: "POST", body: { date: day.date, name: day.name, sourceUrl: source.value.trim() } }); await reloadLaw(); }, "Holiday confirmed."), text: "Confirm date" }) : null,
+      ]);
+    });
+    const hol = { date: h("input", { type: "date", "aria-label": "Holiday date" }), name: h("input", { "aria-label": "Holiday name" }), url: h("input", { type: "url", "aria-label": "Source link (optional)" }) };
     const cl = { id: h("input", { "aria-label": "Case id (lowercase-with-hyphens)" }), citation: h("input", { "aria-label": "Citation" }), parties: h("input", { "aria-label": "Parties" }), date: h("input", { type: "date", "aria-label": "Decision date" }), url: h("input", { "aria-label": "ULII link" }), tags: h("input", { "aria-label": "Issue tags separated by ;" }), terms: h("input", { "aria-label": "Search words" }) };
     return h("section", { className: "ch-card" }, [
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),
       state.me.canApproveLaw && !law.ruleSet.approvedForComputation ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); }, "Rules approved."), text: "Approve these rules (legal approver)" }) : null,
+      h("h3", { text: "Public holidays" }),
+      h("p", { className: "ch-muted", text: "When a deadline falls on a weekend or a listed holiday, users are told to lodge by the working day before. Only confirmed holidays can move a deadline later, and only if the deadline rules say a deadline moves to the next working day. Add Eid al-Fitr and Eid al-Adha each year once they are gazetted." }),
+      h("details", { className: "ch-holidays" }, [
+        h("summary", { text: `Upcoming holidays: ${upcoming.length} listed, ${upcoming.filter((day) => day.verified).length} confirmed` }),
+        h("ul", { className: "ch-law-list" }, holidayRows),
+        h("div", { className: "ch-fields" }, Object.values(hol).map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("button", { type: "button", className: "btn btn-secondary", disabled: state.busy, onclick: () => act(async () => { await call("/api/challenge/review/holidays", { method: "POST", body: { date: hol.date.value, name: hol.name.value, sourceUrl: hol.url.value.trim() || null } }); await reloadLaw(); }, "Holiday added."), text: "Add holiday" }),
+      ]),
       h("h3", { text: "Statute text (paste the official text from ULII)" }),
       h("ul", { className: "ch-law-list" }, rows),
       h("h3", { text: "Add a Tax Appeals Tribunal decision" }),
