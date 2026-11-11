@@ -34,7 +34,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=challenge-7">
+    <link rel="stylesheet" href="design.css?v=challenge-8">
     <script src="site-router.js?v=challenge-1" defer></script>
     <script src="kb-search.js?v=kb-1" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
@@ -51,7 +51,8 @@
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
     <script src="tax-chat.js?v=history-1" defer></script>
-    <script src="international-tax.js?v=international-tax-1" defer></script>
+    <script src="international-tax.js?v=international-tax-2" defer></script>
+    <script src="intl-tax-reasoning.js?v=intl-1" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
     <script src="app-install.js?v=pwa-phone-banner-3" defer></script>
@@ -59,7 +60,7 @@
     <script src="account.js?v=case-pay-1" defer></script>
     <script src="challenge-docx.js?v=challenge-2" defer></script>
     <script src="challenge-calendar.js?v=challenge-1" defer></script>
-    <script src="challenge-app.js?v=challenge-6" defer></script>
+    <script src="challenge-app.js?v=challenge-7" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -1693,6 +1694,27 @@
           International tax depends on the countries involved, the tax year, the contract and the facts. This guide is not a worldwide rate database and does not determine residence, treaty entitlement, permanent establishment, transfer-pricing compliance or filing obligations. Confirm current rules in every relevant country before acting.
         </div>
 
+        <div class="intl-guide" id="intl-guide">
+          <div>
+            <p class="eyebrow section-eyebrow">GUIDED QUESTION</p>
+            <h3>Ask about your cross-border situation.</h3>
+            <p>Describe it in your own words. TaxComp asks for the facts it needs, then sets out the rules, what to do, the sources and what is still uncertain. It does not state tax rates it has not verified.</p>
+          </div>
+          <form id="intl-guide-form">
+            <div class="field">
+              <label for="intl-guide-question">Your situation</label>
+              <textarea id="intl-guide-question" rows="3" maxlength="1000" placeholder="e.g. I received money from a company in Kenya for consulting work"></textarea>
+            </div>
+            <div id="intl-guide-questions" class="intl-guide-questions"></div>
+            <button type="submit">Continue</button>
+          </form>
+          <div id="intl-guide-answer" class="intl-guide-answer" aria-live="polite" hidden></div>
+          <details class="intl-framework">
+            <summary>How TaxComp organises international and Uganda tax knowledge</summary>
+            <div id="intl-framework"></div>
+          </details>
+        </div>
+
         <div class="international-tax-topics">
           <article><span>01</span><h3>Residence and source</h3><p>Identify where a person or company is tax-resident, where income arises, and which countries may tax it. Citizenship, incorporation and payment location are not always decisive on their own.</p></article>
           <article><span>02</span><h3>Tax treaties and double taxation</h3><p>Check whether an effective agreement applies to both parties and the income type, then review residence, beneficial ownership, anti-abuse and documentation requirements before seeking relief.</p></article>
@@ -1718,6 +1740,15 @@
             <div class="field">
               <label for="international-tax-method">Choose a calculation</label>
               <select id="international-tax-method">
+                <optgroup label="With full working">
+                <option value="foreignTaxCredit">Foreign tax credit</option>
+                <option value="doubleTaxRelief">Double tax relief: credit, exemption, deduction</option>
+                <option value="withholdingGrossUp">Withholding tax and gross-up</option>
+                <option value="taxableIncome">Taxable income</option>
+                <option value="transferPricingAdjustment">Transfer pricing adjustment</option>
+                <option value="structureComparison">Compare two transaction structures</option>
+                </optgroup>
+                <optgroup label="Quick scenarios">
                 <option value="withholding">Cross-border withholding comparison</option>
                 <option value="foreignCredit">Foreign tax credit ceiling scenario</option>
                 <option value="currency">Foreign-currency conversion</option>
@@ -1725,6 +1756,7 @@
                 <option value="workdays">Cross-border employment workday allocation</option>
                 <option value="importedServicesVat">Imported-service VAT scenario</option>
                 <option value="profitAttribution">Permanent-establishment profit allocation</option>
+                </optgroup>
               </select>
             </div>
             <h3 id="international-tax-workbench-title"></h3>

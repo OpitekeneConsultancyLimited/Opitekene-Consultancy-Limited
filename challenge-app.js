@@ -168,7 +168,7 @@
     ];
     if (me.reviewer) {
       parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["law", "Law and cases admin"]].map(([key, text]) =>
-        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); } }), text }))));
+        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); } }), text }))));
       if (state.panel === "queue") return [...parts, queueScreen()];
       if (state.panel === "law") return [...parts, lawAdminScreen()];
     }
@@ -646,6 +646,67 @@
     ]);
   }
 
+  /** Knowledge base: drafts to review, verified records, and a form to add one. Users see only verified records. */
+  function knowledgePanel() {
+    const kb = state.knowledge;
+    if (!kb) return null;
+    const reload = async () => { state.knowledge = await call("/api/challenge/review/knowledge"); };
+    const order = { draft: 0, verified: 1, outdated: 2, rejected: 3 };
+    const records = [...kb.records].sort((a, b) => order[a.status] - order[b.status] || a.id.localeCompare(b.id));
+    const drafts = records.filter((r) => r.status === "draft");
+    const row = (r) => {
+      const note = h("input", { type: "text", "aria-label": `Review note for ${r.id}`, placeholder: r.aiGenerated ? "What you checked it against (required for AI-written notes)" : "Review note" });
+      const replacement = h("input", { type: "text", "aria-label": `Record that replaces ${r.id}`, placeholder: "Replaced by (record id, optional)" });
+      const decide = (decision) => act(async () => { await call(`/api/challenge/review/knowledge/${r.id}/decision`, { method: "POST", body: { decision, note: note.value.trim(), supersededBy: replacement.value.trim() || undefined } }); await reload(); }, "Saved.");
+      const buttons = [];
+      if (state.me.canApproveLaw) {
+        if (r.status === "draft" || r.status === "outdated") buttons.push(h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => decide("verify"), text: "Verify" }));
+        if (r.status === "draft") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("reject"), text: "Reject" }));
+        if (r.status === "verified") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("outdated"), text: "Mark outdated" }));
+        if (r.status === "verified" || r.status === "rejected") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("reopen"), text: "Reopen as draft" }));
+      }
+      return h("li", { className: `ch-law-row ch-kb-${r.status}` }, [
+        h("strong", { text: r.title }),
+        h("span", { className: "ch-muted", text: ` · ${r.id} · ${r.status}${r.aiGenerated ? " · written by AI" : ""} · ${r.country} · ${r.taxCategory}` }),
+        h("p", { className: "ch-muted", text: `${r.sourceKind.replace(/_/g, " ")}: ${r.sourceReference}${r.chapterRef ? ` · ${r.chapterRef}` : ""} · licence: ${r.licence.replace(/_/g, " ")}${r.reviewedAt ? ` · last reviewed ${date(r.reviewedAt.slice(0, 10))}` : ""}` }),
+        r.body ? h("p", { className: "ch-kb-body", text: r.body }) : h("p", { className: "ch-muted", text: "Metadata only (no text stored)." }),
+        buttons.length ? note : null,
+        buttons.length && r.status === "verified" ? replacement : null,
+        buttons.length ? h("div", { className: "ch-actions" }, buttons) : null,
+      ]);
+    };
+    const field = (key, label, attrs = {}) => h("input", { type: "text", "aria-label": label, "data-kb-field": key, ...attrs });
+    const select = (key, label, values, chosen) => h("select", { "aria-label": label, "data-kb-field": key }, values.map((v) => h("option", { value: v, text: v.replace(/_/g, " "), selected: v === chosen ? "" : null })));
+    const form = [
+      field("id", "Record id (lowercase, e.g. ug.vat.imported-services)"), field("title", "Title"),
+      select("layer", "Layer", ["domestic", "international"], "domestic"), field("country", "Country (UG, KE… or INTL)", { value: "UG" }),
+      select("taxCategory", "Tax category", kb.options.categories), field("topic", "Topic"),
+      select("sourceKind", "Source kind", kb.options.sourceKinds), field("sourceOrganisation", "Source organisation (e.g. URA, Parliament of Uganda)"),
+      field("sourceReference", "Source reference (Act and section, publication title, or book and chapter)"), field("sourceUrl", "Source link (https://, optional)"),
+      field("chapterRef", "Chapter or section (no page numbers for unlicensed books)"), field("statuteId", "Law register statute id (optional, e.g. ita)"),
+      field("applicableFrom", "Applies from (YYYY-MM-DD, optional)"), field("applicableTo", "Applies to (YYYY-MM-DD, optional)"),
+      field("effectiveDate", "Effective date (YYYY-MM-DD, optional)"), field("publicationDate", "Publication date (YYYY-MM-DD, optional)"),
+      select("contentKind", "Content", kb.options.contentKinds, "original_note"), select("licence", "Licence", kb.options.licences, "original_work"),
+      field("licenceNote", "Licence note (where written permission is kept, if licensed)"),
+    ];
+    const body = h("textarea", { rows: "4", "aria-label": "Note in your own words (or official text for legislation)", "data-kb-field": "body" });
+    return h("section", { className: "ch-kb", "aria-labelledby": "ch-kb-title" }, [
+      h("h3", { id: "ch-kb-title", text: `Knowledge base${drafts.length ? ` (${drafts.length} drafts to review)` : ""}` }),
+      h("p", { className: "ch-muted", text: "Users only see verified records, and verified current law ranks first. Copyright books without a licence (such as the International Tax Primer) may only be referred to by chapter in notes written in your own words: no quotations, no page numbers, no copied text. Any edit sends a record back to draft." }),
+      h("details", { className: "ch-watch-list", open: drafts.length ? "" : null }, [h("summary", { text: `${records.length} records` }), h("ul", { className: "ch-law-list" }, records.map(row))]),
+      h("details", {}, [
+        h("summary", { text: "Add or edit a record" }),
+        h("div", { className: "ch-fields" }, [...form, body].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
+        h("button", { type: "button", className: "btn btn-secondary", disabled: state.busy, onclick: () => act(async () => {
+          const payload = {};
+          for (const input of [...form, body]) payload[input.getAttribute("data-kb-field")] = input.value;
+          await call("/api/challenge/review/knowledge", { method: "POST", body: payload });
+          await reload();
+        }, "Saved as a draft for review."), text: "Save as draft" }),
+      ]),
+    ]);
+  }
+
   function lawAdminScreen() {
     const law = state.law;
     if (!law) return h("p", { text: "Loading…" });
@@ -693,6 +754,7 @@
     return h("section", { className: "ch-card" }, [
       ...paymentForm,
       lawWatchPanel(),
+      knowledgePanel(),
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),
       state.me.canApproveLaw && !law.ruleSet.approvedForComputation ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); }, "Rules approved."), text: "Approve these rules (legal approver)" }) : null,
