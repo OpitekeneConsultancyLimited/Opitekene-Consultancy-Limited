@@ -17,7 +17,7 @@ import { assertSafe, UnsafeOutputError } from "./safety.mts";
 import { ISSUE_TAGS, searchCases } from "./search.mts";
 import {
   audit, isActiveReviewer, listAssignedCases, listOwnCases, loadCase, loadCaseLaw, loadConfirmations, loadDocuments, loadItems,
-  loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
+  findCasesByReference, loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
@@ -36,6 +36,8 @@ export interface ChallengeEnv extends AiEnv {
   SUPABASE_SERVICE_ROLE_KEY?: string;
   CHAT_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
   CHALLENGE_REVIEW_THRESHOLD_UGX?: string;
+  /** Only its presence is read here (online payments on or off); billing.mjs uses the value. */
+  FLW_SECRET_KEY?: string;
   /** Test seam: a function can only be injected by code, never by Worker vars. */
   CHALLENGE_CLOCK?: () => Date;
 }
@@ -240,7 +242,12 @@ async function route(ctx: Ctx): Promise<Response> {
   if (path === "/api/challenge/me" && method === "GET") {
     const consent = await db.prepare(`SELECT accepted_at AS "acceptedAt" FROM challenge_consents WHERE user_id = ? AND consent_version = ?`).bind(ctx.userId, CONSENT_VERSION).first();
     const cases = await listOwnCases(db, ctx.userId);
+    const reviewedPlan = await db.prepare(`SELECT id, amount, currency FROM billing_plans WHERE kind = 'per_case' AND challenge_tier = 'reviewed' AND active = 1 ORDER BY sort_order LIMIT 1`).first<Record<string, unknown>>();
     return json({
+      offers: {
+        reviewed: reviewedPlan ? { planId: String(reviewedPlan.id), amount: Number(reviewedPlan.amount), currency: String(reviewedPlan.currency) } : null,
+        paymentsEnabled: typeof ctx.env.FLW_SECRET_KEY === "string" && ctx.env.FLW_SECRET_KEY.length > 0,
+      },
       consentVersion: CONSENT_VERSION, consented: Boolean(consent), reviewer: ctx.reviewer, canApproveLaw: ctx.canApproveLaw,
       cases: cases.map((row) => ({ id: row.id, taxHead: row.taxHead, periodStart: row.periodStart, periodEnd: row.periodEnd, principal: row.principal, status: row.status, reviewStatus: row.reviewStatus, updatedAt: row.updatedAt })),
       uploadsEnabled: Boolean(storageFor(ctx.env)),
@@ -621,6 +628,26 @@ async function route(ctx: Ctx): Promise<Response> {
         audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
       ]);
       return json({ saved: id }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/entitlements" && method === "POST") {
+      // Payments taken by hand (mobile money via WhatsApp, or an agreed managed-dispute quote):
+      // a legal approver grants the tier using the short case reference the customer quotes.
+      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can record a payment for a case.");
+      const body = await readJson(request);
+      const reference = String(body.caseRef ?? "").trim().toLowerCase();
+      if (body.tier !== "reviewed" && body.tier !== "managed") throw new HttpError(400, "Choose reviewed or managed.");
+      const paymentReference = cleanText(body.paymentReference, 120);
+      if (!paymentReference) throw new HttpError(400, "Record the payment reference (for example the mobile money transaction ID).");
+      const found = await findCasesByReference(db, reference);
+      if (found.length !== 1) throw new HttpError(found.length ? 409 : 404, found.length ? "More than one case matches; use more of the reference." : "No case has that reference.");
+      const row = found[0] as CaseRow;
+      await db.batch([
+        db.prepare(`INSERT INTO challenge_case_entitlements (case_id, tier, granted_by, granted_at, payment_reference) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`).bind(row.id, body.tier, ctx.userId, ctx.nowIso, paymentReference),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "entitlement.grant", caseId: row.id, details: { tier: body.tier, paymentReference, manual: true }, at: ctx.nowIso }),
+      ]);
+      // The paid tier makes review required: assign a reviewer now, not on the owner's next visit.
+      const view = await syncReview(ctx, row, await buildView(ctx, row));
+      return json({ granted: body.tier, caseId: row.id, assignedReviewerId: view.case.assignedReviewerId }, 200, ctx.cors);
     }
     if (path === "/api/challenge/review/holidays" && method === "POST") {
       // Any reviewer may list a holiday (e.g. a gazetted Eid date). It starts

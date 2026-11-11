@@ -233,3 +233,89 @@ test("without Flutterwave keys, accounts work but checkout is clearly unavailabl
   assert.equal((await t.webhook(1)).status, 401, "webhook refuses without a configured hash");
   await t.pg.close();
 });
+
+test("Reviewed pack: pay UGX 250,000 for one case; the case gets the tier and goes to review", async () => {
+  const t = await setup();
+  const owner = await t.supabase.issueToken({ email: "owner@example.com" });
+  const other = await t.supabase.issueToken({ email: "other@example.com" });
+  const newCase = async (who) => {
+    await t.call("/api/challenge/consent", { method: "POST", token: who.token, body: { version: "2026-11-10", accept: true } });
+    return (await t.call("/api/challenge/cases", { method: "POST", token: who.token })).json.view.case.id;
+  };
+  const caseId = await newCase(owner);
+  const otherCase = await newCase(other);
+
+  // The per-case plan is not offered as a subscription on the Account page...
+  const account = await t.call("/api/account", { token: owner.token });
+  assert.ok(!account.json.plans.some((p) => p.id === "challenge-reviewed-case"));
+  // ...it is offered inside Challenge an Assessment.
+  const me = await t.call("/api/challenge/me", { token: owner.token });
+  assert.deepEqual(me.json.offers, { reviewed: { planId: "challenge-reviewed-case", amount: 250000, currency: "UGX" }, paymentsEnabled: true });
+
+  const checkout = (body, who = owner) => t.call("/api/billing/checkout", { method: "POST", token: who.token, body });
+  assert.equal((await checkout({ planId: "challenge-reviewed-case" })).status, 404, "a case is required");
+  assert.equal((await checkout({ planId: "challenge-reviewed-case", caseId: otherCase })).status, 404, "only the owner can pay for a case");
+  const started = await checkout({ planId: "challenge-reviewed-case", caseId });
+  assert.equal(started.status, 201);
+  const { txRef } = started.json;
+  assert.match(txRef, /^taxcomp-case-/);
+  const sent = t.flw.checkouts.get(txRef);
+  assert.equal(sent.amount, 250000);
+  assert.equal(new URL(sent.redirect_url).hash, "#challenge");
+  assert.equal(sent.meta.case_id, caseId);
+
+  // Paid: the webhook (re-verified) grants the tier once, with an audit entry.
+  const paid = t.flw.pay(txRef);
+  assert.equal((await t.webhook(paid)).json.credited, true);
+  assert.equal((await t.webhook(paid)).json.credited, false, "a repeated webhook grants nothing more");
+  const grants = await t.pg.query("SELECT tier, granted_by AS by, payment_reference AS ref FROM taxcomp.challenge_case_entitlements WHERE case_id = $1", [caseId]);
+  assert.deepEqual(grants.rows, [{ tier: "reviewed", by: "payment:flutterwave", ref: txRef }]);
+  const audit = await t.pg.query("SELECT actor_role AS role, action FROM taxcomp.challenge_audit_log WHERE case_id = $1 AND action = 'entitlement.paid'", [caseId]);
+  assert.deepEqual(audit.rows, [{ role: "system", action: "entitlement.paid" }]);
+  const subs = await t.pg.query("SELECT count(*)::int AS n FROM taxcomp.billing_subscriptions WHERE user_id = $1", [owner.userId]);
+  assert.equal(subs.rows[0].n, 0, "a per-case purchase is not a subscription");
+
+  // The case now has the reviewed tier and needs a reviewer's sign-off.
+  const view = (await t.call(`/api/challenge/cases/${caseId}`, { token: owner.token })).json.view;
+  assert.equal(view.access.tier, "reviewed");
+  assert.ok(view.review.reasons.some((r) => r.code === "paid-review"));
+  assert.deepEqual(view.access.blockedBecause, ["review"], "paid for: the plan no longer blocks, the review does");
+  assert.equal((await checkout({ planId: "challenge-reviewed-case", caseId })).status, 409, "cannot buy twice for one case");
+
+  // Underpayment never grants anything.
+  const otherStart = await checkout({ planId: "challenge-reviewed-case", caseId: otherCase }, other);
+  assert.equal((await t.webhook(t.flw.pay(otherStart.json.txRef, { amount: 1000 }))).json.credited, false);
+  assert.equal((await t.pg.query("SELECT count(*)::int AS n FROM taxcomp.challenge_case_entitlements WHERE case_id = $1", [otherCase])).rows[0].n, 0);
+
+  // Deleting the case keeps the payment record.
+  assert.equal((await t.call(`/api/challenge/cases/${caseId}`, { method: "DELETE", token: owner.token })).status, 200);
+  const payment = await t.pg.query("SELECT status, case_id AS case FROM taxcomp.billing_payments WHERE tx_ref = $1", [txRef]);
+  assert.deepEqual(payment.rows[0], { status: "successful", case: null });
+  await t.pg.close();
+});
+
+test("manual payments: only a legal approver records them, by the short case reference", async () => {
+  const t = await setup({ paymentsConfigured: false });
+  const owner = await t.supabase.issueToken({ email: "owner@example.com" });
+  const staff = await t.supabase.issueToken({ email: "staff@example.com" });
+  await t.call("/api/challenge/consent", { method: "POST", token: owner.token, body: { version: "2026-11-10", accept: true } });
+  const caseId = (await t.call("/api/challenge/cases", { method: "POST", token: owner.token })).json.view.case.id;
+  const me = await t.call("/api/challenge/me", { token: owner.token });
+  assert.equal(me.json.offers.paymentsEnabled, false, "without Flutterwave keys the site offers WhatsApp instead");
+
+  const record = (body, who = staff) => t.call("/api/challenge/review/entitlements", { method: "POST", token: who.token, body });
+  const body = { caseRef: caseId.slice(0, 8), tier: "managed", paymentReference: "MM-12345" };
+  assert.equal((await record(body, owner)).status, 403, "owners cannot grant themselves a tier");
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, 'staff@example.com', now()::text)", [staff.userId]);
+  assert.equal((await record(body)).status, 403, "reviewers without approver rights cannot either");
+  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  assert.equal((await record({ ...body, paymentReference: "" })).status, 400);
+  assert.equal((await record({ ...body, caseRef: "ffffffff" })).status, 404);
+  const granted = await record(body);
+  assert.equal(granted.status, 200, JSON.stringify(granted.json));
+  assert.deepEqual({ tier: granted.json.granted, caseId: granted.json.caseId, assigned: granted.json.assignedReviewerId }, { tier: "managed", caseId, assigned: staff.userId });
+  const view = (await t.call(`/api/challenge/cases/${caseId}`, { token: owner.token })).json.view;
+  assert.equal(view.access.tier, "managed");
+  assert.ok(view.review.reasons.some((r) => r.code === "paid-review"));
+  await t.pg.close();
+});

@@ -255,6 +255,10 @@ test("review gate: threshold, procedural, lapsed, TAT, unconfirmed fields; sign-
   assert.equal(reviewGate({ ...row, reviewStatus: "approved", reviewedCaseVersion: 3 }, deadlines, empty, []).signedOff, true);
   assert.equal(reviewGate({ ...row, reviewStatus: "approved", reviewedCaseVersion: 2 }, deadlines, empty, []).signedOff, false);
   assert.equal(reviewGate(row, deadlines, empty, [], 100_000_000).required, false, "threshold is configurable");
+  for (const tier of ["reviewed", "managed"]) {
+    assert.deepEqual(reviewGate({ ...row, principal: 1_000_000 }, deadlines, empty, [], undefined, tier).reasons.map((r) => r.code), ["paid-review"], `a ${tier} case always goes to a reviewer`);
+  }
+  assert.equal(reviewGate({ ...row, principal: 1_000_000 }, deadlines, empty, [], undefined, "self-service").required, false);
 });
 
 test("REV-1 (logic): full pack blocked until sign-off even on a paid plan; free plan blocked by plan", () => {

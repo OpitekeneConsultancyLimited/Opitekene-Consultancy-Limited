@@ -121,7 +121,25 @@
       h("p", { className: "ch-rule" }, [`Rule: ${b.ruleLabel} (${b.ruleSetVersion}) · `, link("source", b.sourceUrl)]),
       provisionalLabel ? h("p", { className: "ch-provisional", text: provisionalLabel }) : null,
       state.pro && b.assumptions?.length ? h("ul", { className: "ch-assumptions" }, b.assumptions.map((a) => h("li", { text: a }))) : null,
+      calendarButton(b, provisionalLabel),
     ]);
+  }
+
+  const CALENDAR_TITLES = { objection: "lodge your objection with URA", tat_application: "apply to the Tax Appeals Tribunal" };
+  /** "Add to my calendar": an .ics file with alerts 7 days, 2 days and on the day. */
+  function calendarButton(b, provisionalLabel) {
+    const title = CALENDAR_TITLES[b.key];
+    if (!title || !b.dueDate || !(b.state === "on_track" || b.state === "urgent") || !window.TaxCompCalendar || !state.view) return null;
+    if (b.key === "objection" && state.view.case.objectionFiledOn) return null;
+    return h("p", {}, [h("button", { type: "button", className: "btn btn-small btn-secondary", onclick: () => {
+      const ics = window.TaxCompCalendar.deadlineIcs({
+        uid: `${state.view.case.id}-${b.key}-${b.dueDate}`, title, dueDate: b.dueDate, lodgeBy: b.closedDay?.lodgeBy ?? null,
+        details: `${b.ruleLabel} (rule set ${b.ruleSetVersion}).${provisionalLabel ? ` ${provisionalLabel}.` : ""} Check the date yourself: TaxComp counts from the day you received the notice.`,
+        url: `${location.origin}${location.pathname}#challenge`,
+      });
+      download(ics, `TaxComp-deadline-${b.dueDate}.ics`, "text/calendar");
+      say("Calendar file downloaded. Open it to add the deadline and its reminders to your calendar.", "success"); render();
+    }, text: "Add to my calendar" })]);
   }
 
   function consentScreen() {
@@ -528,8 +546,43 @@
         h("button", { type: "button", className: "btn btn-primary", disabled: state.busy, onclick: () => act(async () => download(window.TaxCompDocx.packToDocx(await getPack()), "TaxComp-response-pack.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"), "Pack downloaded. Edit it in Word before you use it."), text: "Download the pack (Word)" }),
         h("button", { type: "button", className: "btn btn-secondary", disabled: state.busy, onclick: () => act(async () => printPack(await getPack())), text: "Print or save the pack as PDF" }),
       ]),
+      state.role === "owner" ? helpOffers(v) : null,
       state.role === "owner" ? h("p", {}, [h("button", { type: "button", className: "ch-link ch-danger-text", onclick: () => { state.confirmDelete = true; render(); }, text: "Delete this case" })]) : null,
       confirmBox,
+    ]);
+  }
+
+  const WHATSAPP = "https://wa.me/256782092825";
+  const whatsappLink = (text) => `${WHATSAPP}?text=${encodeURIComponent(text)}`;
+  /** Reviewed pack (UGX 250,000 per case, paid online) and Managed dispute (quoted per case). */
+  function helpOffers(v) {
+    const offers = state.me.offers || {};
+    const reviewed = offers.reviewed;
+    const ref = v.case.id.slice(0, 8);
+    const tier = v.access.tier;
+    const hasReview = tier === "reviewed" || tier === "managed";
+    const price = reviewed ? `UGX ${Number(reviewed.amount).toLocaleString("en-UG")}` : null;
+    const reviewedBlock = hasReview
+      ? h("p", { className: "ch-banner ch-ok", text: tier === "managed" ? "Opitekene is managing this dispute. Your reviewer will contact you." : "You have a reviewed pack for this case. A reviewer will check it and sign off the full pack." })
+      : reviewed ? h("div", { className: "ch-offer" }, [
+        h("h5", { text: `Reviewed pack: ${price} for this case` }),
+        h("p", { text: "An Opitekene reviewer checks your figures, deadline and grounds, and signs off the full response pack. You still lodge it yourself." }),
+        offers.paymentsEnabled
+          ? h("button", { type: "button", className: "btn btn-primary", disabled: state.busy, onclick: () => act(async () => {
+            const { checkoutUrl } = await call("/api/billing/checkout", { method: "POST", body: { planId: reviewed.planId, caseId: v.case.id } });
+            window.location.assign(checkoutUrl);
+          }), text: `Pay ${price} (mobile money or card)` })
+          : h("p", {}, ["Online payment is not switched on yet. ", h("a", { href: whatsappLink(`Hello Opitekene, I would like a reviewed pack (${price}) for my TaxComp case ${ref}.`), target: "_blank", rel: "noopener", text: "Pay by mobile money through WhatsApp" }), "; a reviewer adds it to your case once paid."]),
+      ]) : null;
+    return h("section", { className: "ch-help", "aria-labelledby": "ch-help-title" }, [
+      h("h4", { id: "ch-help-title", text: "Want a professional to help?" }),
+      h("p", { className: "ch-muted", text: `Your case reference: ${ref}` }),
+      reviewedBlock,
+      tier === "managed" ? null : h("div", { className: "ch-offer" }, [
+        h("h5", { text: "Managed dispute: price agreed for your case" }),
+        h("p", { text: "Opitekene prepares and lodges the objection for you and follows it up with URA. We quote after looking at your case." }),
+        h("a", { className: "btn btn-secondary", href: whatsappLink(`Hello Opitekene, I would like a quote for a managed dispute. My TaxComp case reference is ${ref}.`), target: "_blank", rel: "noopener", text: "Ask for a quote on WhatsApp" }),
+      ]),
     ]);
   }
 
@@ -592,7 +645,22 @@
     });
     const hol = { date: h("input", { type: "date", "aria-label": "Holiday date" }), name: h("input", { "aria-label": "Holiday name" }), url: h("input", { type: "url", "aria-label": "Source link (optional)" }) };
     const cl = { id: h("input", { "aria-label": "Case id (lowercase-with-hyphens)" }), citation: h("input", { "aria-label": "Citation" }), parties: h("input", { "aria-label": "Parties" }), date: h("input", { type: "date", "aria-label": "Decision date" }), url: h("input", { "aria-label": "ULII link" }), tags: h("input", { "aria-label": "Issue tags separated by ;" }), terms: h("input", { "aria-label": "Search words" }) };
+    const pay = {
+      ref: h("input", { id: "ch-pay-ref", "aria-label": "Case reference (first 8 characters)", maxlength: "36", autocomplete: "off" }),
+      tier: h("select", { id: "ch-pay-tier", "aria-label": "What was paid for" }, [h("option", { value: "reviewed", text: "Reviewed pack" }), h("option", { value: "managed", text: "Managed dispute" })]),
+      payment: h("input", { id: "ch-pay-payment", "aria-label": "Payment reference (e.g. mobile money ID)", maxlength: "120", autocomplete: "off" }),
+    };
+    const paymentForm = state.me.canApproveLaw ? [
+      h("h3", { text: "Record a payment for a case" }),
+      h("p", { className: "ch-muted", text: "For payments taken by hand (mobile money on WhatsApp, or an agreed managed-dispute quote). The case is then sent for review." }),
+      h("div", { className: "ch-fields" }, Object.values(pay).map((input) => h("div", { className: "ch-field" }, [h("label", { for: input.id, text: input.getAttribute("aria-label") }), input]))),
+      h("button", { type: "button", className: "btn btn-secondary", disabled: state.busy, onclick: () => act(async () => {
+        const result = await call("/api/challenge/review/entitlements", { method: "POST", body: { caseRef: pay.ref.value.trim(), tier: pay.tier.value, paymentReference: pay.payment.value.trim() } });
+        say(`Recorded. Case ${result.caseId.slice(0, 8)} now has a ${result.granted === "managed" ? "managed dispute" : "reviewed pack"} and is in the review queue.`, "success");
+      }), text: "Record payment" }),
+    ] : [];
     return h("section", { className: "ch-card" }, [
+      ...paymentForm,
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),
       state.me.canApproveLaw && !law.ruleSet.approvedForComputation ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); }, "Rules approved."), text: "Approve these rules (legal approver)" }) : null,
@@ -676,6 +744,11 @@
     await act(loadMe);
   }
   window.addEventListener("hashchange", start);
+  // account.js confirms a per-case payment on return from Flutterwave; refresh and show the result here.
+  window.addEventListener("taxcomp:case-payment", (event) => {
+    act(async () => { await loadMe(); if (state.view) await openCase(state.view.case.id, "pack"); })
+      .then(() => { say(event.detail?.text || "", event.detail?.kind || "notice"); render(); });
+  });
   window.TaxCompAccount?.onChange?.(() => { started = false; state.me = null; state.view = null; start(); });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();

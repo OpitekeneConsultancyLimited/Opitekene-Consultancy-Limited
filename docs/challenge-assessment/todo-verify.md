@@ -78,6 +78,6 @@ While a holiday is unverified it can only make TaxComp warn users to lodge earli
 | # | Item |
 |---|---|
 | E1 | Review threshold: UGX 50,000,000 of disputed principal (`CHALLENGE_REVIEW_THRESHOLD_UGX`) |
-| E2 | Prices for the "reviewed pack" and "managed dispute" tiers; existing plans give only the self-service pack (D-08) |
+| E2 | **Decided 2026-11-11:** Reviewed pack UGX 250,000 per case (online through Flutterwave once its keys are set; WhatsApp until then). Managed dispute quoted per case and recorded by a legal approver. |
 | E3 | Retention period for cases (privacy notes) |
 | E4 | Whether the Gemini key is a paid tier (privacy notes) |

@@ -303,19 +303,26 @@
     if (!txRef) return;
     const state = read("status");
     const transactionId = read("transaction_id");
-    window.history.replaceState({}, "", `${window.location.pathname}#account`);
+    // Per-case purchases (Challenge an Assessment) return to #challenge.
+    const perCase = txRef.startsWith("taxcomp-case-");
+    window.history.replaceState({}, "", `${window.location.pathname}#${perCase ? "challenge" : "account"}`);
+    const tell = (text, kind) => {
+      setMessage(text, kind);
+      if (perCase) window.dispatchEvent(new CustomEvent("taxcomp:case-payment", { detail: { text, kind } }));
+    };
     if (state !== "successful" && state !== "completed") {
-      setMessage(state === "cancelled" ? "Payment cancelled. You have not been charged." : "The payment did not go through. You have not been given access; please try again.", "error");
+      tell(state === "cancelled" ? "Payment cancelled. You have not been charged." : "The payment did not go through. You have not been given access; please try again.", "error");
       return;
     }
     try {
       const result = await call("/api/billing/confirm", { method: "POST", body: { transactionId, txRef } });
       await loadAccount();
-      setMessage(result.paymentStatus === "successful"
-        ? "Payment confirmed. Your subscription is active."
-        : "We are still confirming your payment with Flutterwave. Refresh this page in a minute.", result.paymentStatus === "successful" ? "success" : "notice");
+      const done = result.paymentStatus === "successful";
+      tell(done
+        ? (perCase ? "Payment confirmed. A reviewer will now check your case and sign off the full pack." : "Payment confirmed. Your subscription is active.")
+        : "We are still confirming your payment with Flutterwave. Refresh this page in a minute.", done ? "success" : "notice");
     } catch (error) {
-      setMessage(error.message, "error");
+      tell(error.message, "error");
     }
   }
 

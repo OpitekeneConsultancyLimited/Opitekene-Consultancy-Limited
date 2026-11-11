@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-11 - Reviewed pack payments and calendar reminders
+
+- **Reviewed pack, UGX 250,000 per case.** Bought from the case's pack step through Flutterwave (mobile money or card). A verified payment grants that case the reviewed tier (not a subscription), writes an audit entry, and sends the case for review; the full pack unlocks on sign-off. Without Flutterwave keys the button opens WhatsApp instead.
+- **Managed dispute** is quoted per case: "Ask for a quote on WhatsApp", with the case reference.
+- Legal approvers can record payments taken by hand (Law and cases admin → Record a payment for a case), by the 8-character case reference; the case is assigned for review straight away.
+- A Reviewed pack or Managed dispute always requires a reviewer's sign-off (review reason `paid-review`).
+- Migration `20261111000200`: `billing_plans.kind` (`subscription` / `per_case`), `billing_payments.case_id` (kept as NULL if the case is deleted), and the `challenge-reviewed-case` plan. Per-case plans are not listed on the Account page.
+- **Calendar reminders:** "Add to my calendar" on the objection and Tribunal deadline banners downloads a calendar file (`challenge-calendar.js`) with alerts 7 days and 2 days before and on the day. No email service needed.
+
 ## 2026-11-11 - PAYE and withholding tax assessments
 
 - Challenge an Assessment now takes PAYE and withholding tax (WHT) notices as well as income tax and VAT.
