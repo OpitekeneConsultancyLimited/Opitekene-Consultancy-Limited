@@ -307,7 +307,7 @@
       state.data = await call("/api/challenge/profile");
       state.message = "";
     } catch (error) {
-      rootNode?.replaceChildren(h("p", { className: "ws-empty", text: error.status === 401 ? "Sign in to see your personalised dashboard." : error.status === 503 ? "Your dashboard is not switched on yet." : error.message }));
+      rootNode?.replaceChildren(h("p", { className: "ws-empty", text: error.status === 401 ? "Sign in to see your personalised dashboard." : [404, 503].includes(error.status) ? "Your personalised dashboard is not switched on yet. Your other workspace sections still work." : error.message }));
       return;
     }
     render();
