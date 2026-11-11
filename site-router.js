@@ -262,6 +262,28 @@
     });
   }
 
+  // Signed-in visitors who open the site without a section in the address land
+  // on their dashboard (My Workspace), once per page load. Home stays one click
+  // away, and links to a specific section (#tools, #calc-paye, …) are honoured.
+  // Reads <html data-auth> only; account.js remains its only writer.
+  let landed = false;
+  function landSignedIn() {
+    if (landed || root.dataset.auth !== "in") return;
+    landed = true;
+    if (window.location.hash.slice(1)) return;
+    history.replaceState(null, "", "#workspace");
+    route();
+  }
+  function watchSignIn() {
+    landSignedIn();
+    if (landed || typeof MutationObserver !== "function") return;
+    const observer = new MutationObserver(() => {
+      landSignedIn();
+      if (landed) observer.disconnect();
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ["data-auth"] });
+  }
+
   function start() {
     setToolFocus("tools");
     wirePayePreview();
@@ -271,6 +293,7 @@
     wireCatalogue();
     route();
     window.addEventListener("hashchange", route);
+    watchSignIn();
     const year = document.getElementById("footer-year");
     if (year) year.textContent = String(new Date().getFullYear());
   }

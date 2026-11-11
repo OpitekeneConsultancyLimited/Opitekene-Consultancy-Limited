@@ -394,6 +394,18 @@ await page.click("#tax-chat-clear");
 check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
 
 // Phase 12: personalised dashboard.
+// Opening the site with no section in the address while signed in lands on the dashboard; #home still shows Home.
+{
+  const landing = await context.newPage();
+  await landing.goto(`${SITE}/index.html`);
+  await landing.waitForFunction(() => document.documentElement.dataset.view === "workspace", null, { timeout: 8000 }).catch(() => {});
+  check("signed in with no section in the address: the site opens on My dashboard",
+    await landing.evaluate(() => document.documentElement.dataset.view === "workspace" && location.hash === "#workspace" && !document.querySelector("[data-pane='dashboard']").hidden));
+  await landing.goto(`${SITE}/index.html#home`);
+  await landing.waitForTimeout(500);
+  check("the Home link still shows Home", await landing.evaluate(() => document.documentElement.dataset.view === "home"));
+  await landing.close();
+}
 await page.evaluate(() => { location.hash = "workspace"; });
 await page.waitForSelector("#dashboard-root form.dash-onboarding", { timeout: 8000 }).catch(() => {});
 check("first visit to the workspace shows onboarding", Boolean(await page.$("#dashboard-root form.dash-onboarding")));
