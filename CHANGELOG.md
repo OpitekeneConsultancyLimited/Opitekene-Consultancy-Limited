@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-12 - Phase 12: personalised dashboard
+
+- **My dashboard** (Workspace, now the default pane; the nav reads "My Workspace").
+  - **Onboarding:** five questions; every one can be skipped and answers can be changed later.
+  - **Dashboards by user type:** individual or employee, self-employed, small business, company, accountant, consultant, finance manager and tax administrator. No tax is assumed: sole traders don't see company tax, and businesses without staff don't see employer PAYE.
+  - **Simple and Professional modes**, switchable at any time.
+  - **Recommendations** that name the data they come from: the profile, the obligation check, the user's assessment cases, practice-workspace client deadlines and the legislative watch.
+- **Discover my tax obligations**: obligations come only from the user's answers. Each one is either "Applies on the facts you gave" or "May apply: needs more facts or a check", with the reasons, legal provisions from the legislative database (with their status), what to do, when, documents and a link to the tool. No unverified rates, thresholds or dates are stated.
+- **Tax Companion**: answers natural-language requests by pointing to the right tool and passes other questions to the AI assistant. The assistant now receives the user's category and explanation style from the profile (fixed option values only).
+- Migration `20261112000400`: `user_profiles` (RLS, Worker-only). See `docs/PHASE12_PERSONALISED_DASHBOARD.md`. Service worker `taxcomp-app-v41`.
+
 ## 2026-11-12 - Legislative knowledge engine
 
 - **Database**: migration `20261112000300` adds editions, laws, law versions, sections (with full-text search), schedules, relations (`confirmed` or `inferred`), coverage gaps and an append-only history written by triggers.

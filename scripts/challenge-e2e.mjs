@@ -384,6 +384,40 @@ check("chat answer says only headings are held and no wording is invented", chat
 await page.click("#tax-chat-clear");
 check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
 
+// Phase 12: personalised dashboard.
+await page.evaluate(() => { location.hash = "workspace"; });
+await page.waitForSelector("#dashboard-root form.dash-onboarding", { timeout: 8000 }).catch(() => {});
+check("first visit to the workspace shows onboarding", Boolean(await page.$("#dashboard-root form.dash-onboarding")));
+await page.selectOption("#dash-q-userCategory", "small_business");
+await page.selectOption("#dash-q-purpose", "business");
+await page.selectOption("#dash-q-businessType", "company");
+await page.selectOption("#dash-q-knowledgeLevel", "none");
+await page.check("#dashboard-root input[name=interests][value=vat]");
+await page.click("#dashboard-root form.dash-onboarding button[type=submit]");
+await page.waitForSelector("#dashboard-root .dash-head", { timeout: 8000 }).catch(() => {});
+const dashText = (await page.textContent("#dashboard-root")) || "";
+check("dashboard is set up for a small business owner, in Simple mode", dashText.includes("SMALL BUSINESS OWNER") && (await page.getAttribute("#dashboard-root .dash-mode button:has-text('Simple')", "aria-pressed")) === "true");
+check("a beginner sees the Tax Companion first and the learning module", Boolean(await page.$("#dashboard-root .dash-companion.is-prominent")) && Boolean(await page.$("[data-module='learning']")) && Boolean(await page.$("[data-module='corporation-tax']")));
+check("recommendations say why", dashText.includes("Find out which taxes may apply to your business.") && dashText.includes("Why:"));
+await axeScan(page, "personalised dashboard", "#dashboard-root");
+await page.selectOption("#dash-fact-employsStaff", "yes");
+await page.selectOption("#dash-fact-vatRegistered", "no");
+await page.click(".dash-discover-form button[type=submit]");
+await page.waitForSelector("[data-obligation='corporation-tax']", { timeout: 8000 }).catch(() => {});
+const cit = (await page.textContent("[data-obligation='corporation-tax']").catch(() => "")) || "";
+check("obligation check: corporation tax applies on the facts, citing the database", cit.includes("Applies on the facts you gave") && cit.includes("Income Tax Act (Cap. 338), s.7"));
+check("obligation check: VAT registration needs checking, not assumed", ((await page.textContent("[data-obligation='vat-registration']").catch(() => "")) || "").includes("May apply") && !(await page.$("[data-obligation='vat']")));
+check("recommendations follow the obligation check", ((await page.textContent("#dashboard-root .dash-recs")) || "").includes("You may need to review your corporation income tax obligations for the current year."));
+await page.locator("#dashboard-root .dash-mode button", { hasText: "Professional" }).click();
+await page.waitForFunction(() => document.querySelector("#dashboard-root .dash-mode button[aria-pressed='true']")?.textContent === "Professional", null, { timeout: 5000 }).catch(() => {});
+check("Professional mode shows technical detail", ((await page.textContent("[data-module='corporation-tax']")) || "").includes("Income Tax Act s.7"));
+await page.fill("#dash-companion-input", "How do I calculate VAT?");
+await page.click(".dash-companion-form button[type=submit]");
+check("Tax Companion sends a VAT question to the VAT calculator", (await page.getAttribute("#dash-companion-answer a.dash-link", "href").catch(() => null)) === "#calc-vat");
+await page.screenshot({ path: path.join(shots, "6-dashboard-360.png"), fullPage: false });
+await page.click("#dashboard-root .dash-head-actions button:has-text('Edit my profile')");
+check("the profile can be changed later", Boolean(await page.$("#dashboard-root form.dash-onboarding")) && (await page.inputValue("#dash-q-businessType")) === "company");
+
 check("no script errors", errors.length === 0, errors.join(" | "));
 
 writeFileSync(path.join(shots, "axe-report.json"), JSON.stringify(axeFindings, null, 2));

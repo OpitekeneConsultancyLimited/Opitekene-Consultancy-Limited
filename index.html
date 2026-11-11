@@ -34,8 +34,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=challenge-10">
-    <script src="site-router.js?v=challenge-1" defer></script>
+    <link rel="stylesheet" href="design.css?v=dashboard-1">
+    <script src="site-router.js?v=dashboard-1" defer></script>
     <script src="kb-search.js?v=kb-2" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
@@ -50,7 +50,7 @@
     <script src="app.js?v=phase3-calculators-1" defer></script>
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
-    <script src="tax-chat.js?v=legislation-1" defer></script>
+    <script src="tax-chat.js?v=dashboard-1" defer></script>
     <script src="international-tax.js?v=international-tax-2" defer></script>
     <script src="law-index.js?v=law-index-2" defer></script>
     <script src="intl-tax-reasoning.js?v=intl-2" defer></script>
@@ -62,6 +62,7 @@
     <script src="challenge-docx.js?v=challenge-2" defer></script>
     <script src="challenge-calendar.js?v=challenge-1" defer></script>
     <script src="challenge-app.js?v=challenge-8" defer></script>
+    <script src="dashboard.js?v=dashboard-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -339,7 +340,7 @@
           </div>
         </div>
         <a href="#assistant" data-nav-view="assistant">AI Tax Assistant</a>
-        <a href="#workspace" data-nav-view="workspace">Business Workspace</a>
+        <a href="#workspace" data-nav-view="workspace">My Workspace</a>
         <a href="#about" data-nav-view="about">About Us</a>
       </nav>
       <div class="header-actions">
@@ -2094,11 +2095,12 @@
         </p>
       </section>
 
-      <section class="workspace-view" id="workspace" data-view="workspace" aria-label="Business workspace">
+      <section class="workspace-view" id="workspace" data-view="workspace" aria-label="My workspace">
         <aside class="ws-sidebar" aria-label="Workspace sections">
-          <p class="ws-sidebar-title">Business Workspace</p>
+          <p class="ws-sidebar-title">My Workspace</p>
           <nav class="ws-nav">
-            <a href="#ws-overview" data-pane-link="overview">Overview</a>
+            <a href="#ws-dashboard" data-pane-link="dashboard">My dashboard</a>
+            <a href="#ws-overview" data-pane-link="overview">Practice workspace</a>
             <a href="#ws-assets" data-pane-link="assets">Business assets</a>
             <a href="#ws-reports" data-pane-link="reports">Reports</a>
             <a href="#ws-records" data-pane-link="records">Financial records</a>
@@ -2107,7 +2109,10 @@
           </nav>
         </aside>
         <div class="ws-main">
-          <div class="ws-pane" data-pane="overview">
+          <section class="ws-pane dash" data-pane="dashboard" aria-labelledby="dash-title">
+            <div id="dashboard-root" aria-live="polite"><p class="ws-empty">Sign in to see your personalised dashboard.</p></div>
+          </section>
+          <div class="ws-pane" data-pane="overview" hidden>
             <section class="phase6-section" id="phase6-workspace" aria-labelledby="phase6-title">
         <div class="phase6-heading">
           <div>

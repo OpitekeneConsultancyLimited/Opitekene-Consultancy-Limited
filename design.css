@@ -1338,3 +1338,35 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .tax-chat-legislation summary { cursor: pointer; font-weight: 600; }
 .tax-chat-legislation ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
 .tax-chat-legislation-status, .tax-chat-legislation-note { color: var(--muted); font-size: .85rem; }
+/* Phase 12: personalised dashboard (dashboard.js) */
+.dash { display: grid; gap: 16px; }
+#dashboard-root { display: grid; gap: 16px; }
+.dash-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+.dash-head h2 { margin: 0; }
+.dash-head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dash-mode { display: flex; gap: 6px; align-items: center; }
+.dash-card { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; padding: 16px; display: grid; gap: 8px; min-width: 0; }
+.dash-card h3 { margin: 0; font-size: 1.05rem; }
+.dash-card p { margin: 0; line-height: 1.55; }
+.dash-modules { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.dash-links { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.dash-link { font-weight: 600; color: var(--teal-700); min-height: 44px; display: inline-flex; align-items: center; }
+.dash-muted { color: var(--muted); font-size: .9rem; }
+.dash-warn { color: #7a5518; font-weight: 600; }
+.dash-recs ul, .dash-notes, .dash-provisions { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.dash-rec-text { font-weight: 600; color: var(--ink); }
+.dash-companion.is-prominent { border-color: var(--teal-600); box-shadow: var(--shadow-lg); }
+.dash-companion-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.dash-companion-form label { grid-column: 1 / -1; font-weight: 600; }
+.dash-companion-form input, .dash-onboarding select, .dash-discover-form select { min-height: 44px; padding: 0 10px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; width: 100%; }
+.dash-onboarding, .dash-discover-form { display: grid; gap: 12px; max-width: 680px; }
+.dash-interests { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 6px; }
+.dash-check { display: flex; align-items: center; gap: 6px; min-height: 36px; }
+.dash-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dash-obligations { display: grid; gap: 10px; }
+.dash-obligation { border: 1px solid var(--line); border-left: 4px solid var(--teal-600); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.dash-obligation.is-needs_verification { border-left-color: #b38331; }
+.dash-obligation h4 { margin: 0; font-size: 1rem; }
+.dash-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: var(--teal-50); color: var(--teal-700); vertical-align: middle; }
+.dash-badge.is-needs_verification { background: #fdf3e1; color: #7a5518; }
+@media (max-width: 520px) { .dash-companion-form { grid-template-columns: 1fr; } }
