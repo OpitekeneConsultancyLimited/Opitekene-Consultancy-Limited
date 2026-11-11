@@ -409,6 +409,13 @@ export async function handleLegislationRequest(request: Request, env: Legislatio
     };
     const editionView = (c: EditionChoice & { edition: Edition }) => ({ ...c.edition, match: c.match, warning: c.warning });
 
+    if (path === "/api/legislation/amendments") {
+      const amendments = await listAmendments(db, { jurisdiction, lawId: params.get("law"), statuteId: params.get("act"), differ: params.get("differ") === "1" });
+      return respond({
+        jurisdiction, total: amendments.length, acts: await amendingActs(db, jurisdiction), amendments, evidenceLabels: AMENDMENT_EVIDENCE_LABEL, statuses: STATUS_LABEL,
+        note: "TaxComp's summaries of the 2026 changes, from the Bills as published by Parliament (Bills Supplement No. 2, 27 March 2026) and professional reports of the Acts as enacted. Not statutory wording. Unverified until checked against the enacted Acts.",
+      }, 200, cors);
+    }
     if (path === "/api/legislation/editions") {
       return respond({ jurisdiction, editions, gaps: await coverageGaps(db, jurisdiction), statuses: STATUS_LABEL }, 200, cors);
     }
@@ -545,6 +552,128 @@ export async function historyFor(db: Database, entityId: string) {
   return results;
 }
 
+// ------------------------------------------------------------------ amendments register
+// What each 2026 amending Act (or Bill) changes (migration 20261112000500):
+// TaxComp's summaries with the published Bill's figure and the reported
+// enacted figure, side by side, unverified until checked against the Act.
+export const AMENDMENT_EVIDENCE_LABEL: Readonly<Record<string, string>> = {
+  bill_only: "In the published Bill only; not confirmed as enacted",
+  bill_and_report: "In the published Bill and reported as enacted",
+  report_only: "Reported as enacted; not in the published Bill",
+};
+
+export interface AmendmentRecord {
+  id: string;
+  amendingStatuteId: string;
+  amendingTitle: string;
+  billStatus: string;
+  lawId: string | null;
+  principalAct: string;
+  provision: string;
+  sectionNumber: string | null;
+  topic: string;
+  summary: string;
+  previousFigure: string | null;
+  billFigure: string | null;
+  reportedFigure: string | null;
+  figuresDiffer: boolean;
+  effectiveFrom: string | null;
+  evidence: string;
+  evidenceLabel: string;
+  billReference: string;
+  billUrl: string | null;
+  secondarySources: string;
+  note: string;
+  position: number;
+  verificationStatus: VerificationStatus;
+  verificationLabel: string;
+  verificationNote: string;
+  officialSourceUrl: string | null;
+  verifiedAt: string | null;
+}
+
+const AMENDMENT_SELECT = `SELECT a.id, a.amending_statute_id AS "amendingStatuteId", s.title AS "amendingTitle", s.bill_status AS "billStatus", a.law_id AS "lawId",
+  a.principal_act AS "principalAct", a.provision, a.section_number AS "sectionNumber", a.topic, a.summary, a.previous_figure AS "previousFigure", a.bill_figure AS "billFigure",
+  a.reported_figure AS "reportedFigure", a.figures_differ AS "figuresDiffer", a.effective_from AS "effectiveFrom", a.evidence, a.bill_reference AS "billReference",
+  a.bill_url AS "billUrl", a.secondary_sources AS "secondarySources", a.note, a.position, a.verification_status AS "verificationStatus",
+  a.verification_note AS "verificationNote", a.official_source_url AS "officialSourceUrl", a.verified_at AS "verifiedAt"
+  FROM legislation_amendments a JOIN law_statutes s ON s.id = a.amending_statute_id`;
+
+function toAmendment(r: Row): AmendmentRecord {
+  const status = String(r.verificationStatus) as VerificationStatus;
+  const evidence = String(r.evidence);
+  return {
+    id: String(r.id), amendingStatuteId: String(r.amendingStatuteId), amendingTitle: String(r.amendingTitle), billStatus: String(r.billStatus), lawId: str(r.lawId),
+    principalAct: String(r.principalAct), provision: String(r.provision), sectionNumber: str(r.sectionNumber), topic: String(r.topic), summary: String(r.summary),
+    previousFigure: str(r.previousFigure), billFigure: str(r.billFigure), reportedFigure: str(r.reportedFigure), figuresDiffer: r.figuresDiffer === true || r.figuresDiffer === 1 || r.figuresDiffer === "t",
+    effectiveFrom: str(r.effectiveFrom), evidence, evidenceLabel: AMENDMENT_EVIDENCE_LABEL[evidence] ?? evidence, billReference: String(r.billReference), billUrl: str(r.billUrl),
+    secondarySources: String(r.secondarySources ?? ""), note: String(r.note ?? ""), position: Number(r.position), verificationStatus: status, verificationLabel: STATUS_LABEL[status],
+    verificationNote: String(r.verificationNote ?? ""), officialSourceUrl: str(r.officialSourceUrl), verifiedAt: str(r.verifiedAt),
+  };
+}
+
+const STATUTE_ID = /^[a-z0-9-]{2,60}$/;
+
+export async function listAmendments(db: Database, { jurisdiction = "UG", lawId, statuteId, differ }: { jurisdiction?: string; lawId?: string | null; statuteId?: string | null; differ?: boolean } = {}): Promise<AmendmentRecord[]> {
+  if (lawId && !LAW_ID.test(lawId)) throw new LegislationError(400, "Invalid law id.");
+  if (statuteId && !STATUTE_ID.test(statuteId)) throw new LegislationError(400, "Invalid amending Act id.");
+  const where = ["a.jurisdiction = ?", ...(lawId ? ["a.law_id = ?"] : []), ...(statuteId ? ["a.amending_statute_id = ?"] : []), ...(differ ? ["a.figures_differ = 1"] : [])];
+  const values = [jurisdiction, ...(lawId ? [lawId] : []), ...(statuteId ? [statuteId] : [])];
+  const { results } = await db.prepare(`${AMENDMENT_SELECT} WHERE ${where.join(" AND ")} ORDER BY a.position, a.id`).bind(...values).all<Row>();
+  return results.map(toAmendment);
+}
+
+/** The amending Acts (and Bills) that have records in the register, with their register dates. */
+export async function amendingActs(db: Database, jurisdiction = "UG") {
+  const { results } = await db.prepare(`SELECT s.id, s.title, s.parent_id AS "principalId", p.title AS "principalTitle", p.chapter AS "principalChapter", s.bill_status AS "billStatus",
+    s.returned_date AS "returnedDate", s.assent_date AS "assentDate", s.commencement_date AS "commencementDate", s.applies_from_period AS "appliesFrom", s.source_url AS "sourceUrl", s.note,
+    (SELECT count(*)::int FROM legislation_amendments a WHERE a.amending_statute_id = s.id) AS changes,
+    (SELECT count(*)::int FROM legislation_amendments a WHERE a.amending_statute_id = s.id AND a.figures_differ = 1) AS conflicts
+    FROM law_statutes s JOIN law_statutes p ON p.id = s.parent_id
+    WHERE s.id IN (SELECT amending_statute_id FROM legislation_amendments WHERE jurisdiction = ?) ORDER BY (SELECT min(position) FROM legislation_amendments a WHERE a.amending_statute_id = s.id)`).bind(jurisdiction).all<Row>();
+  return results.map((r) => ({ ...r, changes: Number(r.changes), conflicts: Number(r.conflicts) }));
+}
+
+export async function setAmendmentStatus(db: Database, id: string, change: StatusChange, actor: string, at: string, canApprove: boolean) {
+  if (!/^[a-z0-9][a-z0-9-]{2,79}$/.test(id)) throw new LegislationError(400, "Invalid amendment id.");
+  const { status, note, source } = checkChange(change, canApprove);
+  const result = await db.prepare(`UPDATE legislation_amendments SET verification_status = ?, verification_note = ?, official_source_url = COALESCE(?, official_source_url),
+    verified_by = CASE WHEN CAST(? AS text) = 'verified' THEN CAST(? AS text) ELSE NULL END, verified_at = CASE WHEN CAST(? AS text) = 'verified' THEN CAST(? AS text) ELSE NULL END, updated_at = ?, updated_by = ? WHERE id = ?`)
+    .bind(status, note, source, status, actor, status, at, at, actor, id).run();
+  if (!result.meta.changes) throw new LegislationError(404, "That amendment is not in the register.");
+  return { id, status };
+}
+
+/** "Previous: …. Published Bill: …. Reported as enacted: …." with the conflict stated. */
+export function amendmentFigures(a: AmendmentRecord): string {
+  const parts: string[] = [];
+  if (a.previousFigure) parts.push(`Previous: ${a.previousFigure}.`);
+  if (a.billFigure) parts.push(`Published Bill: ${a.billFigure}.`);
+  if (a.reportedFigure) parts.push(`Reported as enacted: ${a.reportedFigure}.`);
+  if (a.figuresDiffer) parts.push("The Bill and the reported enactment differ; the enacted Act must be checked.");
+  return parts.join(" ");
+}
+
+const AMENDMENT_STOP = new Set(["what", "which", "where", "when", "does", "much", "many", "will", "with", "from", "that", "this", "have", "there", "their", "uganda", "ugandan", "taxed", "taxes",
+  "about", "under", "should", "explain", "tell", "please", "rate", "rates", "change", "changed", "changes", "2026", "2026/27", "amendment", "amended", "new"]);
+
+/** Amendment records relevant to a question: word overlap, the law it names, and an explicit section number. */
+export async function retrieveAmendments(db: Database, question: string, lawIds: string[], limit = 3): Promise<Array<AmendmentRecord & { ref: string }>> {
+  const all = await listAmendments(db, {});
+  const words = new Set((question.toLowerCase().match(/[a-z][a-z-]{3,}/g) ?? []).filter((w) => !AMENDMENT_STOP.has(w)).map((w) => w.replace(/s$/, "")));
+  const explicit = question.match(/\b(?:section|s\.)\s*(\d{1,3}[A-Za-z]{0,2})\b/i)?.[1]?.toUpperCase();
+  const scored = all.map((a) => {
+    const text = `${a.summary} ${a.provision} ${a.principalAct}`.toLowerCase();
+    let score = 0;
+    for (const w of words) if (text.includes(w)) score += 1;
+    const sameLaw = a.lawId !== null && lawIds.includes(a.lawId);
+    if (sameLaw) score += 1;
+    if (explicit && sameLaw && a.sectionNumber === explicit) score += 3;
+    return { a, score };
+  }).filter((x) => x.score >= 3).sort((x, y) => y.score - x.score || x.a.position - y.a.position);
+  return scored.slice(0, limit).map((x, i) => ({ ...x.a, ref: `A${i + 1}` }));
+}
+
 // ------------------------------------------------------------------ AI retrieval
 const QUESTION_STOP = new Set(["what", "which", "how", "where", "when", "who", "why", "is", "are", "a", "an", "the", "in", "of", "for", "to", "do", "does", "i", "my", "we", "our",
   "uganda", "ugandan", "tax", "taxes", "taxed", "law", "laws", "act", "section", "purposes", "purpose", "under", "about", "me", "can", "should", "explain", "tell", "please", "and", "or", "on", "be", "it"]);
@@ -585,6 +714,8 @@ export interface LegislationRetrieval {
   edition: (Edition & { match: EditionChoice["match"]; warning: string | null }) | null;
   provisions: RetrievedProvision[];
   laterAmendments: Record<string, LaterAmendment[]>;
+  /** Matching records from the 2026 amendments register ([A#]). */
+  amendments: Array<AmendmentRecord & { ref: string }>;
   gaps: Array<{ id: string; title: string; kind: string; note: string }>;
 }
 
@@ -599,7 +730,8 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
   const words = new Set(question.toLowerCase().match(/[a-z0-9/]+/g) ?? []);
   const gaps = gapsAll.filter((g) => g.kind === "wording_not_held" || g.keywords.split(" ").some((k) => k.length > 2 && words.has(k)) || /local service tax/i.test(question) && g.id === "ug-local-service-tax")
     .map(({ id, title, kind, note }) => ({ id, title, kind, note }));
-  const empty: LegislationRetrieval = { jurisdiction: "UG", edition: null, provisions: [], laterAmendments: {}, gaps };
+  const hint = lawHint(question);
+  const empty: LegislationRetrieval = { jurisdiction: "UG", edition: null, provisions: [], laterAmendments: {}, amendments: await retrieveAmendments(db, question, hint ? [hint] : []), gaps };
   if (!choice.edition) return empty;
   const edition = choice.edition;
   const explicit = question.match(/\b(?:section|s\.)\s*(\d{1,3}[A-Za-z]{0,2})\b/i);
@@ -609,7 +741,6 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
     const titleWords = question.replace(explicit[0], " ");
     found = (await searchSections(db, edition, { q: `section ${explicit[1]} ${subjectTerms(titleWords)}`.trim() }, { page: 1, pageSize: 2 })).results;
   }
-  const hint = lawHint(question);
   if (!found.length && terms.length >= 2) {
     // A named tax narrows the search to its law first, then to all laws.
     for (const lawId of hint ? [hint, null] : [null]) {
@@ -640,7 +771,12 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
   }
   const later: Record<string, LaterAmendment[]> = {};
   for (const [lawId, statute] of lawStatute) if (statute && amendments.get(statute)?.length) later[lawId] = amendments.get(statute) as LaterAmendment[];
-  return { jurisdiction: "UG", edition: { ...edition, match: choice.match, warning: choice.warning }, provisions, laterAmendments: later, gaps };
+  const changes = await retrieveAmendments(db, question, [...new Set([hint, ...provisions.map((p) => p.lawId)].filter((id): id is string => !!id))]);
+  return { jurisdiction: "UG", edition: { ...edition, match: choice.match, warning: choice.warning }, provisions, laterAmendments: later, amendments: changes, gaps };
+}
+
+function amendmentLine(a: AmendmentRecord & { ref: string }): string {
+  return `[${a.ref}] 2026 change: ${a.principalAct}, ${a.provision} (${a.amendingTitle}). ${a.summary} ${amendmentFigures(a)}${a.effectiveFrom ? ` Applies from ${a.effectiveFrom}.` : ""} Evidence: ${a.evidenceLabel}. Status: ${a.verificationLabel}.${a.note ? ` Note: ${a.note}` : ""}`;
 }
 
 function provisionLine(p: RetrievedProvision): string {
@@ -657,16 +793,28 @@ export function legislationEvidence(r: LegislationRetrieval): string {
   if (r.provisions.length) lines.push(...r.provisions.map(provisionLine));
   else lines.push("No section matched this question in the database.");
   for (const [lawId, list] of Object.entries(r.laterAmendments)) lines.push(`Later amendments not captured for ${lawId}: ${list.map((a) => `${a.title} (${a.billStatus}${a.appliesFrom ? `, applies from ${a.appliesFrom}` : ""})`).join("; ")}.`);
+  if (r.amendments.length) lines.push("2026 changes from TaxComp's amendments register (TaxComp's summaries, not statutory wording):", ...r.amendments.map(amendmentLine));
   for (const g of r.gaps) lines.push(`Known gap: ${g.title}. ${g.note}`);
   lines.push("Rules for this legislation: cite Uganda legislation only as the [L#] entries above, and only those sections. A heading says what a section is about; it does not give its conditions, rates or effect, so do not state them from a heading. Never quote or paraphrase statutory wording unless an entry includes wording, and say whether that wording is verified. Say that the headings come from the stated edition, are unverified unless marked verified, and may have been changed by later amendments. Do not apply another country's legislation as Uganda law. If the user's facts matter, ask for them.");
+  if (r.amendments.length) lines.push("Rules for the [A#] 2026 changes: cite them as [A#]. Say the law was changed in 2026 and give figures exactly as listed. Where the Bill and the reported enactment differ, give both and say the enacted Act must be checked; never pick one. A change marked 'In the published Bill only' may not be law: say so. Every [A#] entry is unverified unless its status says otherwise.");
   return lines.join("\n");
 }
 
 /** Plain-text summary used when no AI provider answers (and appended to local answers). */
+function amendmentSummaryLines(r: LegislationRetrieval): string[] {
+  if (!r.amendments.length) return [];
+  return [
+    "Changes made in 2026 (TaxComp's amendments register; not yet verified against the enacted Acts):",
+    ...r.amendments.map((a) => `• ${a.principalAct}, ${a.provision}: ${a.summary} ${amendmentFigures(a)}${a.effectiveFrom ? ` From ${a.effectiveFrom}.` : ""}${a.evidence === "bill_only" ? " This is in the published Bill only and may not have been enacted." : ""}`),
+  ];
+}
+
 export function legislationSummary(r: LegislationRetrieval): string {
   if (!r.edition || !r.provisions.length) {
     const gap = r.gaps.find((g) => g.kind !== "wording_not_held");
-    return gap ? `TaxComp's legislative database does not contain this: ${gap.title}. ${gap.note}` : "";
+    const lines = amendmentSummaryLines(r);
+    if (gap) lines.push(`TaxComp's legislative database does not contain this: ${gap.title}. ${gap.note}`);
+    return lines.join("\n");
   }
   const lines = ["Relevant provisions found in TaxComp's legislative database:"];
   for (const p of r.provisions) lines.push(`• ${p.citation} – ${p.heading}${p.relatedTo ? ` (related${p.relationBasis === "inferred" ? ", inferred from headings" : ""})` : ""}. ${p.evidenceLabel}.${p.flags.includes("numbering-check") ? " Section number to be checked against the official edition." : ""}`);
@@ -677,6 +825,7 @@ export function legislationSummary(r: LegislationRetrieval): string {
   lines.push(`The headings come from ${r.edition.label}.${r.edition.warning ? ` ${r.edition.warning}` : ""}`);
   const later = Object.values(r.laterAmendments).flat();
   if (later.length) lines.push(`Later amendments that may have changed these provisions: ${[...new Set(later.map((a) => a.title))].join("; ")}.`);
+  lines.push(...amendmentSummaryLines(r));
   lines.push("Applying a provision to your situation needs the facts of the transaction (the parties, where they are, what was supplied or paid, and the period) and the official wording.");
   return lines.join("\n");
 }
@@ -688,11 +837,15 @@ export function legislationSummary(r: LegislationRetrieval): string {
  */
 export function checkCitations(answer: string, r: LegislationRetrieval): { answer: string; unmatched: string[] } {
   const byRef = new Map(r.provisions.map((p) => [p.ref, p]));
+  const amendmentByRef = new Map(r.amendments.map((a) => [a.ref, a]));
   let text = answer.replace(/\[L(\d+)\]/g, (_m, n: string) => {
     const p = byRef.get(`L${n}`);
     return p ? `(${p.citation})` : "";
+  }).replace(/\[A(\d+)\]/g, (_m, n: string) => {
+    const a = amendmentByRef.get(`A${n}`);
+    return a ? `(${a.principalAct}, ${a.provision}, as amended in 2026; unverified)` : "";
   });
-  const known = new Set(r.provisions.map((p) => p.sectionNumber.toUpperCase()));
+  const known = new Set([...r.provisions.map((p) => p.sectionNumber.toUpperCase()), ...r.amendments.flatMap((a) => (a.sectionNumber ? [a.sectionNumber.toUpperCase()] : []))]);
   const unmatched = new Set<string>();
   for (const m of text.matchAll(/\b(?:sections?|s\.|ss\.|regulations?|reg\.)\s*(\d{1,3}[A-Za-z]{0,2})\b/gi)) {
     if (!known.has(String(m[1]).toUpperCase())) unmatched.add(String(m[1]).toUpperCase());
@@ -712,6 +865,11 @@ export function legislationForResponse(r: LegislationRetrieval, unmatched: strin
       wordingHeld: p.wordingStatus !== "none", flags: p.flags, relatedTo: p.relatedTo, relationBasis: p.relationBasis,
     })),
     laterAmendments: r.laterAmendments,
+    amendments: r.amendments.map((a) => ({
+      ref: a.ref, id: a.id, amendingTitle: a.amendingTitle, principalAct: a.principalAct, provision: a.provision, summary: a.summary, previousFigure: a.previousFigure,
+      billFigure: a.billFigure, reportedFigure: a.reportedFigure, figuresDiffer: a.figuresDiffer, effectiveFrom: a.effectiveFrom, evidence: a.evidence, evidenceLabel: a.evidenceLabel,
+      verificationStatus: a.verificationStatus, verificationLabel: a.verificationLabel, billUrl: a.billUrl,
+    })),
     gaps: r.gaps,
     citationCheck: { unmatched },
   };

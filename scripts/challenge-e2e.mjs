@@ -306,7 +306,16 @@ await axeScan(page, "knowledge search", "#knowledge");
 // Structure of the tax Acts, from the legislative database through /api/legislation.
 await page.waitForSelector("#kb-law-index details.law-index-act", { timeout: 8000 }).catch(() => {});
 check("Knowledge Centre lists the 18 tax Acts and regulations from the database", (await page.$$eval("#kb-law-index details.law-index-act", (n) => n.length)) === 18);
-check("each Act shows its verification status (unverified)", (await page.$$eval("#kb-law-index details.law-index-act summary .law-status.is-unverified", (n) => n.length)) === 18);
+check("each Act shows its verification status: the six Acts amended in 2026 need amendment review, the rest are unverified",
+  (await page.$$eval("#kb-law-index details.law-index-act summary .law-status.is-unverified", (n) => n.length)) === 12
+  && (await page.$$eval("#kb-law-index details.law-index-act summary .law-status.is-requires_amendment_review", (n) => n.length)) === 6);
+// The 2026 amendments register: grouped by Act, both figures where the Bill and the reported Act differ.
+await page.click("#kb-law-index details.law-amendments > summary").catch(() => {});
+const amendmentsText = (await page.textContent("#kb-law-index details.law-amendments").catch(() => "")) || "";
+check("Knowledge Centre lists the 53 changes made in 2026 by Act", amendmentsText.includes("Changes made in 2026 (53)") && (await page.$$eval("#kb-law-index .law-amendments-act", (n) => n.length)) === 8);
+check("the VAT threshold change shows the Bill figure and the reported enacted figure, flagged", amendmentsText.includes("UGX 250,000,000") && amendmentsText.includes("UGX 300,000,000")
+  && (await page.$$eval("#kb-law-index .law-amendments-list li.is-conflict", (n) => n.length)) === 5);
+check("Bill-only changes are labelled as not confirmed as enacted", amendmentsText.includes("In the published Bill only; not confirmed as enacted"));
 check("the 2026 amendment is flagged as not reflected", ((await page.textContent("details[data-law='ita']")) || "").includes("Not reflected here: Income Tax (Amendment) Act, 2026"));
 await page.click("details[data-law='vata'] > summary");
 await page.waitForSelector("#law-vata-s16", { timeout: 5000 }).catch(() => {});

@@ -479,12 +479,13 @@
 
         // Provisions retrieved from the legislative database, with their status.
         const legislation = metadata.legislation;
-        if (legislation && legislation.provisions.length) {
+        const changes2026 = Array.isArray(legislation?.amendments) ? legislation.amendments : [];
+        if (legislation && (legislation.provisions.length || changes2026.length)) {
           const details = document.createElement("details");
           details.className = "tax-chat-legislation";
           details.open = true;
           const summary = document.createElement("summary");
-          summary.textContent = `Legislation retrieved (${legislation.provisions.length})`;
+          summary.textContent = `Legislation retrieved (${legislation.provisions.length + changes2026.length})`;
           const list = document.createElement("ul");
           for (const provision of legislation.provisions) {
             const item = document.createElement("li");
@@ -493,6 +494,16 @@
             const status = document.createElement("span");
             status.className = "tax-chat-legislation-status";
             status.textContent = ` · ${provision.evidenceLabel}${provision.relatedTo ? ` · related${provision.relationBasis === "inferred" ? " (inferred)" : ""}` : ""}${provision.flags?.includes("numbering-check") ? " · numbering to be checked" : ""}`;
+            item.append(cite, status);
+            list.append(item);
+          }
+          for (const change of changes2026) {
+            const item = document.createElement("li");
+            const cite = document.createElement("strong");
+            cite.textContent = `2026 change: ${change.principalAct}, ${change.provision}`;
+            const status = document.createElement("span");
+            status.className = "tax-chat-legislation-status";
+            status.textContent = ` · ${change.evidenceLabel} · ${change.verificationLabel}${change.figuresDiffer ? " · the Bill and the reported Act differ" : ""}`;
             item.append(cite, status);
             list.append(item);
           }

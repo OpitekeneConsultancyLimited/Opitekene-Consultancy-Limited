@@ -26,7 +26,7 @@ import {
 } from "./knowledge.mts";
 import {
   chooseEdition, compareEditions, getSection as getLegislationSection, historyFor, LegislationError, listLaws, loadEditions, paging as legislationPaging,
-  reviewList, setLawVersionStatus, setSectionStatus, STATUS_LABEL as LEGISLATION_STATUS_LABEL,
+  listAmendments, reviewList, setAmendmentStatus, setLawVersionStatus, setSectionStatus, STATUS_LABEL as LEGISLATION_STATUS_LABEL,
 } from "./legislation.mts";
 import {
   applyProfileUpdate, CATEGORY_LABEL, dashboardFor, discoverObligations, emptyProfile, FACT_KEYS, INTERESTS, loadProfile, OBLIGATION_STATUS_LABEL, ProfileError,
@@ -704,11 +704,12 @@ async function route(ctx: Ctx): Promise<Response> {
           const choice = chooseEdition(editions, { editionId: url.searchParams.get("edition"), today: ctx.today });
           if (!choice.edition) throw new HttpError(404, "No edition is available.");
           const pg = legislationPaging(url.searchParams, 200, 100);
-          const [laws, sections] = await Promise.all([
+          const [laws, sections, amendments] = await Promise.all([
             listLaws(db, choice.edition, {}, { page: 1, pageSize: 100 }),
             reviewList(db, choice.edition, { lawId: url.searchParams.get("law"), status: url.searchParams.get("status"), flagged: url.searchParams.get("flagged") === "1" }, pg),
+            listAmendments(db, {}),
           ]);
-          return json({ editions, edition: choice.edition, laws: laws.laws, sections, statuses: LEGISLATION_STATUS_LABEL, canApprove: ctx.canApproveLaw }, 200, ctx.cors);
+          return json({ editions, edition: choice.edition, laws: laws.laws, sections, amendments, statuses: LEGISLATION_STATUS_LABEL, canApprove: ctx.canApproveLaw }, 200, ctx.cors);
         }
         if (path === "/api/challenge/review/legislation/compare" && method === "GET") {
           return json(await compareEditions(db, url.searchParams.get("law") ?? "", url.searchParams.get("from") ?? "", url.searchParams.get("to") ?? ""), 200, ctx.cors);
@@ -717,6 +718,12 @@ async function route(ctx: Ctx): Promise<Response> {
           const id = url.searchParams.get("id") ?? "";
           if (!/^[a-z0-9][a-z0-9/-]{2,160}[A-Za-z0-9]?$/.test(id)) throw new HttpError(400, "Give a record id.");
           return json({ id, history: await historyFor(db, id) }, 200, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/legislation\/amendments\/([a-z0-9][a-z0-9-]{2,79})\/status$/)) && method === "POST") {
+          const body = await readJson(request);
+          const result = await setAmendmentStatus(db, m[1] as string, { status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl }, ctx.userId, ctx.nowIso, ctx.canApproveLaw);
+          await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "legislation.amendment.status", details: { id: result.id, status: result.status }, at: ctx.nowIso }).run();
+          return json(result, 200, ctx.cors);
         }
         if ((m = path.match(/^\/api\/challenge\/review\/legislation\/([a-z0-9][a-z0-9-]{2,59})\/([a-z0-9][a-z0-9-]{1,59})\/status$/)) && method === "POST") {
           const versionId = `${m[1]}/${m[2]}`;

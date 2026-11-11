@@ -39,6 +39,7 @@ Every response includes `edition` with these fields:
 | `GET /api/legislation/{law}/schedules` | Schedules. |
 | `GET /api/legislation/{law}/related` | Relations, each `confirmed` or `inferred`. |
 | `GET /api/legislation/{law}/verification` | The law's status and its sections by status. |
+| `GET /api/legislation/amendments` | The 2026 amendments register (see `AMENDMENTS_2026.md`): `acts` (each amending Act or Bill with its register dates and counts of `changes` and `conflicts`), `amendments` and the evidence and status labels. Optional filters: `law` (e.g. `vata`), `act` (e.g. `eda-amendment-2026`) and `differ=1` (only records where the Bill and the reported enactment differ). Each record has `provision`, `summary`, `previousFigure`, `billFigure`, `reportedFigure`, `figuresDiffer`, `effectiveFrom`, `evidence` (`bill_only`, `bill_and_report` or `report_only`), `billReference`, `billUrl`, `secondarySources`, `note` and its verification status. |
 
 **Section object fields:**
 
@@ -82,7 +83,8 @@ These endpoints use the existing Challenge API conventions:
 | `POST …/{edition}/{law}/status` with body `{status, note, officialSourceUrl, chapter?, commencementDate?}` | Reviewers can set `under_review`, `unverified` or `requires_amendment_review`. Approvers can also set `verified` and `superseded`, and correct `chapter` and `commencementDate`. | `verified` needs `officialSourceUrl` (https) and a note of at least 10 characters. |
 | `POST …/{edition}/{law}/sections/{number}/status` with body `{status, note, officialSourceUrl, heading?, wording?, wordingSourceUrl?, wordingVerified?}` | As above. Only approvers can change `heading` or enter `wording`, and wording needs the official source link. | |
 | `GET …/compare?law=&from=&to=` | Reviewers | Sections added, removed and changed between two editions. |
-| `GET …/history?id=` | Reviewers | The change history of an edition, law version, section or schedule. |
+| `GET …/history?id=` | Reviewers | The change history of an edition, law version, section, schedule or amendment record. |
+| `POST …/amendments/{id}/status` with body `{status, note, officialSourceUrl}` | As for law versions: only approvers can set `verified` (with the enacted Act's link and a note) or `superseded`. | Sets the status of one record in the 2026 amendments register. The `GET` above also returns `amendments`. |
 
 ## Chat and advisor (`POST /chat`, `POST /advisor`)
 

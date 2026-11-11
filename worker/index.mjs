@@ -694,10 +694,13 @@ function legislationIndicator(legislation) {
   return {
     kind: "legislation_database",
     label: "Uganda legislative database",
-    used: legislation.provisions.length > 0,
-    detail: legislation.provisions.length
-      ? `${legislation.provisions.length} provision${legislation.provisions.length === 1 ? "" : "s"} retrieved; ${legislation.provisions.every((p) => p.wordingStatus === "none") ? "headings only, no wording held" : "some wording held"}; ${legislation.edition?.label ?? "no edition"}.`
-      : "No section matched this question.",
+    used: legislation.provisions.length > 0 || legislation.amendments.length > 0,
+    detail: [
+      legislation.provisions.length
+        ? `${legislation.provisions.length} provision${legislation.provisions.length === 1 ? "" : "s"} retrieved; ${legislation.provisions.every((p) => p.wordingStatus === "none") ? "headings only, no wording held" : "some wording held"}; ${legislation.edition?.label ?? "no edition"}.`
+        : "No section matched this question.",
+      legislation.amendments.length ? `${legislation.amendments.length} 2026 change${legislation.amendments.length === 1 ? "" : "s"} from the amendments register (unverified).` : "",
+    ].filter(Boolean).join(" "),
   };
 }
 
@@ -804,7 +807,7 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
     if (legislation) {
       responseBody.legislation = legislationForResponse(legislation, unmatchedCitations);
       responseBody.sourceIndicators.unshift(legislationIndicator(legislation));
-      if (legislation.provisions.some((p) => p.verificationStatus !== "verified")) responseBody.verificationRequired = true;
+      if (legislation.provisions.some((p) => p.verificationStatus !== "verified") || legislation.amendments.some((a) => a.verificationStatus !== "verified")) responseBody.verificationRequired = true;
     }
     return jsonResponse(responseBody, 200, corsHeaders);
   } catch (error) {
@@ -1536,7 +1539,7 @@ export async function handleRequest(request, env) {
   if (legislation) {
     metadata.legislation = legislationForResponse(legislation, unmatchedCitations);
     metadata.sourceIndicators.unshift(legislationIndicator(legislation));
-    if (legislation.provisions.some((p) => p.verificationStatus !== "verified")) metadata.verificationRequired = true;
+    if (legislation.provisions.some((p) => p.verificationStatus !== "verified") || legislation.amendments.some((a) => a.verificationStatus !== "verified")) metadata.verificationRequired = true;
   }
   const providerStatus = premiumRequired
     ? "premium-required"

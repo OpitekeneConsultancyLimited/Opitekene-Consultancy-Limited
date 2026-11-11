@@ -196,6 +196,58 @@
     setTimeout(() => target.classList.remove("kb-hit"), 2400);
   }
 
+  /** Register records grouped by amending Act, in register order. */
+  function groupAmendments(data) {
+    const groups = new Map();
+    for (const act of data?.acts || []) groups.set(act.id, { act, changes: [] });
+    for (const a of data?.amendments || []) {
+      if (!groups.has(a.amendingStatuteId)) groups.set(a.amendingStatuteId, { act: { id: a.amendingStatuteId, title: a.amendingTitle }, changes: [] });
+      groups.get(a.amendingStatuteId).changes.push(a);
+    }
+    return [...groups.values()].filter((g) => g.changes.length);
+  }
+
+  function figureLines(a) {
+    return [
+      a.previousFigure ? ["Before", a.previousFigure] : null,
+      a.billFigure ? ["Published Bill", a.billFigure] : null,
+      a.reportedFigure ? ["Reported as enacted", a.reportedFigure] : null,
+    ].filter(Boolean);
+  }
+
+  function actStatusText(act) {
+    if (act.billStatus === "bill") return "Bill only: no report of its passing was found";
+    const parts = [];
+    if (act.assentDate) parts.push(`assent reported ${formatDate(act.assentDate)}`);
+    else parts.push(act.billStatus === "passed" ? "passed; assent not confirmed" : "assent date not confirmed");
+    if (act.commencementDate || act.appliesFrom) parts.push(`applies from ${formatDate(act.commencementDate || act.appliesFrom)}`);
+    return parts.join(" · ");
+  }
+
+  function amendmentsSection(data) {
+    const groups = groupAmendments(data);
+    if (!groups.length) return null;
+    const conflicts = data.amendments.filter((a) => a.figuresDiffer).length;
+    return el("details", { className: "law-amendments" }, [
+      el("summary", { text: `Changes made in 2026 (${data.amendments.length})` }),
+      el("p", { className: "ch-muted", text: `${data.note}${conflicts ? ` ${conflicts} change${conflicts === 1 ? " has" : "s have"} different figures in the Bill and in the reports of the enacted Act: both are shown.` : ""}` }),
+      ...groups.map(({ act, changes }) => el("section", { className: "law-amendments-act" }, [
+        el("h4", { text: act.title }),
+        el("p", { className: "law-index-meta", text: [actStatusText(act), act.principalTitle ? `amends the ${act.principalTitle}${act.principalChapter ? `, ${act.principalChapter}` : ""}` : null].filter(Boolean).join(" · ") }),
+        el("ul", { className: "law-amendments-list" }, changes.map((a) => el("li", { className: a.figuresDiffer ? "is-conflict" : null }, [
+          el("p", {}, [el("strong", { text: a.provision }), ` – ${a.summary}`]),
+          figureLines(a).length ? el("dl", { className: "law-amendments-figures" }, figureLines(a).flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])) : null,
+          el("p", { className: "law-index-meta" }, [
+            a.figuresDiffer ? el("span", { className: "law-index-warn", text: "Figures differ: check the enacted Act. " }) : null,
+            `${a.evidenceLabel}. `, badge(a.verificationStatus, a.verificationLabel),
+            a.billUrl ? el("span", { text: " " }) : null, a.billUrl ? el("a", { href: a.billUrl, target: "_blank", rel: "noopener", text: "Bill (Parliament)" }) : null,
+          ]),
+          a.note ? el("p", { className: "law-index-meta", text: a.note }) : null,
+        ]))),
+      ])),
+    ]);
+  }
+
   async function search(query) {
     const data = await getJson(`/api/legislation/search?q=${encodeURIComponent(query)}&pageSize=10`);
     return data.results;
@@ -214,7 +266,7 @@
     const container = typeof document !== "undefined" ? document.querySelector("#kb-law-index") : null;
     if (!container) return;
     try {
-      const [list, editions] = await Promise.all([getJson("/api/legislation?pageSize=100"), getJson("/api/legislation/editions")]);
+      const [list, editions, amendments] = await Promise.all([getJson("/api/legislation?pageSize=100"), getJson("/api/legislation/editions"), getJson("/api/legislation/amendments").catch(() => null)]);
       const form = el("form", { className: "law-search-form", role: "search" }, [
         el("label", { for: "law-search", text: "Search the tax Acts by section number or heading" }),
         el("input", { id: "law-search", type: "search", placeholder: "e.g. foreign tax credit, or section 82", autocomplete: "off" }),
@@ -241,6 +293,7 @@
       container.replaceChildren(
         el("p", { className: "ch-muted", text: `${edition.label}: section numbers and headings only, no wording. Every record is ${edition.verificationStatus === "verified" ? "verified" : "unverified until checked against the official Uganda Law Reform Commission edition"}.${edition.warning ? ` ${edition.warning}` : ""}` }),
         form, results,
+        amendments ? amendmentsSection(amendments) : null,
         ...list.laws.map(actDetails),
         gaps.length ? el("details", { className: "law-index-gaps" }, [el("summary", { text: "Not in the database yet" }), el("ul", {}, gaps.map((g) => el("li", { text: `${g.title}. ${g.note}` })))]) : null,
       );
@@ -262,5 +315,5 @@
     });
   }
 
-  return { load, findSections, cite, initialize, search, showSection, toInstrument };
+  return { load, findSections, cite, initialize, search, showSection, toInstrument, groupAmendments, figureLines };
 });

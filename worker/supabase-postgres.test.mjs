@@ -90,10 +90,11 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   // 34 tables from D1 migrations 0001-0006, minus phase6_sessions and
   // phase6_password_resets (retired with Supabase Auth), plus 4 billing tables,
   // plus 13 Challenge an Assessment tables, public_holidays and 3 legislative-watch tables.
-  assert.equal(tables.rows.length, 64);
+  // Plus the 2026 amendments register.
+  assert.equal(tables.rows.length, 65);
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
   const policies = await pg.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'taxcomp' AND policyname = 'taxcomp_worker_all'");
-  assert.equal(policies.rows[0].n, 64);
+  assert.equal(policies.rows[0].n, 65);
   const challengeGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
     FROM information_schema.role_table_grants
     WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp'

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-11 - 2026 amendments register (from the web)
+
+- **What the 2026 amendments change.** 53 changes made by eight 2026 instruments: the Income Tax, VAT, Excise Duty, Stamp Duty, Tax Procedures Code, Lotteries and Gaming, and External Trade (Amendment) Acts, and the Traffic and Road Safety (Amendment) Bill. They come from the Bills as published by Parliament (Bills Supplement No. 2, 27 March 2026) and from professional reports of the enacted Acts.
+  - Each record gives the previous figure, the Bill's figure and the figure reported as enacted.
+  - The five places where the Bill and the reported Act differ are flagged rather than resolved: the VAT threshold (250m in the Bill, 300m reported), cement, sugar, motorcycle stamp duty and the TPC s.47D waiver.
+  - Eight changes found only in the Bill are labelled as possibly not enacted.
+  - All records are unverified. Migration `20261112000500` adds the table `legislation_amendments`.
+- **Law register.** Adds the External Trade Act (Cap. 69), the Traffic and Road Safety Act (Cap. 347) and the Stamp Duty, Lotteries and Gaming, External Trade and Traffic amending instruments. Adds dated web-check notes to the existing 2026 entries; their dates and statuses are unchanged. The VAT Bill confirms Cap. 344, not Cap. 349.
+- **2024 edition.** The six Acts amended in 2026 are now marked "Requires amendment review".
+- **Where it shows.**
+  - The public API `GET /api/legislation/amendments`.
+  - The Knowledge Centre's "Changes made in 2026".
+  - The reviewer workspace, where approvers verify each record against the enacted Act.
+  - The AI assistant, which cites the changes as `[A#]` entries, gives both figures where they differ and never presents a Bill-only change as law.
+- Details are in `docs/legislation/AMENDMENTS_2026.md`. Service worker `taxcomp-app-v43`.
+
 ## 2026-11-12 - Phase 12: personalised dashboard
 
 - **My dashboard** (Workspace, now the default pane; the nav reads "My Workspace").
