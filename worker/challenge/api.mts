@@ -17,7 +17,7 @@ import { assertSafe, UnsafeOutputError } from "./safety.mts";
 import { ISSUE_TAGS, searchCases } from "./search.mts";
 import {
   audit, isActiveReviewer, listAssignedCases, listOwnCases, loadCase, loadCaseLaw, loadConfirmations, loadDocuments, loadItems,
-  loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
+  loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
 import type { CaseRow, ConfirmableField, ItemCategory, Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
@@ -191,14 +191,14 @@ interface Ctx {
 }
 
 async function buildView(ctx: Ctx, row: CaseRow): Promise<CaseView> {
-  const [confirmations, items, documents, statutes, versions, ruleSet, caseLaw, tiers] = await Promise.all([
+  const [confirmations, items, documents, statutes, versions, ruleSet, holidays, caseLaw, tiers] = await Promise.all([
     loadConfirmations(ctx.db, row.id), loadItems(ctx.db, row.id), loadDocuments(ctx.db, row.id), loadStatutes(ctx.db), loadVersions(ctx.db),
-    loadRuleSet(ctx.db), loadCaseLaw(ctx.db), tierFor(ctx.db, row.ownerUserId, row.id, ctx.nowIso),
+    loadRuleSet(ctx.db), loadHolidays(ctx.db, ctx.today), loadCaseLaw(ctx.db), tierFor(ctx.db, row.ownerUserId, row.id, ctx.nowIso),
   ]);
   return buildCaseView({
     row, confirmations, items,
     documents: documents.map(({ id, docType, fileName, sizeBytes, uploadedAt }) => ({ id, docType, fileName, sizeBytes, uploadedAt })),
-    statutes, versions, ruleSet: ruleSet ?? SEED_RULE_SET, caseLaw, tier: highestTier(tiers), today: ctx.today,
+    statutes, versions, ruleSet: ruleSet ?? SEED_RULE_SET, holidays, caseLaw, tier: highestTier(tiers), today: ctx.today,
     reviewThresholdUgx: Number(ctx.env.CHALLENGE_REVIEW_THRESHOLD_UGX) > 0 ? Number(ctx.env.CHALLENGE_REVIEW_THRESHOLD_UGX) : DEFAULT_REVIEW_THRESHOLD_UGX,
   });
 }
@@ -511,13 +511,13 @@ async function route(ctx: Ctx): Promise<Response> {
   }
 
   if (path === "/api/challenge/law" && method === "GET") {
-    const [statutes, versions, ruleSet] = await Promise.all([loadStatutes(db), loadVersions(db), loadRuleSet(db)]);
+    const [statutes, versions, ruleSet, holidays] = await Promise.all([loadStatutes(db), loadVersions(db), loadRuleSet(db), loadHolidays(db, ctx.today)]);
     const taxHead = url.searchParams.get("taxHead");
     const start = url.searchParams.get("periodStart");
     const end = url.searchParams.get("periodEnd");
     const resolution = (taxHead === "income_tax" || taxHead === "vat") && isIsoDate(start) && isIsoDate(end) && start <= end
       ? resolveLaw({ taxHead, periodStart: start, periodEnd: end }, statutes, versions) : null;
-    return json({ statutes, versions, ruleSet: ruleSet ?? SEED_RULE_SET, resolution }, 200, ctx.cors);
+    return json({ statutes, versions, ruleSet: ruleSet ?? SEED_RULE_SET, holidays, resolution }, 200, ctx.cors);
   }
 
   if (path === "/api/challenge/case-law" && method === "GET") {
@@ -620,6 +620,37 @@ async function route(ctx: Ctx): Promise<Response> {
         audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
       ]);
       return json({ saved: id }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/holidays" && method === "POST") {
+      // Any reviewer may list a holiday (e.g. a gazetted Eid date). It starts
+      // unverified: it can then only make TaxComp warn users to lodge EARLIER.
+      const body = await readJson(request);
+      const date = body.date;
+      const name = cleanText(body.name, 80);
+      const sourceUrl = body.sourceUrl ? String(body.sourceUrl) : null;
+      if (!isIsoDate(date) || !name || name.length < 3) throw new HttpError(400, "Give the date (YYYY-MM-DD) and the holiday's name.");
+      if (sourceUrl && !/^https:\/\/\S{4,500}$/.test(sourceUrl)) throw new HttpError(400, "The source must be an https:// link.");
+      await db.batch([
+        db.prepare(`INSERT INTO public_holidays (holiday_date, name, source_url, note, added_by, created_at) VALUES (?, ?, ?, '', ?, ?) ON CONFLICT (holiday_date, name) DO NOTHING`)
+          .bind(date, name, sourceUrl, ctx.userId, ctx.nowIso),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "holiday.add", details: { date, name }, at: ctx.nowIso }),
+      ]);
+      return json({ added: { date, name } }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/holidays/verify" && method === "POST") {
+      // Verifying lets a holiday move a deadline LATER (under next_business_day), so legal approvers only, with a source.
+      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can confirm public holidays.");
+      const body = await readJson(request);
+      const date = body.date;
+      const name = cleanText(body.name, 80);
+      const sourceUrl = String(body.sourceUrl ?? "");
+      if (!isIsoDate(date) || !name) throw new HttpError(400, "Give the holiday's date and name.");
+      if (!/^https:\/\/\S{4,500}$/.test(sourceUrl)) throw new HttpError(400, "Give the https:// link to the Gazette notice or Act that confirms it.");
+      const result = await db.prepare(`UPDATE public_holidays SET verified_by = ?, verified_at = ?, source_url = ? WHERE holiday_date = ? AND name = ?`)
+        .bind(ctx.userId, ctx.nowIso, sourceUrl, date, name).run();
+      if (!result.meta.changes) throw new HttpError(404, "Holiday not found.");
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "holiday.verify", details: { date, name, sourceUrl }, at: ctx.nowIso }).run();
+      return json({ verified: { date, name } }, 200, ctx.cors);
     }
     if ((m = path.match(/^\/api\/challenge\/review\/rules\/([a-z0-9.-]{3,60})\/approve$/)) && method === "POST") {
       if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can approve the deadline rules.");

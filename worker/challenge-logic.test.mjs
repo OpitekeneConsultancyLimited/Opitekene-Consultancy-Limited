@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { addDays } from "./challenge/dates.mts";
-import { computeDeadlines, dueDateFor, PROVISIONAL_LABEL, SEED_RULE_SET } from "./challenge/deadlines.mts";
+import { closedDayFor, computeDeadlines, dueDateFor, PROVISIONAL_LABEL, SEED_RULE_SET } from "./challenge/deadlines.mts";
 import { resolveLaw } from "./challenge/law.mts";
 import { classifyItem, reconcile } from "./challenge/classify.mts";
 import { assertSafe, checkBannedPhrases, citedOnly, scrubSentences, UnsafeOutputError } from "./challenge/safety.mts";
@@ -53,6 +53,29 @@ test("urgency boundary is 10 days; counting flags are configurable and shown", (
   const banner = computeDeadlines(input({ dateServed: "2026-10-01" }), SEED_RULE_SET).objection;
   assert.ok(banner.assumptions.some((line) => /TODO_VERIFY/.test(line)));
   assert.equal(computeDeadlines(input({ dateServed: "2026-10-01" }), { ...SEED_RULE_SET, approvedForComputation: true }).provisionalLabel, null);
+});
+
+test("A3: holidays warn earlier always, extend later only when verified and the rule allows", () => {
+  const christmas = { date: "2026-12-25", name: "Christmas Day", verified: false, sourceUrl: null, note: "" };
+  const boxing = { date: "2026-12-26", name: "Boxing Day", verified: false, sourceUrl: null, note: "" };
+  const holidays = [christmas, boxing];
+  const rule = SEED_RULE_SET.rules.find((r) => r.ruleKey === "objection");
+  const nextDay = { ...rule, weekendHolidayRule: "next_business_day" };
+  // Served 10 Nov 2026: day 45 is Friday 25 December.
+  assert.equal(dueDateFor(rule, "2026-11-10", holidays), "2026-12-25", "calendar rule never moves the deadline");
+  assert.equal(dueDateFor(nextDay, "2026-11-10", holidays), "2026-12-25", "an unverified holiday never extends a deadline");
+  const verified = holidays.map((day) => ({ ...day, verified: true }));
+  assert.equal(dueDateFor(nextDay, "2026-11-10", verified), "2026-12-28", "Fri holiday, Sat holiday, Sun -> Monday 28th");
+
+  const banner = computeDeadlines(input({ dateServed: "2026-11-10", holidays }), SEED_RULE_SET).objection;
+  assert.equal(banner.dueDate, "2026-12-25");
+  assert.deepEqual(banner.closedDay, { reason: "Christmas Day, a public holiday (date not yet confirmed)", lodgeBy: "2026-12-24" });
+  assert.match(banner.message, /aim to lodge it by 24 December 2026/);
+
+  assert.deepEqual(closedDayFor("2026-11-15"), { reason: "a Sunday", lodgeBy: "2026-11-13" });
+  assert.equal(closedDayFor("2026-11-16"), null, "an ordinary Monday");
+  assert.equal(computeDeadlines(input({ dateServed: "2026-09-01", holidays }), SEED_RULE_SET).objection.closedDay, null, "no advice once possibly lapsed");
+  assert.equal(computeDeadlines(input({ dateServed: "2026-11-10" }), SEED_RULE_SET).objection.closedDay, null, "without a holiday list a Friday is a working day");
 });
 
 test("decision day 90, Tribunal countdown, 30% payment and ADR", () => {

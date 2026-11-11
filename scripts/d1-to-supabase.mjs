@@ -38,6 +38,7 @@ export const TABLE_ORDER = Object.freeze([
   "challenge_reviewers", "challenge_consents", "challenge_cases", "challenge_field_confirmations",
   "challenge_documents", "challenge_disputed_items", "challenge_case_entitlements", "challenge_audit_log",
   "law_statutes", "law_provision_versions", "procedure_rule_sets", "procedure_rules", "tax_case_law",
+  "public_holidays",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

@@ -13,7 +13,7 @@ Code and seed data never set `approved_for_computation = true`. A reviewer with 
 |---|---|---|---|---|
 | A1 | Objection period | 45 days from receipt of the assessment | URA Objections and Appeals page | The period and the provision, as amended by the TPC (Amendment) Act 2026 |
 | A2 | Day of receipt counted? | Not counted (`exclude_trigger_day = 1`) | Not stated | Counting convention |
-| A3 | Weekends and public holidays | Calendar days; a deadline on a weekend is not moved | Not stated | Whether a deadline that falls on a weekend or holiday moves to the next working day. If so, a public-holiday list is also needed. |
+| A3 | Weekends and public holidays | Calendar days; a deadline on a weekend or holiday is not moved. Users are told to lodge by the working day before. | Not stated | Whether a deadline that falls on a weekend or holiday moves to the next working day. If it does, set the rules to `next_business_day`; only holidays confirmed in section F then extend a deadline. |
 | A4 | "Urgent" threshold | 10 days or fewer | Brief (product choice) | None; this is a product choice |
 | A5 | Late objection grounds | Absence from Uganda, sickness or another reasonable cause, without unreasonable delay | URA page | Wording, the provision, and the form of the application |
 | A6 | URA's time to decide | 90 days after the objection is lodged | Daily Monitor article | The period, the provision, and **what happens if URA does not decide in time** (the app only alerts) |
@@ -55,6 +55,19 @@ Each row needs: the official text pasted from ULII, the section number, and conf
 | D1 | Enter TAT decisions, aiming for 50, tagged by issue. ULII does not allow automated collection (decision D-21): use the reviewer form, or the CSV import (`scripts/ulii-ingest.mjs import`). Alternatively, ask ULII for permission or a data feed. |
 | D2 | `[2023] UGTAT 2` (Quickway Property Services v URA): its summary is marked "Staff summary, unreviewed"; approve it or correct it. Its appeal status is **unverified**. |
 | D3 | For each decision: appeal status (never inferred by code) and summary approval. |
+
+## F. Public holidays (`public_holidays`, migration `20261111000000`)
+
+The seeded holidays are unverified. They cover the fixed-date holidays and Good Friday and Easter Monday for 2026 to 2028; the Easter dates are computed.
+
+| # | Item |
+|---|---|
+| F1 | Confirm each fixed date and name against the Public Holidays Act. Confirm each one in Law and cases admin → Public holidays, with a link to the source. |
+| F2 | Whether a holiday that falls on a Sunday is observed on the Monday. Nothing is seeded for this. |
+| F3 | Eid al-Fitr and Eid al-Adha are gazetted each year. A reviewer adds them once announced. |
+| F4 | Any one-off holidays, such as election days. |
+
+While a holiday is unverified it can only make TaxComp warn users to lodge earlier; it never moves a deadline later.
 
 ## E. Product and policy (owner)
 

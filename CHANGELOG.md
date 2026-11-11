@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-11 - Public holidays in deadlines; accessibility scan
+
+- Migration `20261111000000`: `public_holidays` table (RLS, Worker-only), seeded **unverified** with the fixed-date holidays and Easter for 2026-2028. Eid dates are added by reviewers each year.
+- Deadline banners: when the last day falls on a weekend or a listed holiday, users are told to lodge by the working day before. Only reviewer-confirmed holidays can move a deadline later, and only under an approved `next_business_day` rule (todo-verify A3, F).
+- Law and cases admin: list, add and confirm holidays (confirming needs approver rights and a source link; both actions are audited).
+- The end-to-end test runs axe-core (WCAG 2.1 AA) on six screens and fails on serious problems. Fixed the two it found: low-contrast table headers, and a scrolling table keyboard users could not reach.
+
 ## 2026-11-10 - Tidy-up after release
 
 - Migration `20261110000200`: indexes every foreign key in the `taxcomp` schema (41 flagged by the Supabase performance advisor).

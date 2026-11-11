@@ -89,15 +89,15 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   const tables = await pg.query("SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'taxcomp' ORDER BY 1");
   // 34 tables from D1 migrations 0001-0006, minus phase6_sessions and
   // phase6_password_resets (retired with Supabase Auth), plus 4 billing tables,
-  // plus 13 Challenge an Assessment tables.
-  assert.equal(tables.rows.length, 49);
+  // plus 13 Challenge an Assessment tables, plus public_holidays.
+  assert.equal(tables.rows.length, 50);
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
   const policies = await pg.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'taxcomp' AND policyname = 'taxcomp_worker_all'");
-  assert.equal(policies.rows[0].n, 49);
+  assert.equal(policies.rows[0].n, 50);
   const challengeGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
     FROM information_schema.role_table_grants
     WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp'
-      AND table_name IN ('challenge_audit_log', 'challenge_reviewers', 'law_statutes', 'law_provision_versions', 'procedure_rules', 'procedure_rule_sets', 'tax_case_law', 'challenge_cases')
+      AND table_name IN ('challenge_audit_log', 'challenge_reviewers', 'law_statutes', 'law_provision_versions', 'procedure_rules', 'procedure_rule_sets', 'tax_case_law', 'challenge_cases', 'public_holidays')
     GROUP BY table_name ORDER BY table_name`);
   assert.deepEqual(challengeGrants.rows, [
     { table_name: "challenge_audit_log", privileges: "INSERT,SELECT" },
@@ -107,6 +107,7 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
     { table_name: "law_statutes", privileges: "SELECT" },
     { table_name: "procedure_rule_sets", privileges: "SELECT,UPDATE" },
     { table_name: "procedure_rules", privileges: "SELECT" },
+    { table_name: "public_holidays", privileges: "INSERT,SELECT,UPDATE" },
     { table_name: "tax_case_law", privileges: "INSERT,SELECT,UPDATE" },
   ], "audit log append-only; reviewers and rules are owner-managed; law is never deleted");
   const billingGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges

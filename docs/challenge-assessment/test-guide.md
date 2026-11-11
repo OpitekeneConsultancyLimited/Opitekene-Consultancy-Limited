@@ -40,5 +40,5 @@ CI (`release-candidate.yml`) runs `npm test`, the type check and the end-to-end 
 ## Manual checks before going live
 
 1. Apply the migrations to a Supabase **branch** first (Checkpoint B). Sign in, run one case end to end, and download a document.
-2. Use a screen reader (NVDA or TalkBack) on the steps; the e2e checks only labels, button names, contrast and focus.
+2. Use a screen reader (NVDA or TalkBack) on the steps. The e2e runs axe-core (WCAG 2.0/2.1 A and AA rules) on six screens and fails on any serious or critical problem, and writes the rest to `axe-report.json` in the screenshot folder. Automated rules catch only part of the problems a screen-reader user meets.
 3. On a real phone: take a photo of a notice and upload it.

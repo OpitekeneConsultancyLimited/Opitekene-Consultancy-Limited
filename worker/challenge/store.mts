@@ -3,7 +3,7 @@
 // or by assigned reviewer; callers never pass raw SQL.
 import type { Tier } from "./review.mts";
 import type {
-  CaseLaw, CaseRow, ConfirmableField, DisputedItem, FieldConfirmation, ProvisionVersion, RuleSet, Statute,
+  CaseLaw, CaseRow, ConfirmableField, DisputedItem, FieldConfirmation, ProvisionVersion, PublicHoliday, RuleSet, Statute,
 } from "./types.mts";
 
 export interface Statement {
@@ -176,6 +176,17 @@ export async function loadRuleSet(db: Database): Promise<RuleSet | null> {
       paymentFraction: num(row.paymentFraction), description: String(row.description), sourceUrl: str(row.sourceUrl),
     })),
   };
+}
+
+/** Public holidays from a year before today onwards (deadlines never reach further back). */
+export async function loadHolidays(db: Database, today: string): Promise<PublicHoliday[]> {
+  const from = `${Number(today.slice(0, 4)) - 1}-01-01`;
+  const { results } = await db.prepare(`SELECT holiday_date AS "date", name, verified_by AS "verifiedBy", source_url AS "sourceUrl", note
+    FROM public_holidays WHERE holiday_date >= ? ORDER BY holiday_date, name`).bind(from).all<Row>();
+  return results.map((row) => ({
+    date: String(row.date), name: String(row.name), verified: row.verifiedBy !== null && row.verifiedBy !== undefined,
+    sourceUrl: str(row.sourceUrl), note: String(row.note ?? ""),
+  }));
 }
 
 export async function loadCaseLaw(db: Database): Promise<CaseLaw[]> {
