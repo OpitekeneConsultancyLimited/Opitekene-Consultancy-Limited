@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-11 - Legislative watch (Master Directive phase 7)
+
+- `worker/challenge/lawwatch.mts`: every morning (the existing 02:15 cron) the Worker reads Parliament of Uganda's Bill Tracker (bills.parliament.ug), picks out tax Bills, reads each Bill's stage page and records the stage (introduced, debated, passed, assented, withdrawn), its dates and the Acts it amends (e.g. "Cap. 336").
+- Proposed and enacted law stay apart: the watch never changes the law register. A "passed" Bill is shown as not yet law; an "assented" Bill is flagged for a reviewer to confirm in the Gazette and then update the register by hand.
+- Polite reading: robots.txt is checked first (the tracker has none), requests identify TaxComp and are spaced 1.5 s apart, at most 25 Bills a run (about 150 tax Bills covered within a week; assented and withdrawn Bills are re-read monthly).
+- Law and cases admin → **Legislative watch**: Bills with changes to review first, stage in plain words, dates, a link to the tracker, "Mark as reviewed" / "Not relevant", and "Check now" for legal approvers. Changes, reviews and runs are logged (`law_watch_events`, `law_watch_runs`, audit log).
+- Migration `20261111000400`: `law_watch_bills`, `law_watch_events`, `law_watch_runs` (RLS, Worker-only, events and runs append-only). `scripts/law-watch-check.mjs` checks the parser against the live tracker without a database.
+
 ## 2026-11-11 - Knowledge search, chat history, Excise Duty in the law register
 
 - **Knowledge Centre search** (`kb-search.js`): one box across guides, laws, case law, updates and compliance resources, including the law and case registers once loaded. Every word must match; headings rank first. Choosing a result scrolls to it and highlights it. Nothing is sent anywhere.

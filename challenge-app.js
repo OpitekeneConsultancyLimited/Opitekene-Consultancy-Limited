@@ -168,7 +168,7 @@
     ];
     if (me.reviewer) {
       parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["law", "Law and cases admin"]].map(([key, text]) =>
-        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") state.law = await call("/api/challenge/law"); }), text }))));
+        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); } }), text }))));
       if (state.panel === "queue") return [...parts, queueScreen()];
       if (state.panel === "law") return [...parts, lawAdminScreen()];
     }
@@ -615,6 +615,37 @@
     ]);
   }
 
+  /** Phase 7: tax Bills from Parliament's Bill Tracker, newest changes first. Never changes the register. */
+  function lawWatchPanel() {
+    const watch = state.lawwatch;
+    if (!watch) return null;
+    const reload = async () => { state.lawwatch = await call("/api/challenge/review/lawwatch"); };
+    const fresh = watch.bills.filter((b) => b.reviewStatus === "new");
+    const dates = (b) => [["Introduced", b.firstReading], ["Debated", b.secondReading], ["Passed", b.thirdReading], ["Assented", b.assentDate], ["Withdrawn", b.withdrawnDate]]
+      .filter(([, d]) => d).map(([label, d]) => `${label} ${date(d)}`).join(" · ") || "No stage dates on the tracker";
+    const row = (b) => h("li", { className: `ch-law-row${b.reviewStatus === "new" ? " ch-watch-new" : ""}` }, [
+      h("strong", {}, [link(b.title, b.sourceUrl)]),
+      h("span", { className: "ch-muted", text: ` ${b.capReferences.length ? `(amends ${b.capReferences.join(", ")}) ` : ""}` }),
+      h("p", { className: b.stage === "assented" ? "ch-watch-stage ch-watch-enacted" : "ch-watch-stage", text: watch.stageLabels[b.stage] || b.stage }),
+      h("p", { className: "ch-muted", text: dates(b) }),
+      b.reviewStatus === "new" ? h("div", { className: "ch-actions" }, [
+        h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/lawwatch/${b.billId}`, { method: "POST", body: { status: "reviewed" } }); await reload(); }), text: "Mark as reviewed" }),
+        h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/lawwatch/${b.billId}`, { method: "POST", body: { status: "not_relevant" } }); await reload(); }), text: "Not relevant" }),
+      ]) : h("p", { className: "ch-muted", text: b.reviewStatus === "not_relevant" ? "Marked not relevant." : `Reviewed.${b.reviewNote ? ` ${b.reviewNote}` : ""}` }),
+    ]);
+    const last = watch.lastRun;
+    return h("section", { className: "ch-watch", "aria-labelledby": "ch-watch-title" }, [
+      h("h3", { id: "ch-watch-title", text: `Legislative watch${fresh.length ? ` (${fresh.length} to review)` : ""}` }),
+      h("p", { className: "ch-muted", text: "Tax Bills from Parliament's Bill Tracker, checked every morning. A Bill is proposed law only: it is never applied, and nothing here changes the law register. When the tracker shows a Bill as assented, confirm the assent and commencement dates in the Uganda Gazette, then update the register." }),
+      h("p", { className: "ch-muted", text: last ? `Last check: ${new Date(last.ranAt).toLocaleString("en-UG")} · ${last.checked} Bills read · ${last.changes} change${last.changes === 1 ? "" : "s"}${last.errors.length ? ` · ${last.errors.length} could not be read` : ""}.` : "Not checked yet: the first check runs tonight." }),
+      state.me.canApproveLaw ? h("button", { type: "button", className: "btn btn-secondary btn-small", disabled: state.busy, onclick: () => act(async () => { const { result } = await call("/api/challenge/review/lawwatch/run", { method: "POST" }); await reload(); say(result.skippedByRobots ? "The Bill Tracker's robots.txt now asks robots not to read it, so nothing was read." : `Checked ${result.checked} Bills: ${result.changes} change${result.changes === 1 ? "" : "s"}.`, "success"); }), text: "Check now" }) : null,
+      watch.bills.length ? h("details", { className: "ch-watch-list", open: fresh.length ? "" : null }, [
+        h("summary", { text: `${watch.bills.length} tax Bills followed` }),
+        h("ul", { className: "ch-law-list" }, watch.bills.map(row)),
+      ]) : null,
+    ]);
+  }
+
   function lawAdminScreen() {
     const law = state.law;
     if (!law) return h("p", { text: "Loading…" });
@@ -661,6 +692,7 @@
     ] : [];
     return h("section", { className: "ch-card" }, [
       ...paymentForm,
+      lawWatchPanel(),
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),
       state.me.canApproveLaw && !law.ruleSet.approvedForComputation ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); }, "Rules approved."), text: "Approve these rules (legal approver)" }) : null,

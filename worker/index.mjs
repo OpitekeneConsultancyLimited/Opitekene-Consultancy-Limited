@@ -11,6 +11,7 @@ import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 import { handleChallengeRequest } from "./challenge/api.mts";
+import { runLawWatch } from "./challenge/lawwatch.mts";
 import { callClaude } from "./claude-research.mjs";
 
 const { createTaxAdvisor } = advisorModule;
@@ -1511,7 +1512,18 @@ export default {
     return withDatabase(env, context, (scopedEnv) => handleRequest(request, withMalwareScanner(withSupabaseStorage(scopedEnv))));
   },
   scheduled(_event, env, context) {
-    context.waitUntil(withDatabase(env, context, (scopedEnv) => cleanupExpiredQuestions(scopedEnv)));
+    context.waitUntil(withDatabase(env, context, async (scopedEnv) => {
+      await cleanupExpiredQuestions(scopedEnv);
+      // Phase 7: follow Parliament's Bill Tracker once a day (Supabase only).
+      if (scopedEnv.DATABASE_PROVIDER === "supabase" && scopedEnv.UNANSWERED_QUESTIONS) {
+        try {
+          const result = await runLawWatch(scopedEnv.UNANSWERED_QUESTIONS, scopedEnv);
+          console.log("Legislative watch", { checked: result.checked, taxBills: result.taxBills, changes: result.changes, errors: result.errors.length });
+        } catch (error) {
+          console.warn("Legislative watch failed", { message: error instanceof Error ? error.message.slice(0, 160) : "unknown" });
+        }
+      }
+    }));
   },
 };
 

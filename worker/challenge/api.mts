@@ -19,6 +19,7 @@ import {
   audit, isActiveReviewer, listAssignedCases, listOwnCases, loadCase, loadCaseLaw, loadConfirmations, loadDocuments, loadItems,
   findCasesByReference, loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
+import { runLawWatch, STAGE_LABEL, type LawWatchEnv } from "./lawwatch.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
@@ -27,7 +28,7 @@ export const DOCUMENTS_BUCKET = "assessment-documents";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_JSON_BYTES = 220_000;
 
-export interface ChallengeEnv extends AiEnv {
+export interface ChallengeEnv extends AiEnv, LawWatchEnv {
   UNANSWERED_QUESTIONS?: Database;
   DATABASE_PROVIDER?: string;
   ALLOWED_ORIGIN?: string;
@@ -628,6 +629,39 @@ async function route(ctx: Ctx): Promise<Response> {
         audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
       ]);
       return json({ saved: id }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/lawwatch" && method === "GET") {
+      const [bills, events, lastRun] = await Promise.all([
+        db.prepare(`SELECT bill_id AS "billId", title, object, cap_references_json AS "capReferencesJson", stage, first_reading AS "firstReading",
+          second_reading AS "secondReading", third_reading AS "thirdReading", assent_date AS "assentDate", withdrawn_date AS "withdrawnDate",
+          source_url AS "sourceUrl", last_checked_at AS "lastCheckedAt", last_changed_at AS "lastChangedAt", review_status AS "reviewStatus", review_note AS "reviewNote"
+          FROM law_watch_bills ORDER BY (review_status = 'new') DESC, last_changed_at DESC LIMIT 200`).all<Record<string, unknown>>(),
+        db.prepare(`SELECT bill_id AS "billId", detected_at AS "detectedAt", kind, summary FROM law_watch_events ORDER BY detected_at DESC LIMIT 30`).all<Record<string, unknown>>(),
+        db.prepare(`SELECT ran_at AS "ranAt", checked, tax_bills AS "taxBills", changes, errors_json AS "errorsJson" FROM law_watch_runs ORDER BY ran_at DESC LIMIT 1`).first<Record<string, unknown>>(),
+      ]);
+      return json({
+        stageLabels: STAGE_LABEL,
+        bills: bills.results.map((row) => ({ ...row, capReferences: JSON.parse(String(row.capReferencesJson ?? "[]")), capReferencesJson: undefined })),
+        events: events.results,
+        lastRun: lastRun ? { ...lastRun, errors: JSON.parse(String(lastRun.errorsJson ?? "[]")), errorsJson: undefined } : null,
+      }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/review/lawwatch/run" && method === "POST") {
+      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can run the legislative watch.");
+      const result = await runLawWatch(db, ctx.env, ctx.now);
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "lawwatch.run", details: { ...result, errors: result.errors.length }, at: ctx.nowIso }).run();
+      return json({ result }, 200, ctx.cors);
+    }
+    if ((m = path.match(/^\/api\/challenge\/review\/lawwatch\/(\d{1,9})$/)) && method === "POST") {
+      const billId = Number(m[1]);
+      const body = await readJson(request);
+      if (body.status !== "reviewed" && body.status !== "not_relevant") throw new HttpError(400, "Choose reviewed or not relevant.");
+      const note = cleanText(body.note, 1000) ?? "";
+      const updated = await db.prepare(`UPDATE law_watch_bills SET review_status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ? WHERE bill_id = ?`)
+        .bind(body.status, ctx.userId, ctx.nowIso, note, billId).run();
+      if (!updated.meta.changes) throw new HttpError(404, "Bill not found.");
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "lawwatch.review", details: { billId, status: body.status, note }, at: ctx.nowIso }).run();
+      return json({ reviewed: billId }, 200, ctx.cors);
     }
     if (path === "/api/challenge/review/entitlements" && method === "POST") {
       // Payments taken by hand (mobile money via WhatsApp, or an agreed managed-dispute quote):

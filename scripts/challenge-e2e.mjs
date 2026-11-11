@@ -262,6 +262,7 @@ check("A3: law admin lists upcoming holidays only, as not yet confirmed",
 await page.screenshot({ path: path.join(shots, "6-law-admin-360.png"), fullPage: true });
 await axeScan(page, "law and cases admin");
 check("no sideways scroll on law admin at 360 px", await page.evaluate(() => document.documentElement.scrollWidth <= 361));
+check("legislative watch panel explains that Bills are not law", admin.includes("Legislative watch") && admin.includes("A Bill is proposed law only"));
 
 // Existing routes still work.
 for (const [hash, selector] of [["home", "#paye-preview"], ["tools", "#tools"], ["calc-paye", "#estimator"], ["knowledge", "#knowledge"], ["kb-laws", "#kb-law-register"], ["kb-cases", "#kb-case-register"], ["assistant", "#tax-chat"], ["workspace", "#workspace"], ["ws-assessments", "#ws-assessments-root"], ["about", "#about"], ["privacy", "#privacy"]]) {
