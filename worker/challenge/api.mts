@@ -28,6 +28,10 @@ import {
   chooseEdition, compareEditions, getSection as getLegislationSection, historyFor, LegislationError, listLaws, loadEditions, paging as legislationPaging,
   reviewList, setLawVersionStatus, setSectionStatus, STATUS_LABEL as LEGISLATION_STATUS_LABEL,
 } from "./legislation.mts";
+import {
+  applyProfileUpdate, CATEGORY_LABEL, dashboardFor, discoverObligations, emptyProfile, FACT_KEYS, INTERESTS, loadProfile, OBLIGATION_STATUS_LABEL, ProfileError,
+  recommendations, saveProfile, type Profile,
+} from "./personalise.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
@@ -542,6 +546,41 @@ async function route(ctx: Ctx): Promise<Response> {
     const all = await loadCaseLaw(db);
     const results = q ? searchCases(all, q, { limit: 20 }).map((match) => ({ ...match.caseLaw, score: match.score, matchedTags: match.matchedTags })) : all.slice(0, 100);
     return json({ total: all.length, results }, 200, ctx.cors);
+  }
+
+  // ------------------------------------------------- Phase 12: personalisation
+  if (path === "/api/challenge/profile" || path === "/api/challenge/profile/discover") {
+    const view = async (profile: Profile | null) => {
+      const effective = profile ?? emptyProfile(ctx.userId);
+      return {
+        exists: Boolean(profile), profile: effective, dashboard: dashboardFor(effective),
+        recommendations: await recommendations(db, profile, ctx.userId, ctx.today),
+        options: { categories: CATEGORY_LABEL, interests: INTERESTS, facts: FACT_KEYS, obligationStatuses: OBLIGATION_STATUS_LABEL },
+      };
+    };
+    try {
+      if (path === "/api/challenge/profile" && method === "GET") return json(await view(await loadProfile(db, ctx.userId)), 200, ctx.cors);
+      if (path === "/api/challenge/profile" && method === "POST") {
+        const body = await readJson(request);
+        const current = (await loadProfile(db, ctx.userId)) ?? emptyProfile(ctx.userId);
+        const next = applyProfileUpdate(current, body);
+        await saveProfile(db, next, ctx.nowIso, { completeOnboarding: body.completeOnboarding === true });
+        return json(await view(await loadProfile(db, ctx.userId)), 200, ctx.cors);
+      }
+      if (path === "/api/challenge/profile/discover" && method === "POST") {
+        const body = await readJson(request);
+        const current = (await loadProfile(db, ctx.userId)) ?? emptyProfile(ctx.userId);
+        const next = applyProfileUpdate(current, { facts: body.facts ?? {} });
+        next.discovery = await discoverObligations(db, next, ctx.nowIso);
+        next.discoveredAt = ctx.nowIso;
+        await saveProfile(db, next, ctx.nowIso);
+        return json({ discovery: next.discovery, ...(await view(await loadProfile(db, ctx.userId))) }, 200, ctx.cors);
+      }
+      throw new HttpError(405, "Use GET or POST.");
+    } catch (error) {
+      if (error instanceof ProfileError) throw new HttpError(error.status, error.message);
+      throw error;
+    }
   }
 
   if (path === "/api/challenge/knowledge" && method === "GET") {

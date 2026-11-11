@@ -13,6 +13,18 @@ import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 import { handleChallengeRequest } from "./challenge/api.mts";
 import { runLawWatch } from "./challenge/lawwatch.mts";
 import { checkCitations, handleLegislationRequest, legislationEvidence, legislationForResponse, legislationSummary, retrieveLegislation } from "./challenge/legislation.mts";
+import { applyProfileUpdate, emptyProfile, profileContext } from "./challenge/personalise.mts";
+
+/** The user's profile as sent by the dashboard (enumerated values only), as a short instruction for the model. */
+function userContext(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  try {
+    const { userCategory, businessType, experienceMode } = value;
+    return profileContext(applyProfileUpdate(emptyProfile("chat"), { userCategory, businessType, experienceMode }));
+  } catch {
+    return "";
+  }
+}
 import { callClaude } from "./claude-research.mjs";
 
 const { createTaxAdvisor } = advisorModule;
@@ -709,6 +721,8 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
           const knowledge = retrieveKnowledge(scopedQuestion);
           const evidence = buildEvidence(knowledge);
           if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
+          const profileNote = userContext(body.profile);
+          if (profileNote) evidence.text += `\n\nUser context (from their TaxComp profile; not evidence of any fact about their tax position): ${profileNote}`;
           const result = await callWebResearch(scopedQuestion, [], evidence, env);
           if (result.fallback || !result.answer) {
             throw new Error("Grounded AI research is unavailable.");
@@ -1484,6 +1498,8 @@ export async function handleRequest(request, env) {
   // only where entered from an official source), for the tax period asked about.
   const legislation = await retrieveLegislationFor(env, question, taxPeriod);
   if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
+  const profileNote = userContext(body.profile);
+  if (profileNote) evidence.text += `\n\nUser context (from their TaxComp profile; not evidence of any fact about their tax position): ${profileNote}`;
   const result = body.providerConsent === true
     ? await callWebResearch(
       researchQuestion,

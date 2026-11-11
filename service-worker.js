@@ -1,6 +1,6 @@
 // Bump on every release that changes styles.css: CSS is served cache-first and
 // the cache match ignores ?v= query strings.
-const CACHE_NAME = "taxcomp-app-v40";
+const CACHE_NAME = "taxcomp-app-v41";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,6 +32,7 @@ const APP_SHELL = [
   "./international-tax.js",
   "./intl-tax-reasoning.js",
   "./law-index.js",
+  "./dashboard.js",
   "./audit-health.js",
   "./manifest.webmanifest",
   "./icons/taxcomp-180.png",

@@ -95,7 +95,7 @@
       setView(hash);
       if (hash === "tools") setToolFocus("tools");
       if (hash === "knowledge") setKnowledgeFilter("all");
-      if (hash === "workspace") setPane("overview");
+      if (hash === "workspace") setPane("dashboard");
       scrollToTop();
       return;
     }
@@ -116,7 +116,8 @@
     }
     if (hash.startsWith("ws-")) {
       setView("workspace");
-      setPane(hash.slice(3));
+      // "ws-dashboard-discover" opens the dashboard pane; dashboard.js handles the rest.
+      setPane(hash.slice(3).split("-")[0]);
       scrollToTop();
       return;
     }

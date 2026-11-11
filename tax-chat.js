@@ -678,6 +678,7 @@
               message: question,
               taxPeriod: taxPeriod || null,
               providerConsent,
+              profile: root.taxCompDashboard?.chatProfile?.() || undefined,
             }),
             signal: controller.signal,
           });
@@ -709,6 +710,7 @@
             history: conversation.slice(-8),
             recordUnanswered,
             providerConsent,
+            profile: root.taxCompDashboard?.chatProfile?.() || undefined,
           }),
           signal: controller.signal,
         });
