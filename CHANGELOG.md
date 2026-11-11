@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11 - Signed-in visitors land on their dashboard
+
+- Opening the site while signed in, with no section in the address, now goes to My Workspace → My dashboard instead of Home. Home is still in the menu, and links to a section (for example `#tools` or `#calc-paye`) open that section. Service worker `taxcomp-app-v44`.
+
 ## 2026-11-11 - 2026 amendments register (from the web)
 
 - **What the 2026 amendments change.** 53 changes made by eight 2026 instruments: the Income Tax, VAT, Excise Duty, Stamp Duty, Tax Procedures Code, Lotteries and Gaming, and External Trade (Amendment) Acts, and the Traffic and Road Safety (Amendment) Bill. They come from the Bills as published by Parliament (Bills Supplement No. 2, 27 March 2026) and from professional reports of the enacted Acts.
