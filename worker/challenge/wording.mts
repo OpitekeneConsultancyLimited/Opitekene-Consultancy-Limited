@@ -1,7 +1,7 @@
 // Fixed user-facing wording for Challenge an Assessment (brief Section 6).
 // Everything a reviewer may want to check is in this one file. Owner-view
 // text uses no tax jargon; placeholders are {amount} and {documents}.
-import type { ItemCategory, Outcome } from "./types.mts";
+import type { ItemCategory, Outcome, TaxHead } from "./types.mts";
 
 export const OUTCOME_OWNER_TEMPLATES: Readonly<Record<Outcome, string>> = Object.freeze({
   correct: "URA's figure for this item looks consistent with your records. Objecting to it is unlikely to help.",
@@ -50,12 +50,37 @@ export const OWNER_QUESTIONS: Readonly<Record<ItemCategory, string[]>> = Object.
   penal_tax: ["Does the penalty figure look right to you? We can check the arithmetic."],
   procedural: ["How and when did you receive this notice? Was anything about it unusual?"],
   other: ["In your own words, why do you think this figure is wrong?"],
+  employment_income: [
+    "What was this payment to your staff for? For example salary, an allowance, a benefit such as a car or housing, or paying them back for costs they met for the business.",
+    "Do you have the payslips, payroll records or receipts that show it?",
+  ],
+  withholding: [
+    "What were these payments for, and who did you pay?",
+    "Did you take tax off them and pay it to URA? If not, why not? For example, the supplier had an exemption certificate, or the payment was below the limit.",
+  ],
 });
 
 /** Plain description of what URA is claiming, by tax head. */
-export const TAX_HEAD_PLAIN: Readonly<Record<"income_tax" | "vat", string>> = Object.freeze({
+export const TAX_HEAD_PLAIN: Readonly<Record<TaxHead, string>> = Object.freeze({
   income_tax: "income tax (tax on the profit your business made)",
   vat: "VAT (the tax added to the price of goods and services you sell)",
+  paye: "PAYE (the income tax an employer must take from staff pay and pay to URA)",
+  wht: "withholding tax (tax a business must take off certain payments it makes and pay to URA)",
+});
+
+/** Short names, for headings, lists and the pack. */
+export const TAX_HEAD_LABEL: Readonly<Record<TaxHead, string>> = Object.freeze({
+  income_tax: "Income tax",
+  vat: "VAT",
+  paye: "PAYE",
+  wht: "Withholding tax",
+});
+
+export const TAX_HEAD_PACK_TITLE: Readonly<Record<TaxHead, string>> = Object.freeze({
+  income_tax: "INCOME TAX",
+  vat: "VALUE ADDED TAX",
+  paye: "PAY AS YOU EARN (PAYE)",
+  wht: "WITHHOLDING TAX",
 });
 
 export const STANDING_DISCLAIMER =

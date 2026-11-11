@@ -47,6 +47,10 @@ Each row needs: the official text pasted from ULII, the section number, and conf
 | Interest on unpaid tax (TPCA) | `tpca.interest.pre-2026`, `tpca.interest.2026` | **Rate, and whether it compounds**: formula `{"kind":"simple-monthly","ratePercentPerMonth":?}` (only simple monthly interest is coded) |
 | Burden of proof (TPCA) | `tpca.burden-of-proof` | Whether it sits in the TPCA or the TAT Act |
 | Tribunal application (TAT Act) | `tata.review-application` | |
+| PAYE: employment income (ITA) | `ita.paye-employment-income.pre-2026`, `ita.paye-employment-income.2026` | How allowances, benefits in kind and reimbursements are treated |
+| PAYE: employer's duty to withhold (ITA) | `ita.paye-employer-duty.pre-2026`, `ita.paye-employer-duty.2026` | Whether the employer's liability for tax not withheld is in the ITA or the TPCA |
+| WHT: payments, rates and exemptions (ITA) | `ita.wht-payments.pre-2026`, `ita.wht-payments.2026` | Rates, thresholds and exemption certificates. TaxComp never applies a withholding rate itself. |
+| WHT: withholding agent's liability (ITA) | `ita.wht-agent-liability.pre-2026`, `ita.wht-agent-liability.2026` | Whether it is in the ITA or the TPCA; any right to recover from the payee |
 
 ## D. Case repository
 

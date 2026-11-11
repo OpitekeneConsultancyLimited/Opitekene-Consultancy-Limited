@@ -2,7 +2,9 @@
 
 export type IsoDate = string; // YYYY-MM-DD
 
-export type TaxHead = "income_tax" | "vat";
+/** PAYE and withholding tax are both charged under the Income Tax Act. */
+export type TaxHead = "income_tax" | "vat" | "paye" | "wht";
+export const TAX_HEADS: readonly TaxHead[] = Object.freeze(["income_tax", "vat", "paye", "wht"]);
 export type AssessmentType = "original" | "additional" | "other";
 export type ServiceMethod = "hand" | "email" | "ura-portal" | "post" | "other";
 
@@ -14,7 +16,15 @@ export type Outcome =
   | "procedural_issue";
 
 export type ItemCategory =
-  | "income" | "expense" | "input_vat" | "output_vat" | "penal_tax" | "interest" | "credit" | "procedural" | "other";
+  | "income" | "expense" | "input_vat" | "output_vat" | "penal_tax" | "interest" | "credit" | "procedural" | "other"
+  // PAYE: whether a payment to staff is taxable employment income.
+  | "employment_income"
+  // WHT: tax the business should have taken off a payment it made (as withholding agent).
+  | "withholding";
+
+export const ITEM_CATEGORIES: readonly ItemCategory[] = Object.freeze([
+  "income", "expense", "input_vat", "output_vat", "penal_tax", "interest", "credit", "procedural", "other", "employment_income", "withholding",
+]);
 
 export type ConfirmableField =
   | "tin" | "tax_head" | "assessment_type" | "period_start" | "period_end" | "date_issued"

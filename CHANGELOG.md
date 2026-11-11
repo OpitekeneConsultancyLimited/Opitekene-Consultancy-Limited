@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-11 - PAYE and withholding tax assessments
+
+- Challenge an Assessment now takes PAYE and withholding tax (WHT) notices as well as income tax and VAT.
+- Reader: the text reader recognises PAYE and WHT notices (an income tax notice that only lists WHT credits stays income tax). The AI prompt is now `assessment-extraction.v2` with the two new tax heads.
+- Two new kinds of disputed item, each with plain questions and an evidence list: a payment to staff URA treats as taxable pay (PAYE), and a payment the business made without withholding tax (WHT). The records step offers the items that fit the tax.
+- Migration `20261111000100`: allows the new tax heads and item kinds, and adds 8 Income Tax Act provision rows for PAYE and WHT. All are TODO_VERIFY placeholders; nothing is approved for computation.
+- Case search: new issue tags `paye` and `withholding`.
+
 ## 2026-11-11 - Public holidays in deadlines; accessibility scan
 
 - Migration `20261111000000`: `public_holidays` table (RLS, Worker-only), seeded **unverified** with the fixed-date holidays and Easter for 2026-2028. Eid dates are added by reviewers each year.

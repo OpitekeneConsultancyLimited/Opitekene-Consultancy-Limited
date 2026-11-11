@@ -225,6 +225,23 @@ await page.getByRole("button", { name: "Delete this case" }).click();
 await clickButton("Yes, delete it");
 check("one-click deletion removes the case", (await text()).includes("No cases yet") && (await pg.query("SELECT count(*)::int AS n FROM taxcomp.challenge_cases")).rows[0].n === 0);
 
+// PAYE: the reader recognises the notice, and the records step offers PAYE items.
+await clickButton("Start a new case");
+await page.fill("#ch-text", NOTICE.replace("NOTICE OF ADDITIONAL ASSESSMENT - INCOME TAX", "NOTICE OF ADDITIONAL ASSESSMENT - PAY AS YOU EARN (PAYE)")
+  .replace("Reasons: Expenses claimed were not supported by invoices.", "Reasons: Allowances paid to employees were left out of PAYE."));
+await clickButton("Read the text");
+check("PAYE notice: tax read as PAYE", (await page.inputValue("#ch-f-tax_head")) === "paye");
+await clickButton("Save and continue");
+await page.fill("#ch-served", daysAgo(20));
+await clickButton("Save and continue");
+await clickButton("Add an item");
+const payeOptions = await page.$$eval("#ch-i0-cat option", (options) => options.map((o) => o.value));
+check("PAYE records step offers PAYE items first, and no VAT items", payeOptions[0] === "employment_income" && !payeOptions.includes("input_vat"), payeOptions.join(","));
+await axeScan(page, "PAYE records step");
+await page.getByRole("button", { name: "6. Your pack" }).click();
+await page.getByRole("button", { name: "Delete this case" }).click();
+await clickButton("Yes, delete it");
+
 // Reviewer screens: make this user a legal approver, reload, open Law and cases admin.
 await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'e2e-owner@example.com', 1, now()::text)", [userId]);
 await page.reload();

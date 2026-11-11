@@ -283,6 +283,74 @@ test("reviewers cannot approve law or rules without approver rights; text must b
   await t.pg.close();
 });
 
+const PAYE_NOTICE = `UGANDA REVENUE AUTHORITY
+NOTICE OF ADDITIONAL ASSESSMENT - PAY AS YOU EARN (PAYE)
+TIN: 1000654321
+Tax period: 01/07/2026 to 31/07/2026
+Date of assessment: 15/09/2026
+Principal tax: UGX 6,300,000
+Penal tax at 20%: UGX 1,260,000
+Interest at 2% per month for 2 months: UGX 252,000
+Total amount due: UGX 7,812,000
+Reasons: Transport and housing allowances paid to employees were not included in PAYE computations.`;
+
+const WHT_NOTICE = `UGANDA REVENUE AUTHORITY
+WITHHOLDING TAX ASSESSMENT
+TIN: 1000777888
+Tax period: 01/08/2026 to 31/08/2026
+Date of assessment: 20/09/2026
+Principal tax: UGX 4,500,000
+Total amount due: UGX 4,500,000
+Reasons: Failure to withhold tax on payments to contractors. The taxpayer is a withholding agent.`;
+
+async function paidPlan(t, who, email) {
+  await t.pg.query("INSERT INTO taxcomp.billing_accounts (user_id, email, created_at, updated_at) VALUES ($1, $2, $3, $3)", [who.userId, email, NOW.toISOString()]);
+  await t.pg.query(`INSERT INTO taxcomp.billing_subscriptions (id, user_id, plan_id, status, current_period_start, current_period_end, created_at, updated_at)
+    VALUES ($1, $2, 'individual-monthly', 'active', '2026-11-01T00:00:00.000Z', '2026-12-01T00:00:00.000Z', $3, $3)`, [`s-${who.userId}`, who.userId, NOW.toISOString()]);
+}
+
+test("PAYE and withholding tax assessments: read, classify, research and pack", async () => {
+  const t = await setup();
+  const owner = await t.user("employer@example.com");
+  await paidPlan(t, owner, "employer@example.com");
+  const run = async (notice, expectedHead, item) => {
+    const caseId = await newCase(t, owner);
+    const read = await t.call(`/api/challenge/cases/${caseId}/read`, { method: "POST", token: owner.token, body: { text: notice } });
+    assert.equal(read.status, 200, JSON.stringify(read.body));
+    assert.equal(read.body.view.confirmations.find((f) => f.fieldName === "tax_head").extractedValue, expectedHead);
+    const fields = read.body.view.confirmations.filter((f) => f.extractedValue !== null).map((f) => ({ field: f.fieldName, action: "confirm" }));
+    await t.call(`/api/challenge/cases/${caseId}/fields`, { method: "POST", token: owner.token, body: { fields } });
+    await t.call(`/api/challenge/cases/${caseId}`, { method: "PATCH", token: owner.token, body: { dateServed: "2026-10-20" } });
+    const saved = await t.call(`/api/challenge/cases/${caseId}/items`, { method: "PUT", token: owner.token, body: { items: [item] } });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    const pack = await t.call(`/api/challenge/cases/${caseId}/pack`, { token: owner.token });
+    assert.equal(pack.status, 200, JSON.stringify(pack.body));
+    return { view: saved.body.view, pack: pack.body.pack };
+  };
+
+  const paye = await run(PAYE_NOTICE, "paye", { category: "employment_income", description: "Transport allowances treated as pay", uraAmount: 6300000, taxpayerAmount: 0, facts: { hasRecords: false } });
+  assert.match(paye.view.explanation.owner[0], /PAYE \(the income tax an employer must take from staff pay/);
+  const payeItem = paye.view.reconciliation.items[0];
+  assert.equal(payeItem.outcome, "insufficient_evidence");
+  assert.ok(payeItem.evidenceGap.includes("payslips and payroll records for the period"));
+  assert.ok(paye.view.research[0].provisions.some((p) => p.provisionId === "ita.paye-employment-income.2026"), "July 2026 PAYE uses the 2026 version");
+  assert.ok(paye.view.law.statutes.some((s) => s.id === "ita"));
+  assert.match(paye.pack.documents[0].title, /PAYE assessment/);
+  assert.ok(JSON.stringify(paye.pack).includes("PAY AS YOU EARN (PAYE)"));
+
+  const wht = await run(WHT_NOTICE, "wht", { category: "withholding", description: "Payments to contractors", uraAmount: 4500000, taxpayerAmount: 0, facts: { hasRecords: true, legalArgument: "The contractors held valid exemption certificates." } });
+  const whtItem = wht.view.reconciliation.items[0];
+  assert.equal(whtItem.outcome, "arguable_legal_ground");
+  assert.deepEqual(wht.view.research[0].provisions.map((p) => p.provisionId).filter((id) => id.startsWith("ita.wht")).sort(), ["ita.wht-agent-liability.2026", "ita.wht-payments.2026"]);
+  assert.match(wht.pack.documents[0].title, /withholding tax assessment/);
+  // Nothing new is approved for computation.
+  const approved = await t.pg.query("SELECT count(*)::int AS n FROM taxcomp.law_provision_versions WHERE approved_for_computation = 1");
+  assert.equal(approved.rows[0].n, 0);
+  // The database refuses unknown taxes and categories.
+  await assert.rejects(t.pg.query("UPDATE taxcomp.challenge_cases SET tax_head = 'stamp_duty'"), /check constraint/);
+  await t.pg.close();
+});
+
 test("A3: seeded holidays start unverified; reviewers add them, only approvers confirm them, with a source; all audited", async () => {
   const t = await setup();
   const owner = await t.user("owner@example.com");

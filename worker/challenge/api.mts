@@ -19,7 +19,7 @@ import {
   audit, isActiveReviewer, listAssignedCases, listOwnCases, loadCase, loadCaseLaw, loadConfirmations, loadDocuments, loadItems,
   loadHolidays, loadRuleSet, loadStatutes, loadVersions, pickReviewer, tierFor, type Database, type Statement,
 } from "./store.mts";
-import type { CaseRow, ConfirmableField, ItemCategory, Outcome } from "./types.mts";
+import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
 export const CONSENT_VERSION = "2026-11-10";
@@ -104,7 +104,7 @@ const FILE_TYPES: Record<string, (bytes: Uint8Array) => boolean> = {
 
 const FIELD_RULES: Record<ConfirmableField, (value: string) => string | null> = {
   tin: (v) => (/^\d{10}$/.test(v) ? v : null),
-  tax_head: (v) => (v === "income_tax" || v === "vat" ? v : null),
+  tax_head: (v) => ((TAX_HEADS as readonly string[]).includes(String(v)) ? v : null),
   assessment_type: (v) => (["original", "additional", "other"].includes(v) ? v : null),
   period_start: (v) => (isIsoDate(v) ? v : null),
   period_end: (v) => (isIsoDate(v) ? v : null),
@@ -166,7 +166,7 @@ function optionalDate(value: unknown, label: string, today: string): string | nu
   return value;
 }
 
-const CATEGORIES = new Set<ItemCategory>(["income", "expense", "input_vat", "output_vat", "penal_tax", "interest", "credit", "procedural", "other"]);
+const CATEGORIES = new Set<ItemCategory>(ITEM_CATEGORIES);
 const OUTCOMES = new Set<Outcome>(["correct", "computational_error", "insufficient_evidence", "arguable_legal_ground", "procedural_issue"]);
 
 function cleanText(value: unknown, max: number): string | undefined {
@@ -515,8 +515,9 @@ async function route(ctx: Ctx): Promise<Response> {
     const taxHead = url.searchParams.get("taxHead");
     const start = url.searchParams.get("periodStart");
     const end = url.searchParams.get("periodEnd");
-    const resolution = (taxHead === "income_tax" || taxHead === "vat") && isIsoDate(start) && isIsoDate(end) && start <= end
-      ? resolveLaw({ taxHead, periodStart: start, periodEnd: end }, statutes, versions) : null;
+    const head = TAX_HEADS.find((item) => item === taxHead);
+    const resolution = head && isIsoDate(start) && isIsoDate(end) && start <= end
+      ? resolveLaw({ taxHead: head, periodStart: start, periodEnd: end }, statutes, versions) : null;
     return json({ statutes, versions, ruleSet: ruleSet ?? SEED_RULE_SET, holidays, resolution }, 200, ctx.cors);
   }
 
