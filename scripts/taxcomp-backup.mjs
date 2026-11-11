@@ -75,10 +75,15 @@ export async function createBackup(query, { passphrase, now = new Date(), source
   const present = new Set((await query("SELECT tablename FROM pg_tables WHERE schemaname = 'taxcomp'")).map((row) => row.tablename));
   const unknown = [...present].filter((name) => !TABLE_ORDER.includes(name));
   if (unknown.length) throw new Error(`Tables not covered by the backup order: ${unknown.join(", ")}`);
+  // Generated columns (e.g. legislation_sections.search_tsv) are rebuilt by
+  // Postgres on restore and cannot be inserted, so they are not exported.
+  const generated = new Set((await query("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'taxcomp' AND is_generated = 'ALWAYS'"))
+    .map((row) => `${row.table_name}.${row.column_name}`));
   const rowsByTable = {};
   for (const table of TABLE_ORDER) {
     if (!present.has(table)) continue;
-    rowsByTable[table] = await query(`SELECT * FROM taxcomp.${table}`);
+    const rows = await query(`SELECT * FROM taxcomp.${table}`);
+    rowsByTable[table] = rows.map((row) => Object.fromEntries(Object.entries(row).filter(([column]) => !generated.has(`${table}.${column}`))));
   }
   const { sql, summary } = buildImportSql(rowsByTable, { now, dropExpiredQuestions: false });
   const migrations = localMigrations().map(({ name, sha256 }) => ({ name, sha256 }));

@@ -41,6 +41,9 @@ export const TABLE_ORDER = Object.freeze([
   "public_holidays",
   // Legislative watch (phase 7): bills before their events.
   "law_watch_bills", "law_watch_events", "law_watch_runs", "knowledge_records", "knowledge_record_events",
+  // Legislative database: editions and laws before their versions, sections and links; history last.
+  "legislation_editions", "legislation_laws", "legislation_law_versions", "legislation_sections", "legislation_schedules",
+  "legislation_relations", "legislation_coverage_gaps", "legislation_history",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

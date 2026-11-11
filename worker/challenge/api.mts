@@ -24,6 +24,10 @@ import {
   authorityRank, CONTENT_KINDS, decide, LICENCES, loadKnowledge, loadRecord, parseRecordInput, publicRecord, rankRecords, recordEvent,
   saveRecordStatements, SOURCE_KINDS, TAX_CATEGORIES,
 } from "./knowledge.mts";
+import {
+  chooseEdition, compareEditions, getSection as getLegislationSection, historyFor, LegislationError, listLaws, loadEditions, paging as legislationPaging,
+  reviewList, setLawVersionStatus, setSectionStatus, STATUS_LABEL as LEGISLATION_STATUS_LABEL,
+} from "./legislation.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
@@ -652,6 +656,51 @@ async function route(ctx: Ctx): Promise<Response> {
         audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
       ]);
       return json({ saved: id }, 200, ctx.cors);
+    }
+    // ---------------------------------------------- legislation verification
+    if (path.startsWith("/api/challenge/review/legislation")) {
+      try {
+        if (path === "/api/challenge/review/legislation" && method === "GET") {
+          const editions = await loadEditions(db, "UG");
+          const choice = chooseEdition(editions, { editionId: url.searchParams.get("edition"), today: ctx.today });
+          if (!choice.edition) throw new HttpError(404, "No edition is available.");
+          const pg = legislationPaging(url.searchParams, 200, 100);
+          const [laws, sections] = await Promise.all([
+            listLaws(db, choice.edition, {}, { page: 1, pageSize: 100 }),
+            reviewList(db, choice.edition, { lawId: url.searchParams.get("law"), status: url.searchParams.get("status"), flagged: url.searchParams.get("flagged") === "1" }, pg),
+          ]);
+          return json({ editions, edition: choice.edition, laws: laws.laws, sections, statuses: LEGISLATION_STATUS_LABEL, canApprove: ctx.canApproveLaw }, 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/legislation/compare" && method === "GET") {
+          return json(await compareEditions(db, url.searchParams.get("law") ?? "", url.searchParams.get("from") ?? "", url.searchParams.get("to") ?? ""), 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/legislation/history" && method === "GET") {
+          const id = url.searchParams.get("id") ?? "";
+          if (!/^[a-z0-9][a-z0-9/-]{2,160}[A-Za-z0-9]?$/.test(id)) throw new HttpError(400, "Give a record id.");
+          return json({ id, history: await historyFor(db, id) }, 200, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/legislation\/([a-z0-9][a-z0-9-]{2,59})\/([a-z0-9][a-z0-9-]{1,59})\/status$/)) && method === "POST") {
+          const versionId = `${m[1]}/${m[2]}`;
+          const body = await readJson(request);
+          const result = await setLawVersionStatus(db, versionId, { status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl, chapter: body.chapter, commencementDate: body.commencementDate }, ctx.userId, ctx.nowIso, ctx.canApproveLaw);
+          await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "legislation.law.status", details: { versionId, status: result.status }, at: ctx.nowIso }).run();
+          return json(result, 200, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/legislation\/([a-z0-9][a-z0-9-]{2,59})\/([a-z0-9][a-z0-9-]{1,59})\/sections\/(\d{1,3}[A-Za-z]{0,2})\/status$/)) && method === "POST") {
+          const section = await getLegislationSection(db, `${m[1]}/${m[2]}`, (m[3] as string).toUpperCase());
+          const body = await readJson(request);
+          const result = await setSectionStatus(db, section.id, {
+            status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl, heading: body.heading, wording: body.wording,
+            wordingSourceUrl: body.wordingSourceUrl, wordingVerified: body.wordingVerified,
+          }, ctx.userId, ctx.nowIso, ctx.canApproveLaw);
+          await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "legislation.section.status", details: { sectionId: section.id, status: result.status }, at: ctx.nowIso }).run();
+          return json(result, 200, ctx.cors);
+        }
+        throw new HttpError(404, "Not found.");
+      } catch (error) {
+        if (error instanceof LegislationError) throw new HttpError(error.status, error.message);
+        throw error;
+      }
     }
     if (path === "/api/challenge/review/knowledge" && method === "GET") {
       const [records, events] = await Promise.all([

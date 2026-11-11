@@ -12,6 +12,7 @@ import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 import { handleChallengeRequest } from "./challenge/api.mts";
 import { runLawWatch } from "./challenge/lawwatch.mts";
+import { checkCitations, handleLegislationRequest, legislationEvidence, legislationForResponse, legislationSummary, retrieveLegislation } from "./challenge/legislation.mts";
 import { callClaude } from "./claude-research.mjs";
 
 const { createTaxAdvisor } = advisorModule;
@@ -56,6 +57,7 @@ const SYSTEM_INSTRUCTION = [
   "Do not present yourself as a lawyer, accountant, URA officer, or official tax assessment.",
   "Do not ask users to provide TINs, passwords, mobile-money PINs, account numbers, or confidential documents.",
   "Use plain text, not Markdown tables.",
+  "When a Uganda legislation block is supplied, cite Uganda legislation only from its [L#] entries, never state a section's conditions, rates or effect from its heading alone, never invent or paraphrase statutory wording that is not supplied, say when a provision is unverified or from an older edition, and mention later amendments it lists.",
 ].join(" ");
 
 function jsonResponse(data, status, corsHeaders = {}) {
@@ -661,12 +663,40 @@ async function handleWebSearch(body, query, env, corsHeaders) {
   });
 }
 
+/** Uganda legislation for a question from the legislative database (Supabase only); null if unavailable. */
+async function retrieveLegislationFor(env, question, taxPeriod) {
+  if (env.DATABASE_PROVIDER !== "supabase" || !env.UNANSWERED_QUESTIONS) return null;
+  try {
+    const startYear = String(taxPeriod || "").match(/^(20\d{2})\//)?.[1];
+    return await retrieveLegislation(env.UNANSWERED_QUESTIONS, question, {
+      onDate: startYear ? `${startYear}-07-01` : null,
+      today: new Date().toISOString().slice(0, 10),
+    });
+  } catch (error) {
+    console.warn("Legislation retrieval failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
+    return null;
+  }
+}
+
+function legislationIndicator(legislation) {
+  return {
+    kind: "legislation_database",
+    label: "Uganda legislative database",
+    used: legislation.provisions.length > 0,
+    detail: legislation.provisions.length
+      ? `${legislation.provisions.length} provision${legislation.provisions.length === 1 ? "" : "s"} retrieved; ${legislation.provisions.every((p) => p.wordingStatus === "none") ? "headings only, no wording held" : "some wording held"}; ${legislation.edition?.label ?? "no edition"}.`
+      : "No section matched this question.",
+  };
+}
+
 async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders) {
   if (body.providerConsent !== undefined && typeof body.providerConsent !== "boolean") {
     return jsonResponse({ error: "Provider consent must be true or false." }, 400, corsHeaders);
   }
 
   try {
+    const legislation = await retrieveLegislationFor(env, question, taxPeriod);
+    let unmatchedCitations = [];
     const records = await loadLegalSourceRecords(env);
     const legalSourceRegistry = createLegalSourceRegistry(records);
     const caseLawRegistry = createCaseLawRegistry();
@@ -677,11 +707,16 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
             ? `${context.question}\n\nUser-selected tax period: FY ${context.taxPeriod}.`
             : context.question;
           const knowledge = retrieveKnowledge(scopedQuestion);
-          const result = await callWebResearch(scopedQuestion, [], buildEvidence(knowledge), env);
+          const evidence = buildEvidence(knowledge);
+          if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
+          const result = await callWebResearch(scopedQuestion, [], evidence, env);
           if (result.fallback || !result.answer) {
             throw new Error("Grounded AI research is unavailable.");
           }
-          return result.answer;
+          if (!legislation) return result.answer;
+          const checked = checkCitations(result.answer, legislation);
+          unmatchedCitations = checked.unmatched;
+          return checked.answer;
         },
       }
       : null;
@@ -707,8 +742,9 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
       url: citation.url,
       sourceType: citation.authorityType,
     }));
+    const legislationText = legislation ? legislationSummary(legislation) : "";
     const responseBody = {
-      answer: result.answer,
+      answer: legislationText ? `${legislationText}\n\n${result.answer}` : result.answer,
       answerSource: "advisor",
       webGrounded: false,
       advisorMode: advisorModeFor(result),
@@ -751,6 +787,11 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
       citationCsv: toCitationCsv(researchReport),
       auditRecord: result.auditRecord,
     };
+    if (legislation) {
+      responseBody.legislation = legislationForResponse(legislation, unmatchedCitations);
+      responseBody.sourceIndicators.unshift(legislationIndicator(legislation));
+      if (legislation.provisions.some((p) => p.verificationStatus !== "verified")) responseBody.verificationRequired = true;
+    }
     return jsonResponse(responseBody, 200, corsHeaders);
   } catch (error) {
     console.error("Advisor request failed", {
@@ -1316,6 +1357,9 @@ export async function handleRequest(request, env) {
   if (requestUrl.pathname.startsWith("/api/challenge/")) {
     return handleChallengeRequest(request, env);
   }
+  if (requestUrl.pathname === "/api/legislation" || requestUrl.pathname.startsWith("/api/legislation/")) {
+    return handleLegislationRequest(request, env);
+  }
   if (requestUrl.pathname === "/admin" ||
       requestUrl.pathname.startsWith("/admin/")) {
     try {
@@ -1417,7 +1461,7 @@ export async function handleRequest(request, env) {
     : question;
 
   const knowledge = retrieveKnowledge(researchQuestion);
-  const isTaxQuestion = /\b(?:tax(?:es|ation|payer|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
+  const isTaxQuestion = /\b(?:tax(?:es|ed|ing|ation|payers?|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
     .test(question);
   if (!isTaxQuestion) {
     return jsonResponse({
@@ -1436,6 +1480,10 @@ export async function handleRequest(request, env) {
 
   const recordRequested = body.recordUnanswered === true;
   const evidence = buildEvidence(knowledge);
+  // Uganda legislation from the legislative database (structure, and wording
+  // only where entered from an official source), for the tax period asked about.
+  const legislation = await retrieveLegislationFor(env, question, taxPeriod);
+  if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
   const result = body.providerConsent === true
     ? await callWebResearch(
       researchQuestion,
@@ -1453,11 +1501,27 @@ export async function handleRequest(request, env) {
       webGrounded: result.webGrounded,
       answerSource: result.answerSource,
     };
+  let unmatchedCitations = [];
+  if (legislation) {
+    if (result.fallback) {
+      const summary = legislationSummary(legislation);
+      if (summary) answer.answer = `${summary}\n\n${answer.answer}`;
+    } else {
+      const checked = checkCitations(answer.answer, legislation);
+      answer.answer = checked.answer;
+      unmatchedCitations = checked.unmatched;
+    }
+  }
   const metadata = createAnswerMetadata(
     knowledge,
     answer.answerSource,
     answer.sources,
   );
+  if (legislation) {
+    metadata.legislation = legislationForResponse(legislation, unmatchedCitations);
+    metadata.sourceIndicators.unshift(legislationIndicator(legislation));
+    if (legislation.provisions.some((p) => p.verificationStatus !== "verified")) metadata.verificationRequired = true;
+  }
   const providerStatus = premiumRequired
     ? "premium-required"
     : result.reason === "provider_consent_required"
