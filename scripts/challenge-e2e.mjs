@@ -440,6 +440,26 @@ const legBlock = (await page.textContent(".tax-chat-legislation")) || "";
 check("chat answer lists the provision retrieved from the database", legBlock.includes("Income Tax Act (Cap. 338), s.80 – Foreign tax credit") && legBlock.includes("Unverified structure only"));
 const chatAnswer = (await page.textContent("#tax-chat-messages")) || "";
 check("chat answer says only headings are held and no wording is invented", chatAnswer.includes("cannot state the conditions, rates or legal effect") && chatAnswer.includes("may not reflect the law in force"));
+// Plain questions from the brief get a guided answer; a calculation continues across two messages.
+{
+  const lastAnswer = async () => (await page.$$eval("#tax-chat-messages .tax-chat-message-assistant", (nodes) => nodes.at(-1)?.textContent || "")) || "";
+  const waitForAnswers = async (count) => page.waitForFunction((n) => document.querySelectorAll("#tax-chat-messages .tax-chat-message-assistant").length >= n, count, { timeout: 10000 }).catch(() => {});
+  let answers = await page.$$eval("#tax-chat-messages .tax-chat-message-assistant", (n) => n.length);
+  await page.fill("#tax-chat-input", "Do I need a TIN to operate my business?");
+  await page.click("#tax-chat-form button[type=submit]");
+  await waitForAnswers(++answers);
+  const tin = await lastAnswer();
+  check("chat: 'Do I need a TIN?' gets a plain answer with its legal basis", tin.includes("A TIN (Taxpayer Identification Number) is your tax number from URA") && tin.includes("Tax identification number") && !tin.includes("Please ask me about a tax topic"));
+  await page.fill("#tax-chat-input", "How does the new VAT threshold affect my business?");
+  await page.click("#tax-chat-form button[type=submit]");
+  await waitForAnswers(++answers);
+  check("chat: the VAT threshold question asks for taxable supplies", (await lastAnswer()).includes("What is the value of your taxable supplies over 12 months?"));
+  await page.fill("#tax-chat-input", "about 180 million a year");
+  await page.click("#tax-chat-form button[type=submit]");
+  await waitForAnswers(++answers);
+  const followUp = await lastAnswer();
+  check("chat: the reply completes the calculation, with both figures and the conflict", followUp.includes("below the new VAT registration limits") && followUp.includes("does not choose"), followUp.slice(0, 200));
+}
 await page.click("#tax-chat-clear");
 check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
 

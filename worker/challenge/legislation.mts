@@ -690,7 +690,23 @@ const LAW_HINTS: Array<[RegExp, string]> = [
 ];
 
 export function lawHint(question: string): string | null {
-  return LAW_HINTS.find(([pattern]) => pattern.test(question))?.[1] ?? null;
+  return LAW_HINTS.find(([pattern]) => pattern.test(question))?.[1] ?? DOMAIN_HINTS.find(([pattern]) => pattern.test(question))?.[1] ?? null;
+}
+
+/** Ordinary words that point to one Act (used to narrow the search; unlike LAW_HINTS they stay in the search words). */
+const DOMAIN_HINTS: Array<[RegExp, string]> = [
+  [/\b(?:tin|deregist\w*|nil returns?|penalt(?:y|ies)|late|dormant|objections?|extension of time|tax agents?)\b/i, "tpca"],
+  [/\b(?:corporation tax|company tax|deduct\w*|expenses?|business income|chargeable income|paye|employees?|employer|withh?old\w*|salar(?:y|ies)|capital allowances?|wear and tear|rental income)\b/i, "ita"],
+];
+
+/** Specialist Acts appear only when the question is about them. */
+const SPECIALIST_LAWS: Array<[string, RegExp]> = [
+  ["eacop", /\b(?:pipeline|eacop|crude oil|petroleum)\b/i],
+  ["cmaa", /\b(?:mutual (?:administrative )?assistance|convention|exchange of information)\b/i],
+];
+function specialistAllowed(lawId: string, question: string): boolean {
+  const rule = SPECIALIST_LAWS.find(([id]) => id === lawId);
+  return !rule || rule[1].test(question);
 }
 
 /** Search words from a question: subject words only, with plain-language phrasing mapped to statutory terms. */
@@ -723,7 +739,7 @@ export interface LegislationRetrieval {
  * Steps 2 to 6 of an answer: subject words, search, related provisions,
  * edition for the period, wording when held, gaps that apply.
  */
-export async function retrieveLegislation(db: Database, question: string, { onDate, today, limit = 4 }: { onDate?: string | null; today: string; limit?: number }): Promise<LegislationRetrieval> {
+export async function retrieveLegislation(db: Database, question: string, { onDate, today, limit = 4, preferred = [] }: { onDate?: string | null; today: string; limit?: number; preferred?: Array<{ law: string; heading: string }> }): Promise<LegislationRetrieval> {
   const editions = await loadEditions(db, "UG");
   const choice = chooseEdition(editions, { onDate, today });
   const gapsAll = await coverageGaps(db, "UG");
@@ -737,7 +753,13 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
   const explicit = question.match(/\b(?:section|s\.)\s*(\d{1,3}[A-Za-z]{0,2})\b/i);
   const terms = subjectTerms(question);
   let found: SectionRecord[] = [];
-  if (explicit) {
+  // Sections a guided answer or impact scenario rests on come first (resolved by heading, never by number).
+  for (const ref of preferred.slice(0, limit)) {
+    const row = await db.prepare(`${SECTION_SELECT} WHERE v.edition_id = ? AND v.law_id = ? AND lower(s.heading) = lower(?) ORDER BY s.position LIMIT 1`).bind(edition.id, ref.law, ref.heading).first<Row>();
+    if (row && !found.some((s) => s.id === String(row.id))) found.push(toSection(row));
+  }
+  const preferredCount = found.length;
+  if (explicit && !preferredCount) {
     const titleWords = question.replace(explicit[0], " ");
     found = (await searchSections(db, edition, { q: `section ${explicit[1]} ${subjectTerms(titleWords)}`.trim() }, { page: 1, pageSize: 2 })).results;
   }
@@ -746,7 +768,8 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
     for (const lawId of hint ? [hint, null] : [null]) {
       const result = await searchSections(db, edition, { q: terms, lawId }, { page: 1, pageSize: limit * 2 });
       // With any-word matching keep only the strong hits.
-      found = result.mode === "all-words" ? result.results : result.results.filter((s, _i, all) => (s.rank ?? 0) >= ((all[0]?.rank ?? 0) * 0.6));
+      const hits = result.results.filter((s) => specialistAllowed(s.lawId, question));
+      found = result.mode === "all-words" ? hits : hits.filter((s, _i, all) => (s.rank ?? 0) >= ((all[0]?.rank ?? 0) * 0.6));
       if (found.length) break;
     }
   }

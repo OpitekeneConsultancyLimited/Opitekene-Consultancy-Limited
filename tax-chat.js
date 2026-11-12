@@ -399,6 +399,8 @@
     const clearButton = document.querySelector("#tax-chat-clear");
     const shortcuts = document.querySelector(".tax-chat-shortcuts");
     const conversation = [];
+    // An impact assessment waiting for the user's answers (sent back with the next message).
+    let pendingImpact = null;
     let busy = false;
 
     status.textContent = endpoint
@@ -487,7 +489,7 @@
           const heading = document.createElement("p");
           heading.className = "tax-chat-legislation-note";
           heading.textContent = impact.status === "needs_facts"
-            ? `To work out the effect for you (${impact.title}), TaxComp needs: ${impact.questions.map((q) => q.question).join(" ")}`
+            ? "Reply here with the answers (for example \"180 million\" or \"yes, resident\"), or use the full assessment."
             : `TaxComp's calculation (${impact.title}): ${impact.outcomes.map((o) => `${o.label}: ${o.result}`).join(" · ")}${impact.conflicts.length ? ` · ${impact.conflicts[0]}` : ""}`;
           const open = document.createElement("a");
           open.href = impact.link || "#impact-assessment";
@@ -707,6 +709,7 @@
               taxPeriod: taxPeriod || null,
               providerConsent,
               profile: root.taxCompDashboard?.chatProfile?.() || undefined,
+              impactContext: pendingImpact || undefined,
             }),
             signal: controller.signal,
           });
@@ -739,6 +742,7 @@
             recordUnanswered,
             providerConsent,
             profile: root.taxCompDashboard?.chatProfile?.() || undefined,
+            impactContext: pendingImpact || undefined,
           }),
           signal: controller.signal,
         });
@@ -809,6 +813,9 @@
 
       try {
         const result = await getAnswer(question, recordRequested, taxPeriod, providerConsent);
+        pendingImpact = result.impact?.status === "needs_facts" && result.impact.scenario
+          ? { scenario: result.impact.scenario, facts: result.impact.facts || {}, pending: (result.impact.questions || []).map((q) => q.key) }
+          : null;
         document.dispatchEvent(new CustomEvent("taxcomp:answer", { detail: { question, taxPeriod, result } }));
         renderMessage("assistant", result.answer, result.sources, result.calculators, {
           ...result,

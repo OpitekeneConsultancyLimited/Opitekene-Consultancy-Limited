@@ -395,6 +395,61 @@ export async function assessImpact(db: Database, calc: Calculator, input: Return
   return withholding(db, calc, r);
 }
 
+// ------------------------------------------------------------------ conversation
+/** The sections each scenario rests on (by heading), so the assistant cites them first. */
+export const SCENARIO_HEADINGS: Readonly<Record<Scenario, Array<{ law: string; heading: string }>>> = {
+  vat_registration: [{ law: "vata", heading: "Persons required or permitted to register" }, { law: "vata", heading: "Registration" }],
+  paye_change: [{ law: "ita", heading: "Withholding of tax by employers" }, { law: "ita", heading: "Employment income" }],
+  withholding_2026: [{ law: "ita", heading: "Withholding tax" }, { law: "ita", heading: "Withholding as final tax" }],
+};
+
+const AMOUNT_KEYS = new Set(["taxableSupplies12m", "taxableSupplies3m", "monthlyPay", "grossPayment", "stake", "statedAmount"]);
+const CHOICE_KEYS = new Set(["resident", "primaryEmployer", "vatRegistered"]);
+
+export interface ImpactContext { scenario: Scenario; facts: Record<string, unknown>; pending: string[] }
+
+/** The assessment a chat is in the middle of (sent back by the browser; validated like any input). */
+export function readImpactContext(value: unknown): ImpactContext | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  try {
+    const parsed = readImpactInput({ scenario: v.scenario, facts: v.facts ?? {} });
+    if (!parsed.scenario) return null;
+    const pending = Array.isArray(v.pending) ? v.pending.filter((k): k is string => typeof k === "string" && FACT_KEYS.includes(k)).slice(0, 6) : [];
+    return { scenario: parsed.scenario, facts: parsed.facts, pending };
+  } catch {
+    return null;
+  }
+}
+
+/** Answers to the pending questions in a follow-up message: "180 million", "yes, resident", "no, a second job". */
+export function answersFrom(message: string, pending: string[]): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const amounts = amountsIn(message);
+  const lower = message.toLowerCase();
+  const yesNo = lower.match(/\b(?:yes|yeah|yep|correct|true|no|nope|not)\b/g) ?? [];
+  let next = 0;
+  for (const key of pending) {
+    if (AMOUNT_KEYS.has(key)) {
+      const amount = amounts.shift();
+      if (amount !== undefined) out[key] = amount;
+    } else if (key === "paymentType") {
+      const type = interpretQuestion(message).facts.paymentType;
+      if (type) out[key] = type;
+    } else if (CHOICE_KEYS.has(key)) {
+      if (key === "resident" && /non-?resident|live (?:abroad|outside)/.test(lower)) out[key] = "no";
+      else if (key === "resident" && /\bresident\b|live in uganda/.test(lower)) out[key] = "yes";
+      else if (key === "primaryEmployer" && /\b(?:secondary|second|another|other) (?:job|employer|employment)\b|\bsecondary\b/.test(lower)) out[key] = "no";
+      else if (key === "primaryEmployer" && /\b(?:main|primary|only)\b/.test(lower)) out[key] = "yes";
+      else if (next < yesNo.length) {
+        out[key] = /^(?:no|nope|not)$/.test(yesNo[next] as string) ? "no" : "yes";
+        next += 1;
+      }
+    }
+  }
+  return out;
+}
+
 // ------------------------------------------------------------------ public API
 export interface ImpactEnv {
   UNANSWERED_QUESTIONS?: Database;
