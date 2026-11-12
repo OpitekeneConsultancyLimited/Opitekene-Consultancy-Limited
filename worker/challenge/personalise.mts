@@ -24,6 +24,9 @@ const YES_NO = ["yes", "no", "unknown"] as const;
 export const FACT_KEYS = ["employed", "selfEmployed", "employsStaff", "vatRegistered", "rentalIncome", "paysSuppliers", "paysNonResidents", "excisableGoods", "instruments", "foreignIncome", "smallTurnover"] as const;
 export type FactKey = (typeof FACT_KEYS)[number];
 export type Facts = Partial<Record<FactKey, (typeof YES_NO)[number]>>;
+export const PROGRESS = ["not_started", "in_progress", "done"] as const;
+export type ProgressStatus = (typeof PROGRESS)[number];
+export const PROGRESS_LABEL: Readonly<Record<ProgressStatus, string>> = { not_started: "Not started", in_progress: "In progress", done: "Done" };
 
 export interface Profile {
   userId: string;
@@ -35,6 +38,8 @@ export interface Profile {
   experienceMode: (typeof MODES)[number];
   interests: string[];
   facts: Facts;
+  /** Compliance Action Centre: the user's own progress on each obligation (by rule id). */
+  progress: Partial<Record<string, ProgressStatus>>;
   discovery: DiscoveryResult | null;
   discoveredAt: string | null;
   onboardingCompletedAt: string | null;
@@ -58,7 +63,7 @@ function pick<T extends readonly string[]>(list: T, value: unknown, label: strin
 
 /** Applies a partial update (any question may be skipped) to a profile. */
 export function applyProfileUpdate(current: Profile, body: Record<string, unknown>): Profile {
-  const next: Profile = { ...current, facts: { ...current.facts }, interests: [...current.interests] };
+  const next: Profile = { ...current, facts: { ...current.facts }, progress: { ...current.progress }, interests: [...current.interests] };
   const set = <K extends keyof Profile>(key: K, value: Profile[K] | undefined) => { if (value !== undefined) next[key] = value; };
   set("userCategory", pick(CATEGORIES, body.userCategory, "What best describes you"));
   set("purpose", pick(PURPOSES, body.purpose, "Personal or business"));
@@ -85,6 +90,16 @@ export function applyProfileUpdate(current: Profile, body: Record<string, unknow
       else next.facts[key as FactKey] = answer;
     }
   }
+  if (body.progress !== undefined) {
+    if (!body.progress || typeof body.progress !== "object" || Array.isArray(body.progress)) throw new ProfileError(400, "Progress must be an object.");
+    const ids = new Set(RULES.map((r) => r.id));
+    for (const [key, value] of Object.entries(body.progress as Record<string, unknown>)) {
+      if (!ids.has(key)) throw new ProfileError(400, `Unknown obligation: ${key.slice(0, 40)}.`);
+      const status = pick(PROGRESS, value, "Progress");
+      if (status === null || status === undefined || status === "not_started") delete next.progress[key];
+      else next.progress[key] = status;
+    }
+  }
   return next;
 }
 
@@ -93,29 +108,29 @@ type Row = Record<string, unknown>;
 const json = <T,>(value: unknown, fallback: T): T => { try { return typeof value === "string" ? JSON.parse(value) as T : fallback; } catch { return fallback; } };
 
 export function emptyProfile(userId: string): Profile {
-  return { userId, userCategory: null, purpose: null, businessType: null, businessSector: null, knowledgeLevel: null, experienceMode: "simple", interests: [], facts: {}, discovery: null, discoveredAt: null, onboardingCompletedAt: null, updatedAt: null };
+  return { userId, userCategory: null, purpose: null, businessType: null, businessSector: null, knowledgeLevel: null, experienceMode: "simple", interests: [], facts: {}, progress: {}, discovery: null, discoveredAt: null, onboardingCompletedAt: null, updatedAt: null };
 }
 
 export async function loadProfile(db: Database, userId: string): Promise<Profile | null> {
   const r = await db.prepare(`SELECT user_id AS "userId", user_category AS "userCategory", purpose, business_type AS "businessType", business_sector AS "businessSector",
-    knowledge_level AS "knowledgeLevel", experience_mode AS "experienceMode", interests_json AS "interestsJson", facts_json AS "factsJson", discovery_json AS "discoveryJson",
+    knowledge_level AS "knowledgeLevel", experience_mode AS "experienceMode", interests_json AS "interestsJson", facts_json AS "factsJson", obligation_status_json AS "progressJson", discovery_json AS "discoveryJson",
     discovered_at AS "discoveredAt", onboarding_completed_at AS "onboardingCompletedAt", updated_at AS "updatedAt" FROM user_profiles WHERE user_id = ?`).bind(userId).first<Row>();
   if (!r) return null;
   return {
     userId: String(r.userId), userCategory: (r.userCategory ?? null) as Category | null, purpose: (r.purpose ?? null) as Profile["purpose"], businessType: (r.businessType ?? null) as Profile["businessType"],
     businessSector: (r.businessSector ?? null) as Profile["businessSector"], knowledgeLevel: (r.knowledgeLevel ?? null) as Profile["knowledgeLevel"], experienceMode: String(r.experienceMode) as Profile["experienceMode"],
-    interests: json<string[]>(r.interestsJson, []), facts: json<Facts>(r.factsJson, {}), discovery: json<DiscoveryResult | null>(r.discoveryJson, null),
+    interests: json<string[]>(r.interestsJson, []), facts: json<Facts>(r.factsJson, {}), progress: json<Profile["progress"]>(r.progressJson, {}), discovery: json<DiscoveryResult | null>(r.discoveryJson, null),
     discoveredAt: (r.discoveredAt ?? null) as string | null, onboardingCompletedAt: (r.onboardingCompletedAt ?? null) as string | null, updatedAt: (r.updatedAt ?? null) as string | null,
   };
 }
 
 export async function saveProfile(db: Database, p: Profile, now: string, { completeOnboarding = false } = {}) {
-  await db.prepare(`INSERT INTO user_profiles (user_id, user_category, purpose, business_type, business_sector, knowledge_level, experience_mode, interests_json, facts_json, discovery_json, discovered_at, onboarding_completed_at, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  await db.prepare(`INSERT INTO user_profiles (user_id, user_category, purpose, business_type, business_sector, knowledge_level, experience_mode, interests_json, facts_json, obligation_status_json, discovery_json, discovered_at, onboarding_completed_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT (user_id) DO UPDATE SET user_category = EXCLUDED.user_category, purpose = EXCLUDED.purpose, business_type = EXCLUDED.business_type, business_sector = EXCLUDED.business_sector,
-      knowledge_level = EXCLUDED.knowledge_level, experience_mode = EXCLUDED.experience_mode, interests_json = EXCLUDED.interests_json, facts_json = EXCLUDED.facts_json,
+      knowledge_level = EXCLUDED.knowledge_level, experience_mode = EXCLUDED.experience_mode, interests_json = EXCLUDED.interests_json, facts_json = EXCLUDED.facts_json, obligation_status_json = EXCLUDED.obligation_status_json,
       discovery_json = EXCLUDED.discovery_json, discovered_at = EXCLUDED.discovered_at, onboarding_completed_at = COALESCE(user_profiles.onboarding_completed_at, EXCLUDED.onboarding_completed_at), updated_at = EXCLUDED.updated_at`)
-    .bind(p.userId, p.userCategory, p.purpose, p.businessType, p.businessSector, p.knowledgeLevel, p.experienceMode, JSON.stringify(p.interests), JSON.stringify(p.facts),
+    .bind(p.userId, p.userCategory, p.purpose, p.businessType, p.businessSector, p.knowledgeLevel, p.experienceMode, JSON.stringify(p.interests), JSON.stringify(p.facts), JSON.stringify(p.progress ?? {}),
       p.discovery ? JSON.stringify(p.discovery) : null, p.discoveredAt, completeOnboarding ? (p.onboardingCompletedAt ?? now) : p.onboardingCompletedAt, now, now).run();
 }
 

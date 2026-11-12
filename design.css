@@ -68,6 +68,7 @@ html[data-view="challenge"] main > [data-view]:not([data-view~="challenge"]) {
 .is-filtered-out { display: none !important; }
 html[data-tool-focus="tools"] main > [data-view="tools"]:not(#tools),
 html[data-tool-focus="estimator"] main > [data-view="tools"]:not(#estimator),
+html[data-tool-focus="impact-assessment"] main > [data-view="tools"]:not(#impact-assessment),
 html[data-tool-focus="multi-tax-analysis"] main > [data-view="tools"]:not(#multi-tax-analysis),
 html[data-tool-focus="international-tax"] main > [data-view="tools"]:not(#international-tax) {
   display: none !important;
@@ -1395,3 +1396,53 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .dash-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: var(--teal-50); color: var(--teal-700); vertical-align: middle; }
 .dash-badge.is-needs_verification { background: #fdf3e1; color: #7a5518; }
 @media (max-width: 520px) { .dash-companion-form { grid-template-columns: 1fr; } }
+/* Tax Impact Assessment (impact-assessment.js) */
+.impact-section { display: grid; gap: 16px; }
+.impact-intro { max-width: 72ch; color: var(--slate-600, #475569); }
+.impact-form { display: grid; gap: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-radius: 12px; max-width: 860px; }
+.impact-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.impact-field { display: grid; gap: 6px; min-width: 0; }
+.impact-field label { font-weight: 600; color: var(--navy-600); }
+.impact-field label span { font-weight: 400; color: var(--slate-600, #475569); }
+.impact-field textarea, .impact-field select, .impact-field input[type="text"], .impact-save input { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; background: #fff; }
+.impact-help { margin: 0; color: var(--slate-600, #475569); font-size: .9rem; }
+.impact-examples { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.impact-examples .chip { text-align: left; white-space: normal; min-height: 44px; }
+.impact-result { display: grid; gap: 14px; max-width: 980px; }
+.impact-result:empty { display: none; }
+.impact-understanding { margin: 0; font-weight: 600; color: var(--navy-600); }
+.impact-questions { display: grid; gap: 12px; padding: 16px; background: var(--slate-50); border: 1px solid var(--line); border-radius: 12px; }
+.impact-questions h3 { margin: 0; }
+.impact-mode { display: flex; gap: 8px; flex-wrap: wrap; }
+.impact-conclusion { margin: 0; padding: 14px 16px; background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--teal-600); border-radius: 8px; font-size: 1.02rem; line-height: 1.6; }
+.impact-conflict { margin: 0; padding: 10px 14px; background: #fdf3e1; color: #6b4a12; border-left: 4px solid #b7791f; border-radius: 6px; }
+.impact-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.impact-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.impact-table caption { text-align: left; padding: 10px 12px; font-weight: 700; color: var(--navy-600); }
+.impact-table th, .impact-table td { padding: 10px 12px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+.impact-table thead th { background: var(--slate-50); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--slate-700, #334155); }
+.impact-table tr.is-conflict th[scope="row"] { box-shadow: inset 3px 0 0 #b7791f; }
+.impact-whatif { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 12px 14px; background: var(--slate-50); border-radius: 10px; }
+.impact-whatif label { font-weight: 600; }
+.impact-whatif input[type="range"] { width: 100%; min-height: 44px; accent-color: var(--teal-600); }
+.impact-whatif output { font-weight: 700; font-size: 1.05rem; }
+.impact-actions { padding: 14px 16px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.impact-actions h4 { margin: 0 0 8px; }
+.impact-actions ul { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
+.impact-actions p { margin: 0; }
+.impact-details { padding: 4px 14px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.impact-details > summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; color: var(--navy-600); }
+.impact-steps, .impact-sources { display: grid; gap: 8px; padding-left: 20px; }
+.impact-sources { list-style: none; padding-left: 0; }
+.impact-sources li { padding: 10px 0; border-top: 1px solid var(--line); }
+.impact-sources dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px 12px; margin: 6px 0; font-size: .92rem; }
+.impact-sources dt { font-weight: 600; color: var(--navy-600); }
+.impact-sources dd { margin: 0; overflow-wrap: anywhere; }
+.impact-subhead { margin: 8px 0 4px; font-weight: 700; }
+.impact-limits { margin: 0; padding-left: 18px; color: var(--slate-600, #475569); font-size: .88rem; }
+.impact-save { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.impact-save label { grid-column: 1 / -1; font-weight: 600; }
+.impact-save .impact-help { grid-column: 1 / -1; }
+.law-amended-mark { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #fdf3e1; color: #6b4a12; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.dash-saved li, .dash-progress { display: grid; gap: 4px; }
+.dash-progress select { min-height: 44px; padding: 0 10px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; max-width: 260px; }

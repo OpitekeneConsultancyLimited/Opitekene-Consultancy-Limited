@@ -47,7 +47,7 @@
   }
 
   // Tax Tools shows either the catalogue or one tool, never everything at once.
-  const TOOL_SECTIONS = ["tools", "estimator", "multi-tax-analysis", "international-tax"];
+  const TOOL_SECTIONS = ["tools", "estimator", "impact-assessment", "multi-tax-analysis", "international-tax"];
   function setToolFocus(id) {
     root.dataset.toolFocus = TOOL_SECTIONS.includes(id) ? id : "tools";
   }

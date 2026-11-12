@@ -11,6 +11,8 @@ import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 import { handleChallengeRequest } from "./challenge/api.mts";
+import { handleImpactRequest, impactEvidence, assessImpact, interpretQuestion } from "./challenge/impact.mts";
+import taxCalculatorModule from "../tax-calculator.js";
 import { runLawWatch } from "./challenge/lawwatch.mts";
 import { checkCitations, handleLegislationRequest, legislationEvidence, legislationForResponse, legislationSummary, retrieveLegislation } from "./challenge/legislation.mts";
 import { applyProfileUpdate, emptyProfile, profileContext } from "./challenge/personalise.mts";
@@ -636,7 +638,7 @@ function advisorModeFor(result) {
   return "registry-review-required";
 }
 
-const TAX_TOPIC = /\b(?:tax(?:es|ation|payer|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal|stamp duty|capital gains?|deduction|exempt(?:ion)?|levy|tin)\b/i;
+const TAX_TOPIC = /\b(?:tax(?:es|ation|payer|able)?|ura|paye|vat|wht|withh?old(?:ing|s)?|winnings|stamp duty|payroll|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal|stamp duty|capital gains?|deduction|exempt(?:ion)?|levy|tin)\b/i;
 const CASE_TOPIC = /\b(?:case|cases|tribunal|tat|appeal|judgment|judgement|ruling|court|v\.?|vs\.?|versus)\b/i;
 const SEARCH_KINDS = Object.freeze({
   guidance: (query) => `Search current, authoritative public sources (URA, Parliament of Uganda, ULII, Ministry of Finance, reputable firms) for this Uganda tax question and summarise what they say in 3 to 6 short paragraphs, citing each source: ${query}`,
@@ -690,6 +692,33 @@ async function retrieveLegislationFor(env, question, taxPeriod) {
   }
 }
 
+/** The impact assessment for a chat question, when it matches a scenario TaxComp can calculate. */
+async function impactFor(env, question) {
+  if (env.DATABASE_PROVIDER !== "supabase" || !env.UNANSWERED_QUESTIONS) return null;
+  try {
+    const interpretation = interpretQuestion(question);
+    if (!interpretation.scenario) return null;
+    return await assessImpact(env.UNANSWERED_QUESTIONS, taxCalculatorModule, { question, scenario: null, userType: null, facts: {} });
+  } catch (error) {
+    console.warn("Impact assessment for chat failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
+    return null;
+  }
+}
+
+function impactNote(impact) {
+  if (impact.status === "assessed") return impactEvidence(impact);
+  return `TaxComp impact assessment (${impact.title}) needs these facts before it can calculate. Ask the user for them in plain words and do not compute figures yourself:\n${impact.questions.map((q) => `- ${q.question} (${q.help})`).join("\n")}`;
+}
+
+function impactForResponse(impact) {
+  return {
+    status: impact.status, scenario: impact.scenario, title: impact.title,
+    questions: impact.questions.map((q) => ({ key: q.key, question: q.question })),
+    outcomes: impact.outcomes, conflicts: impact.conflicts,
+    link: "#impact-assessment",
+  };
+}
+
 function legislationIndicator(legislation) {
   return {
     kind: "legislation_database",
@@ -711,6 +740,7 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
 
   try {
     const legislation = await retrieveLegislationFor(env, question, taxPeriod);
+    const impact = await impactFor(env, question);
     let unmatchedCitations = [];
     const records = await loadLegalSourceRecords(env);
     const legalSourceRegistry = createLegalSourceRegistry(records);
@@ -759,7 +789,9 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
       url: citation.url,
       sourceType: citation.authorityType,
     }));
-    const legislationText = legislation ? legislationSummary(legislation) : "";
+    const impactText = impact?.status === "assessed" && impact.explanation ? impact.explanation.simple
+      : impact?.status === "needs_facts" ? `To work out the effect for you, TaxComp needs: ${impact.questions.map((q) => q.question).join(" ")} Use Tax Tools → Tax Impact Assessment, or tell me here.` : "";
+    const legislationText = [impactText, legislation ? legislationSummary(legislation) : ""].filter(Boolean).join("\n\n");
     const responseBody = {
       answer: legislationText ? `${legislationText}\n\n${result.answer}` : result.answer,
       answerSource: "advisor",
@@ -808,6 +840,10 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
       responseBody.legislation = legislationForResponse(legislation, unmatchedCitations);
       responseBody.sourceIndicators.unshift(legislationIndicator(legislation));
       if (legislation.provisions.some((p) => p.verificationStatus !== "verified") || legislation.amendments.some((a) => a.verificationStatus !== "verified")) responseBody.verificationRequired = true;
+    }
+    if (impact) {
+      responseBody.impact = impactForResponse(impact);
+      responseBody.verificationRequired = true;
     }
     return jsonResponse(responseBody, 200, corsHeaders);
   } catch (error) {
@@ -1372,10 +1408,13 @@ export async function handleRequest(request, env) {
     return handleBillingRequest(request, env);
   }
   if (requestUrl.pathname.startsWith("/api/challenge/")) {
-    return handleChallengeRequest(request, env);
+    return handleChallengeRequest(request, env, taxCalculatorModule);
   }
   if (requestUrl.pathname === "/api/legislation" || requestUrl.pathname.startsWith("/api/legislation/")) {
     return handleLegislationRequest(request, env);
+  }
+  if (requestUrl.pathname === "/api/impact") {
+    return handleImpactRequest(request, env, taxCalculatorModule);
   }
   if (requestUrl.pathname === "/admin" ||
       requestUrl.pathname.startsWith("/admin/")) {
@@ -1478,7 +1517,7 @@ export async function handleRequest(request, env) {
     : question;
 
   const knowledge = retrieveKnowledge(researchQuestion);
-  const isTaxQuestion = /\b(?:tax(?:es|ed|ing|ation|payers?|able)?|ura|paye|vat|wht|withholding|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
+  const isTaxQuestion = /\b(?:tax(?:es|ed|ing|ation|payers?|able)?|ura|paye|vat|wht|withh?old(?:ing|s)?|winnings|stamp duty|payroll|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
     .test(question);
   if (!isTaxQuestion) {
     return jsonResponse({
@@ -1501,6 +1540,8 @@ export async function handleRequest(request, env) {
   // only where entered from an official source), for the tax period asked about.
   const legislation = await retrieveLegislationFor(env, question, taxPeriod);
   if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
+  const impact = await impactFor(env, question);
+  if (impact) evidence.text += `\n\n${impactNote(impact)}`;
   const profileNote = userContext(body.profile);
   if (profileNote) evidence.text += `\n\nUser context (from their TaxComp profile; not evidence of any fact about their tax position): ${profileNote}`;
   const result = body.providerConsent === true
@@ -1521,6 +1562,7 @@ export async function handleRequest(request, env) {
       answerSource: result.answerSource,
     };
   let unmatchedCitations = [];
+  if (impact?.status === "assessed" && result.fallback && impact.explanation) answer.answer = `${impact.explanation.simple}\n\n${answer.answer}`;
   if (legislation) {
     if (result.fallback) {
       const summary = legislationSummary(legislation);
@@ -1540,6 +1582,10 @@ export async function handleRequest(request, env) {
     metadata.legislation = legislationForResponse(legislation, unmatchedCitations);
     metadata.sourceIndicators.unshift(legislationIndicator(legislation));
     if (legislation.provisions.some((p) => p.verificationStatus !== "verified") || legislation.amendments.some((a) => a.verificationStatus !== "verified")) metadata.verificationRequired = true;
+  }
+  if (impact) {
+    metadata.impact = impactForResponse(impact);
+    metadata.verificationRequired = true;
   }
   const providerStatus = premiumRequired
     ? "premium-required"

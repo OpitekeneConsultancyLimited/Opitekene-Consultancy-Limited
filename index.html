@@ -34,8 +34,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css?v=tax-year-1">
-    <link rel="stylesheet" href="design.css?v=tax-year-1">
-    <script src="site-router.js?v=landing-1" defer></script>
+    <link rel="stylesheet" href="design.css?v=impact-1">
+    <script src="site-router.js?v=impact-1" defer></script>
     <script src="kb-search.js?v=kb-2" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
     <script src="tax-rules.js?v=tax-year-1" defer></script>
@@ -50,9 +50,10 @@
     <script src="app.js?v=tax-year-1" defer></script>
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
-    <script src="tax-chat.js?v=amendments-1" defer></script>
+    <script src="tax-chat.js?v=impact-1" defer></script>
     <script src="international-tax.js?v=international-tax-2" defer></script>
-    <script src="law-index.js?v=tax-year-1" defer></script>
+    <script src="law-index.js?v=impact-1" defer></script>
+    <script src="impact-assessment.js?v=impact-1" defer></script>
     <script src="intl-tax-reasoning.js?v=intl-2" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
@@ -62,7 +63,7 @@
     <script src="challenge-docx.js?v=challenge-2" defer></script>
     <script src="challenge-calendar.js?v=challenge-1" defer></script>
     <script src="challenge-app.js?v=amendments-1" defer></script>
-    <script src="dashboard.js?v=tax-year-1" defer></script>
+    <script src="dashboard.js?v=impact-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -320,6 +321,7 @@
         <div class="nav-menu" data-menu>
           <button type="button" class="nav-menu-toggle" data-menu-toggle data-nav-view="tools" aria-expanded="false" aria-controls="menu-tools">Tax Tools<span class="nav-caret" aria-hidden="true"></span></button>
           <div class="nav-menu-panel" id="menu-tools">
+            <a href="#impact-assessment">Tax Impact Assessment</a>
             <a href="#calc-individual">Income Tax</a>
             <a href="#calc-paye">PAYE Calculator</a>
             <a href="#calc-vat">VAT Calculator</a>
@@ -588,6 +590,11 @@
             <p>Assess one transaction across tax heads.</p>
             <a class="btn btn-small" href="#multi-tax-analysis">Open Calculator</a>
           </article>
+          <article class="tool-card" data-tool-card="business" data-keywords="impact assessment amendment 2026 change affect vat threshold paye withholding scenario what if">
+            <h3>Tax Impact Assessment</h3>
+            <p>Describe your situation; see how a tax change affects you, before and after.</p>
+            <a class="btn btn-small" href="#impact-assessment">Open Assessment</a>
+          </article>
           <article class="tool-card" data-tool-card="international" data-keywords="cross-border treaty non-resident transfer pricing">
             <h3>International Tax</h3>
             <p>Cross-border issues for people and businesses operating in or with Uganda.</p>
@@ -595,6 +602,55 @@
           </article>
         </div>
         <p class="catalogue-empty" id="tool-search-empty" hidden>No calculator matches that search. Try a broader word, or <a href="#assistant">ask the assistant</a>.</p>
+      </section>
+
+      <section class="impact-section page-block" id="impact-assessment" data-view="tools" aria-labelledby="impact-title">
+        <a class="back-link" data-back="impact-assessment" href="#tools">← All calculators</a>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow">TAX IMPACT ASSESSMENT</p>
+            <h2 id="impact-title">How does a tax change affect you?</h2>
+            <p class="impact-intro">Describe your situation in your own words. TaxComp asks for any missing facts, then shows your position before and after the change, the working, the law it relies on and its legal status, and what to do. Figures come from TaxComp's calculators, not from AI.</p>
+          </div>
+        </div>
+        <form id="impact-form" class="impact-form" aria-labelledby="impact-title">
+          <div class="impact-field">
+            <label for="impact-question">Your situation or question</label>
+            <textarea id="impact-question" rows="3" maxlength="2000" placeholder="e.g. My business earns UGX 180 million a year. Do I need to register for VAT after the 2026 changes?"></textarea>
+          </div>
+          <div class="impact-row">
+            <div class="impact-field">
+              <label for="impact-scenario">Or choose a check <span>(optional)</span></label>
+              <select id="impact-scenario">
+                <option value="">Work it out from my description</option>
+                <option value="vat_registration">VAT registration threshold</option>
+                <option value="paye_change">PAYE: FY 2025/26 and FY 2026/27</option>
+                <option value="withholding_2026">Withholding on payments changed in 2026</option>
+              </select>
+            </div>
+            <div class="impact-field">
+              <label for="impact-user-type">You are <span>(optional)</span></label>
+              <select id="impact-user-type">
+                <option value="">Prefer not to say</option>
+                <option value="employee">An employee</option>
+                <option value="employer">An employer</option>
+                <option value="sole_proprietor">A sole proprietor</option>
+                <option value="company">A company</option>
+                <option value="landlord">A landlord</option>
+                <option value="vat_registered">A VAT-registered business</option>
+                <option value="not_vat_registered">A business not registered for VAT</option>
+                <option value="importer_exporter">An importer or exporter</option>
+                <option value="accountant">An accountant</option>
+                <option value="consultant">A tax consultant</option>
+                <option value="student">A tax student</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn">Assess the impact</button>
+          <p class="impact-help">Try an example:</p>
+          <ul class="impact-examples" id="impact-examples"></ul>
+        </form>
+        <div id="impact-result" class="impact-result" aria-live="polite"></div>
       </section>
 
       <section class="estimator-section" id="estimator" data-view="tools" aria-labelledby="estimator-title">
@@ -2306,6 +2362,7 @@
         </div>
           <nav class="footer-col" aria-label="Tax Tools">
             <p class="footer-col-title">Tax Tools</p>
+            <a href="#impact-assessment">Tax Impact Assessment</a>
             <a href="#calc-individual">Income Tax</a>
             <a href="#calc-paye">PAYE Calculator</a>
             <a href="#calc-vat">VAT Calculator</a>

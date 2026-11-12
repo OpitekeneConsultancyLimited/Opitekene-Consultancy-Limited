@@ -29,11 +29,14 @@ import {
   listAmendments, reviewList, setAmendmentStatus, setLawVersionStatus, setSectionStatus, STATUS_LABEL as LEGISLATION_STATUS_LABEL,
 } from "./legislation.mts";
 import {
-  applyProfileUpdate, CATEGORY_LABEL, dashboardFor, discoverObligations, emptyProfile, FACT_KEYS, INTERESTS, loadProfile, OBLIGATION_STATUS_LABEL, ProfileError,
+  applyProfileUpdate, CATEGORY_LABEL, dashboardFor, discoverObligations, emptyProfile, FACT_KEYS, INTERESTS, loadProfile, OBLIGATION_STATUS_LABEL, PROGRESS_LABEL, ProfileError,
   recommendations, saveProfile, type Profile,
 } from "./personalise.mts";
+import { assessImpact, ImpactError, readImpactInput, type Calculator, type ImpactInput, type ImpactResult } from "./impact.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
+
+type Row = Record<string, unknown>;
 
 export const CONSENT_VERSION = "2026-11-10";
 export const DOCUMENTS_BUCKET = "assessment-documents";
@@ -200,6 +203,7 @@ interface Ctx {
   email: string;
   reviewer: boolean;
   canApproveLaw: boolean;
+  calc: Calculator | null;
   now: Date;
   nowIso: string;
   today: string;
@@ -555,7 +559,7 @@ async function route(ctx: Ctx): Promise<Response> {
       return {
         exists: Boolean(profile), profile: effective, dashboard: dashboardFor(effective),
         recommendations: await recommendations(db, profile, ctx.userId, ctx.today),
-        options: { categories: CATEGORY_LABEL, interests: INTERESTS, facts: FACT_KEYS, obligationStatuses: OBLIGATION_STATUS_LABEL },
+        options: { categories: CATEGORY_LABEL, interests: INTERESTS, facts: FACT_KEYS, obligationStatuses: OBLIGATION_STATUS_LABEL, progress: PROGRESS_LABEL },
       };
     };
     try {
@@ -581,6 +585,49 @@ async function route(ctx: Ctx): Promise<Response> {
       if (error instanceof ProfileError) throw new HttpError(error.status, error.message);
       throw error;
     }
+  }
+
+  // ------------------------------------------------- saved impact assessments
+  // The server re-runs the assessment from the saved inputs; a result sent by
+  // the browser is never stored.
+  if (path === "/api/challenge/assessments" || path.startsWith("/api/challenge/assessments/")) {
+    if (path === "/api/challenge/assessments" && method === "GET") {
+      const { results } = await db.prepare(`SELECT id, title, scenario, input_json AS "inputJson", result_json AS "resultJson", created_at AS "createdAt" FROM saved_assessments WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`).bind(ctx.userId).all<Row>();
+      return json({ assessments: results.map((r) => {
+        const result = JSON.parse(String(r.resultJson)) as ImpactResult;
+        return { id: String(r.id), title: String(r.title), scenario: String(r.scenario), createdAt: String(r.createdAt), input: JSON.parse(String(r.inputJson)), summary: result.explanation?.simple ?? "", outcomes: result.outcomes, conflicts: result.conflicts };
+      }) }, 200, ctx.cors);
+    }
+    if (path === "/api/challenge/assessments" && method === "POST") {
+      if (!ctx.calc) throw new HttpError(503, "Saving assessments is not available yet.");
+      const body = await readJson(request);
+      const title = String(body.title ?? "").trim().replace(/\s+/g, " ").slice(0, 160);
+      if (title.length < 2) throw new HttpError(400, "Give the assessment a short name.");
+      let input;
+      let result: ImpactResult;
+      try {
+        input = readImpactInput((body.input ?? {}) as ImpactInput);
+        result = await assessImpact(db, ctx.calc, input);
+      } catch (error) {
+        if (error instanceof ImpactError) throw new HttpError(error.status, error.message);
+        if (error instanceof RangeError) throw new HttpError(400, error.message);
+        throw error;
+      }
+      if (result.status !== "assessed" || !result.scenario) throw new HttpError(400, "Only a completed assessment can be saved. Answer the remaining questions first.");
+      const count = await db.prepare(`SELECT count(*)::int AS n FROM saved_assessments WHERE user_id = ?`).bind(ctx.userId).first<Row>();
+      if (Number(count?.n ?? 0) >= 50) throw new HttpError(409, "You have 50 saved assessments. Delete one to save another.");
+      const id = crypto.randomUUID();
+      await db.prepare(`INSERT INTO saved_assessments (id, user_id, title, scenario, input_json, result_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+        .bind(id, ctx.userId, title, result.scenario, JSON.stringify(input), JSON.stringify(result), ctx.nowIso).run();
+      return json({ saved: id, result }, 201, ctx.cors);
+    }
+    const m = path.match(/^\/api\/challenge\/assessments\/([0-9a-f-]{36})$/);
+    if (m && method === "DELETE") {
+      const done = await db.prepare(`DELETE FROM saved_assessments WHERE id = ? AND user_id = ?`).bind(m[1], ctx.userId).run();
+      if (!done.meta.changes) throw new HttpError(404, "That saved assessment was not found.");
+      return json({ deleted: m[1] }, 200, ctx.cors);
+    }
+    throw new HttpError(405, "Use GET, POST or DELETE.");
   }
 
   if (path === "/api/challenge/knowledge" && method === "GET") {
@@ -887,7 +934,7 @@ async function route(ctx: Ctx): Promise<Response> {
   throw new HttpError(404, "Not found.");
 }
 
-export async function handleChallengeRequest(request: Request, env: ChallengeEnv): Promise<Response> {
+export async function handleChallengeRequest(request: Request, env: ChallengeEnv, calc: Calculator | null = null): Promise<Response> {
   const cors = corsFor(request, env);
   if (!cors) return json({ error: "Origin is not allowed." }, 403, {});
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
@@ -916,7 +963,7 @@ export async function handleChallengeRequest(request: Request, env: ChallengeEnv
   try {
     const { reviewer, canApproveLaw } = await isActiveReviewer(db, claims.sub);
     return await route({
-      request, env, db, cors, userId: claims.sub, email: String(claims.email ?? ""), reviewer, canApproveLaw,
+      request, env, db, cors, userId: claims.sub, email: String(claims.email ?? ""), reviewer, canApproveLaw, calc,
       now, nowIso: now.toISOString(), today: todayIso(now),
     });
   } catch (error) {

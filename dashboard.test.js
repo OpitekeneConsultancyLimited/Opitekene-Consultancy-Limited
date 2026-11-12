@@ -13,6 +13,8 @@ test("the brief's example questions reach the right tools", () => {
   assert.equal(route("What tax obligations apply to my employees?"), "#calc-paye");
   assert.equal(route("Is my landlord income taxed?"), "#calc-rental");
   assert.equal(route("Explain the arm's length principle"), "assistant", "anything else goes to the AI assistant");
+  assert.equal(route("How does the new VAT threshold affect my business?"), "#impact-assessment");
+  assert.equal(route("How did the 2026 amendments change my PAYE?"), "#impact-assessment");
 });
 
 test("every intent has a simple and a professional explanation, and states no rate", () => {
