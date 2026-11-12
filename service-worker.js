@@ -1,9 +1,11 @@
 // Bump on every release that changes styles.css: CSS is served cache-first and
 // the cache match ignores ?v= query strings.
-const CACHE_NAME = "taxcomp-app-v47";
+const CACHE_NAME = "taxcomp-app-v48";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./taxcomp/",
+  "./taxcomp/index.html",
   "./styles.css",
   "./design.css",
   "./site-router.js",
@@ -92,7 +94,7 @@ self.addEventListener("fetch", (event) => {
     } catch (error) {
       if (cachedResponse) return cachedResponse;
       if (request.mode === "navigate") {
-        const offlinePage = await cache.match("./index.html");
+        const offlinePage = await cache.match(requestUrl.pathname.includes("/taxcomp/") ? "./taxcomp/index.html" : "./index.html");
         if (offlinePage) return offlinePage;
       }
       throw error;

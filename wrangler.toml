@@ -21,7 +21,7 @@ SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
 # FLW_SECRET_KEY and FLW_WEBHOOK_HASH secrets are set (Flutterwave dashboard);
 # until then the site says online payment is being set up.
 BILLING_ENABLED = "true"
-PUBLIC_SITE_URL = "https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/"
+PUBLIC_SITE_URL = "https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/taxcomp/"
 # ClamAV document scanner (scanner/README.md). Set to the deployed https URL;
 # also needs the MALWARE_SCANNER_TOKEN secret. Empty = uploads stay disabled.
 MALWARE_SCANNER_URL = ""

@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
-const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "taxcomp", "index.html"), "utf8");
+const corporate = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 
 test("every element a front-end script looks up exists exactly once", () => {
   // Exits non-zero (and execFileSync throws) on a missing or duplicated id.
@@ -26,12 +27,12 @@ test("every top-level section belongs to a page view", () => {
   }
 });
 
-test("navigation covers the six sections of the brief", () => {
-  for (const hash of ["#home", "#tools", "#calc-paye", "#calc-vat", "#calc-withholding", "#calc-rental", "#calc-individual",
-    "#kb-guides", "#kb-laws", "#kb-cases", "#kb-updates", "#kb-compliance", "#assistant", "#workspace", "#about"]) {
+test("TaxComp navigation: dashboard, assistant, tools, law and knowledge, compliance, workspace", () => {
+  for (const hash of ["#workspace", "#assistant", "#tools", "#impact-assessment", "#calc-paye", "#calc-vat", "#calc-withholding", "#calc-rental", "#calc-individual", "#calc-company",
+    "#kb-guides", "#kb-laws", "#kb-cases", "#kb-updates", "#kb-compliance", "#ws-dashboard-discover", "#challenge", "#ws-overview", "#ws-reports", "#ws-settings", "#about"]) {
     assert.ok(html.includes(`href="${hash}"`), `nav link ${hash}`);
   }
-  assert.match(html, /<script src="site-router\.js\?v=[^"]+" defer><\/script>/);
+  assert.match(html, /<script src="\.\.\/site-router\.js\?v=[^"]+" defer><\/script>/);
 });
 
 test("the public quick calculator takes every rate from the tax engine", () => {
@@ -42,7 +43,7 @@ test("the public quick calculator takes every rate from the tax engine", () => {
   // No hard-coded tax rates or bands (e.g. 0.18, 0.3, 235000) in the front page.
   assert.ok(!/\b0\.\d+/.test(front), "no decimal tax rates in front-page.js");
   assert.ok(!/\b\d{3},?000\b/.test(front.replace(/2026/g, "")), "no hard-coded money thresholds in front-page.js");
-  assert.match(html, /<script src="front-page\.js\?v=[^"]+" defer><\/script>/);
+  assert.match(corporate, /<script src="front-page\.js\?v=[^"]+" defer><\/script>/);
 });
 
 test("the router never opens the sign-in wall and leaves auth fragments alone", () => {

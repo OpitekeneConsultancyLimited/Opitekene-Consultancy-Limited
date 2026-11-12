@@ -10,7 +10,7 @@ const reasoning = require("./intl-tax-reasoning.js");
 const intl = require("./international-tax.js");
 
 const { detectFacts, nextQuestions, analyse, PRIMER, TOPICS, DOMESTIC } = reasoning;
-const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "taxcomp", "index.html"), "utf8");
 const calculatorOptions = new Set([...html.matchAll(/<option value="([A-Za-z]+)">/g)].map((m) => m[1]));
 const seedSql = fs.readFileSync(path.join(__dirname, "supabase", "migrations", "20261112000100_knowledge_base.sql"), "utf8");
 

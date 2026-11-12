@@ -86,9 +86,12 @@
     button.addEventListener("click", installTaxComp);
   });
 
+  const scriptSrc = document.currentScript && document.currentScript.src;
+  const serviceWorkerUrl = scriptSrc && typeof URL === "function" ? new URL("service-worker.js", scriptSrc).href : "./service-worker.js";
   if ("serviceWorker" in navigator && window.isSecureContext) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js")
+      // The worker sits beside this script (the site root), so its scope covers the corporate site and taxcomp/.
+      navigator.serviceWorker.register(serviceWorkerUrl)
         .catch((error) => {
           console.error("TaxComp offline support could not be enabled.", error);
         });

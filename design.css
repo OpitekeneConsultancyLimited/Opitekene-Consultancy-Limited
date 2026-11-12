@@ -541,8 +541,8 @@ main > [data-view]:not(.home-hero) {
 .faq-item summary:focus-visible { outline: 3px solid var(--teal-400); outline-offset: -3px; }
 .faq-item p { margin: 0; padding: 0 20px 18px; color: var(--muted); font-size: 14px; }
 
-/* ---------- public front page (#auth-gate), owner's sample layout ---------- */
-#auth-gate {
+/* ---------- owner's layout: corporate site (body.corp) and the TaxComp sign-in screen (#auth-gate) ---------- */
+#auth-gate, body.corp {
   --pc-navy-950: #0a1021;
   --pc-navy-900: #111b33;
   --pc-navy-800: #1b2a4a;
@@ -756,7 +756,7 @@ main > [data-view]:not(.home-hero) {
   cursor: pointer;
 }
 .pc-tab:hover { background: var(--pc-navy-800); color: #fff; }
-.pc-tab[aria-selected="true"] { background: var(--pc-teal-500); color: #fff; }
+.pc-tab[aria-selected="true"] { background: var(--pc-teal-600); color: #fff; }
 .pc-tab:focus-visible { outline: 3px solid var(--pc-teal-400); outline-offset: 2px; }
 .pc-calc-body { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; padding: 40px; }
 .pc-panel { display: grid; gap: 18px; }
@@ -888,7 +888,7 @@ main > [data-view]:not(.home-hero) {
 .pc-footer-contact { font-size: 12px; text-align: right; }
 .pc-footer-contact p,
 .pc-footer-bottom p { margin: 0; }
-.pc-footer-bottom { display: flex; justify-content: space-between; gap: 16px; padding-top: 32px; color: var(--pc-slate-500); font-size: 12px; }
+.pc-footer-bottom { display: flex; justify-content: space-between; gap: 16px; padding-top: 32px; color: #94a3b8; font-size: 12px; }
 .pc-footer-tagline { color: var(--pc-teal-400); font-style: italic; }
 
 @media (max-width: 1100px) {
@@ -1446,3 +1446,51 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .law-amended-mark { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: #fdf3e1; color: #6b4a12; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .dash-saved li, .dash-progress { display: grid; gap: 4px; }
 .dash-progress select { min-height: 44px; padding: 0 10px; border: 1px solid var(--slate-300); border-radius: 8px; font: inherit; max-width: 260px; }
+/* ---------------------------------------------------------------
+   Corporate site (index.html) and the TaxComp sign-in screen
+   (taxcomp/index.html #auth-gate). Builds on the pc-* design system.
+   --------------------------------------------------------------- */
+body.corp { margin: 0; background: #fff; }
+.corp .skip-link { position: absolute; left: -9999px; top: 8px; z-index: 100; padding: 10px 14px; background: var(--pc-navy-900); color: #fff; border-radius: 8px; }
+.corp .skip-link:focus { left: 16px; }
+.corp section[id] { scroll-margin-top: 84px; }
+.corp-two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 48px; align-items: start; }
+.corp-left { text-align: left; margin: 0; }
+.corp-left p { margin-left: 0; }
+.corp-why { padding: 28px; background: var(--pc-slate-50); border: 1px solid var(--pc-slate-200); border-radius: 16px; }
+.corp-why h3, .corp-programmes h3 { margin: 0 0 16px; color: var(--pc-navy-900); font-size: 1.15rem; }
+.corp-services { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+.corp-service { display: flex; flex-direction: column; gap: 10px; padding: 22px; background: #fff; border: 1px solid var(--pc-slate-200); border-radius: 14px; min-width: 0; }
+.corp-service h3 { margin: 0; color: var(--pc-navy-900); font-size: 1.05rem; }
+.corp-service p { margin: 0; color: var(--pc-slate-700); line-height: 1.6; flex: 1; }
+.corp-programmes { padding: 28px; border: 1px solid var(--pc-slate-200); border-radius: 16px; }
+.corp-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.corp-chips li { padding: 8px 14px; border-radius: 999px; background: var(--pc-slate-50); border: 1px solid var(--pc-slate-200); color: var(--pc-navy-900); font-weight: 600; }
+.corp-insight { max-width: 860px; margin: 0 auto; padding: 28px; background: #fff; border: 1px solid var(--pc-slate-200); border-radius: 16px; }
+.corp-insight h3 { margin: 4px 0 12px; color: var(--pc-navy-900); font-size: 1.3rem; }
+.corp-insight p { color: var(--pc-slate-700); line-height: 1.7; }
+.corp-insight-meta { margin: 0; color: var(--pc-teal-600); font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+.corp-quick { background: #fff; color: var(--pc-navy-900); border-radius: 16px; padding: 18px; }
+.corp-quick-title { margin: 0 0 12px; font-size: 1.1rem; }
+.corp-quick .pc-calc-body { grid-template-columns: minmax(0, 1fr); }
+.corp-footer-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.corp-footer-links a { color: #fff; text-decoration: none; opacity: .9; }
+.corp-footer-links a:hover, .corp-footer-links a:focus-visible { text-decoration: underline; opacity: 1; }
+.corp-legal h2 { margin: 0 0 12px; color: var(--pc-navy-900); }
+.corp-legal { padding-block: 48px; border-top: 1px solid var(--pc-slate-200); }
+.corp-legal .plain-list { max-width: 860px; line-height: 1.7; color: var(--pc-slate-700); }
+@media (max-width: 860px) { .corp-two { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+
+.tc-gate-header { border-bottom: 1px solid var(--pc-slate-200); background: #fff; }
+.tc-gate-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; flex-wrap: wrap; }
+.tc-gate-back { color: var(--pc-navy-900); font-weight: 600; text-decoration: none; }
+.tc-gate-back:hover, .tc-gate-back:focus-visible { text-decoration: underline; }
+.tc-gate { padding-block: 56px 72px; background: var(--pc-slate-50); }
+.tc-gate-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); gap: 48px; align-items: start; }
+.tc-gate-copy h1 { margin: 12px 0 14px; color: var(--pc-navy-900); font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; text-wrap: balance; }
+.tc-gate-copy .pc-lead { color: var(--pc-slate-700); }
+.tc-gate-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.tc-gate-footer { padding-block: 20px; background: #fff; border-top: 1px solid var(--pc-slate-200); color: var(--pc-slate-700); font-size: .9rem; }
+@media (max-width: 900px) { .tc-gate-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; } }.tc-gate .auth-gate-card { padding: 28px 26px; border: 1px solid var(--pc-slate-200); border-radius: 20px; background: #fff; color: var(--pc-navy-900); box-shadow: 0 10px 30px -5px rgba(27, 42, 74, 0.08); }
+.tc-gate .pc-online-plans { color: var(--pc-slate-700); }
+.tc-gate-header .brand { text-decoration: none; }
