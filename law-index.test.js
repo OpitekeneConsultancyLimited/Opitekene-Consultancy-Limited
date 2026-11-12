@@ -82,3 +82,10 @@ test("2026 amendments: grouped by amending Act, with both figures shown when the
   assert.deepEqual(lawIndex.figureLines(data.amendments[1]), []);
   assert.deepEqual(lawIndex.groupAmendments(null), []);
 });
+test("2026 before-and-after cards: both figures when the Bill and the reported Act differ", () => {
+  const conflict = lawIndex.beforeAfter({ previousFigure: "UGX 150,000,000", billFigure: "UGX 250,000,000", reportedFigure: "UGX 300,000,000", figuresDiffer: true });
+  assert.deepEqual(conflict, { before: "UGX 150,000,000", after: [["Published Bill", "UGX 250,000,000"], ["Reported as enacted", "UGX 300,000,000"]] });
+  assert.deepEqual(lawIndex.beforeAfter({ previousFigure: "UGX 1,550 per litre", billFigure: "UGX 1,750 per litre", reportedFigure: "UGX 1,750 per litre", figuresDiffer: false }).after, [["Reported as enacted", "UGX 1,750 per litre"]]);
+  assert.deepEqual(lawIndex.beforeAfter({ previousFigure: null, billFigure: "UGX 1", reportedFigure: null, figuresDiffer: false }), { before: "None", after: [["Published Bill", "UGX 1"]] });
+  assert.ok(lawIndex.HEADLINE_CHANGES.includes("vat-2026-s7-registration-threshold"));
+});

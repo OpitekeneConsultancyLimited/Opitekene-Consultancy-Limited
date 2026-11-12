@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-12 - Tax-year switch, before-and-after cards, 2026 changes on the dashboard
+
+The useful ideas from the owner's React mock-up are built into the live site using sourced data. The mock-up's unconfirmed Act numbers, assent dates and "verified" labels were left out.
+
+- **PAYE tax-year switch.** The PAYE calculator has a "Tax year" choice: FY 2026/27 (the default) or FY 2025/26. Each result shows the same pay under the other year and the monthly difference.
+  - The FY 2025/26 resident bands are the ones the Income Tax (Amendment) Act, 2026 replaced: nil to UGX 235,000 a month, then 10%, 20% and 30%, plus 10% more above UGX 10m.
+  - They are pending verification and are not approved for filing.
+  - FY 2025/26 covers one resident, primary employer only. A non-resident or secondary employment is refused rather than estimated.
+  - New functions: `calculatePayeForFinancialYear` and `comparePayeAcrossFinancialYears`.
+- **Before-and-after cards** lead "Changes made in 2026" in the Knowledge Centre. They cover the VAT threshold, fuel, cement, sugar and motorcycle stamp duty. Where the Bill and the reported Act differ, both figures are shown.
+- **"Changed in 2026: may affect you"** on the dashboard. The changes shown depend on the user's category and answers: PAYE bands, the VAT threshold, VAT withholding with an e-invoice, excise, and monthly rental returns. Professionals also see a summary of the register.
+  - The figures come from the amendments register, never from code.
+  - The out-of-date "2026 amendments are not yet captured" suggestion is replaced.
+- **Accessibility.** The calculator's help text, optional labels, form note and results table headers now meet WCAG AA contrast, and the results table can be scrolled with the keyboard. These problems were found when the calculator was added to the axe scan.
+- Service worker `taxcomp-app-v45`.
+
 ## 2026-11-11 - Signed-in visitors land on their dashboard
 
 - Opening the site while signed in, with no section in the address, now goes to My Workspace → My dashboard instead of Home. Home is still in the menu, and links to a section (for example `#tools` or `#calc-paye`) open that section. Service worker `taxcomp-app-v44`.

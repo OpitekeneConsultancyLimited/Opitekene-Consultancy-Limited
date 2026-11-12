@@ -33,26 +33,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-    <link rel="stylesheet" href="styles.css?v=landing-1">
-    <link rel="stylesheet" href="design.css?v=amendments-1">
+    <link rel="stylesheet" href="styles.css?v=tax-year-1">
+    <link rel="stylesheet" href="design.css?v=tax-year-1">
     <script src="site-router.js?v=landing-1" defer></script>
     <script src="kb-search.js?v=kb-2" defer></script>
     <script src="tax-advisory.js?v=wear-tear-classes-1" defer></script>
-    <script src="tax-rules.js?v=fy-2026-27-rules-1" defer></script>
+    <script src="tax-rules.js?v=tax-year-1" defer></script>
     <script src="tax-question-classifier.js?v=phase5-classifier-1" defer></script>
     <script src="tax-clarification.js?v=phase5-clarification-2" defer></script>
-    <script src="tax-calculator.js?v=paye-role-selector-1" defer></script>
+    <script src="tax-calculator.js?v=tax-year-1" defer></script>
     <script src="front-page.js?v=front-1" defer></script>
     <script src="corporate-tax.js?v=corporate-tax-phase3-1" defer></script>
     <script src="capital-allowances.js?v=capital-allowances-phase3-1" defer></script>
     <script src="industrial-building.js?v=industrial-building-phase3-1" defer></script>
     <script src="capital-gains.js?v=capital-gains-phase3-1" defer></script>
-    <script src="app.js?v=phase3-calculators-1" defer></script>
+    <script src="app.js?v=tax-year-1" defer></script>
     <script src="multi-tax-analysis.js?v=prototype-1" defer></script>
     <script src="tax-advisor-ui.js?v=phase5-advisor-ui-1" defer></script>
     <script src="tax-chat.js?v=amendments-1" defer></script>
     <script src="international-tax.js?v=international-tax-2" defer></script>
-    <script src="law-index.js?v=amendments-1" defer></script>
+    <script src="law-index.js?v=tax-year-1" defer></script>
     <script src="intl-tax-reasoning.js?v=intl-2" defer></script>
     <script src="tax-worked-examples.js?v=tax-worked-examples-1" defer></script>
     <script src="audit-health.js?v=audit-health-1" defer></script>
@@ -62,7 +62,7 @@
     <script src="challenge-docx.js?v=challenge-2" defer></script>
     <script src="challenge-calendar.js?v=challenge-1" defer></script>
     <script src="challenge-app.js?v=amendments-1" defer></script>
-    <script src="dashboard.js?v=dashboard-2" defer></script>
+    <script src="dashboard.js?v=tax-year-1" defer></script>
     <script src="web-search.js?v=web-search-2" defer></script>
   </head>
   <body>
@@ -667,6 +667,14 @@
             </div>
 
             <div class="tax-fields" data-fields="paye" hidden>
+              <div class="field">
+                <label for="paye-period">Tax year</label>
+                <select id="paye-period" disabled>
+                  <option value="2026/27">FY 2026/27 (pay from 1 July 2026)</option>
+                  <option value="2025/26">FY 2025/26 (July 2025 to June 2026)</option>
+                </select>
+                <p class="field-help">FY 2026/27 uses the bands set by the Income Tax (Amendment) Act, 2026; FY 2025/26 uses the bands it replaced (one resident, primary employer only). Both are pending verification against the official text.</p>
+              </div>
               <div class="field">
                 <label for="paye-residency">Tax residency</label>
                 <select id="paye-residency" disabled>
@@ -1411,7 +1419,7 @@
                 <span id="breakdown-title">How the estimate adds up</span>
                 <span id="breakdown-subtitle">Calculation details</span>
               </div>
-              <div class="table-wrap">
+              <div class="table-wrap" tabindex="0" role="region" aria-labelledby="breakdown-title">
                 <table>
                   <thead>
                     <tr>

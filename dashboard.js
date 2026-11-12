@@ -162,8 +162,23 @@
     return h("div", { className: "dash-mode", role: "group", "aria-label": "Explanation style" }, [h("span", { className: "dash-muted", text: "Explanations: " }), button("simple", "Simple"), button("professional", "Professional")]);
   }
 
+  /** 2026 changes that the user's profile points to, from the amendments register. */
+  function changesCard() {
+    const changes = state.data.recommendations.filter((r) => r.kind === "change_2026");
+    if (!changes.length) return null;
+    return h("section", { className: "dash-card dash-changes", "aria-labelledby": "dash-changes-title" }, [
+      h("h3", { id: "dash-changes-title", text: "Changed in 2026: may affect you" }),
+      h("p", { className: "dash-muted", text: "From TaxComp's 2026 amendments register. Not yet verified against the gazetted Acts; where the Bill and the reported Act differ, both figures are shown." }),
+      h("ul", {}, changes.map((r) => h("li", { "data-change": r.id, className: r.conflict ? "is-conflict" : null }, [
+        h("p", { className: "dash-rec-text", text: r.text }),
+        h("p", { className: "dash-muted", text: r.evidence }),
+        link(r.action),
+      ]))),
+    ]);
+  }
+
   function recommendationsCard() {
-    const recs = state.data.recommendations;
+    const recs = state.data.recommendations.filter((r) => r.kind !== "change_2026");
     if (!recs.length) return null;
     return h("section", { className: "dash-card dash-recs", "aria-labelledby": "dash-recs-title" }, [
       h("h3", { id: "dash-recs-title", text: "Suggested for you" }),
@@ -293,6 +308,7 @@
         h("div", {}, [h("p", { className: "eyebrow section-eyebrow", text: d.dashboard.categoryLabel.toUpperCase() }), h("h2", { id: "dash-title", text: "Your TaxComp dashboard" })]),
         h("div", { className: "dash-head-actions" }, [modeSwitch(), h("button", { type: "button", className: "btn btn-small btn-secondary", text: "Edit my profile", onclick: () => { state.editing = true; render(); } })]),
       ]));
+      parts.push(changesCard());
       if (d.dashboard.companionProminent) parts.push(companion());
       parts.push(recommendationsCard());
       parts.push(modules());

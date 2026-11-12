@@ -3,7 +3,7 @@
 // and the profile context the AI assistant receives.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { applyProfileUpdate, dashboardFor, emptyProfile, profileContext, RULES } from "./challenge/personalise.mts";
+import { applyProfileUpdate, changes2026, dashboardFor, emptyProfile, profileContext, RULES } from "./challenge/personalise.mts";
 import { handleRequest } from "./index.mjs";
 import { clearSupabaseKeyCache } from "./supabase-auth.mjs";
 import { createMigratedDatabase } from "./pglite-test-support.mjs";
@@ -165,5 +165,27 @@ test("the AI assistant receives the profile as context (enumerated values only)"
   } finally {
     globalThis.fetch = originalFetch;
   }
+  await pg.close();
+});
+
+test("2026 changes on the dashboard: chosen by user type and answers, figures from the register", async () => {
+  const { pg, db } = await createMigratedDatabase();
+  const ids = async (fields) => (await changes2026(db, profileOf(fields))).map((r) => r.id);
+  assert.deepEqual(await changes2026(db, emptyProfile("u")), [], "nothing assumed before the user says anything");
+  assert.deepEqual(await ids({ userCategory: "employee" }), ["change-ita-2026-sch4-individual-rates"]);
+  const business = await changes2026(db, profileOf({ userCategory: "small_business", facts: { employsStaff: "yes", excisableGoods: "yes", rentalIncome: "no" } }));
+  assert.deepEqual(business.map((r) => r.id), ["change-ita-2026-sch4-individual-rates", "change-vat-2026-s7-registration-threshold", "change-eda-2026-motor-spirit"]);
+  const vat = business.find((r) => r.id === "change-vat-2026-s7-registration-threshold");
+  assert.equal(vat.conflict, true);
+  assert.match(vat.evidence, /Published Bill: UGX 250,000,000\. Reported as enacted: UGX 300,000,000\..*unverified/);
+  assert.match(business[0].text, /Payroll from July 2026/, "employers get the payroll wording");
+  assert.ok(!(await ids({ userCategory: "small_business", facts: { employsStaff: "no" } })).includes("change-ita-2026-sch4-individual-rates"), "no PAYE change for a business without staff");
+  const accountant = await changes2026(db, profileOf({ userCategory: "accountant" }));
+  assert.match(accountant.at(-1).text, /^53 changes .*; 5 have different figures/);
+  // Shown first among the recommendations, and the out-of-date "not captured" note is gone.
+  const { recommendations } = await import("./challenge/personalise.mts");
+  const recs = await recommendations(db, profileOf({ userCategory: "accountant", completeOnboarding: true }), "00000000-0000-0000-0000-000000000001", "2026-11-12");
+  assert.equal(recs[0].kind, "change_2026");
+  assert.doesNotMatch(recs.find((r) => r.id === "law-edition").text, /not yet captured/);
   await pg.close();
 });

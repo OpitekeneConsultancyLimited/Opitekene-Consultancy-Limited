@@ -215,6 +215,35 @@
     ].filter(Boolean);
   }
 
+  // Changes most people ask about, shown first as before-and-after cards.
+  const HEADLINE_CHANGES = ["vat-2026-s7-registration-threshold", "eda-2026-motor-spirit", "eda-2026-gas-oil", "eda-2026-cement", "eda-2026-sugar", "sda-2026-item67-vehicles"];
+
+  /** Before and after for one change; when the Bill and the reported Act differ, both. */
+  function beforeAfter(a) {
+    const after = a.figuresDiffer && a.billFigure && a.reportedFigure
+      ? [["Published Bill", a.billFigure], ["Reported as enacted", a.reportedFigure]]
+      : [[a.reportedFigure ? "Reported as enacted" : "Published Bill", a.reportedFigure || a.billFigure]];
+    return { before: a.previousFigure || "None", after: after.filter(([, v]) => v) };
+  }
+
+  function headlineCards(data) {
+    const byId = new Map((data?.amendments || []).map((a) => [a.id, a]));
+    const picked = HEADLINE_CHANGES.map((id) => byId.get(id)).filter(Boolean);
+    if (!picked.length) return null;
+    return el("div", { className: "law-change-cards", role: "list", "aria-label": "Key figures changed in 2026" }, picked.map((a) => {
+      const { before, after } = beforeAfter(a);
+      return el("article", { className: `law-change-card${a.figuresDiffer ? " is-conflict" : ""}`, role: "listitem" }, [
+        el("p", { className: "law-change-title", text: `${a.summary.replace(/\.$/, "")} · ${a.provision}` }),
+        el("div", { className: "law-change-pair" }, [
+          el("div", { className: "law-change-before" }, [el("span", { text: "Before" }), el("strong", { text: before })]),
+          el("span", { className: "law-change-arrow", "aria-hidden": "true", text: "→" }),
+          el("div", { className: "law-change-after" }, after.map(([k, v]) => el("p", {}, [el("span", { text: k }), el("strong", { text: v })]))),
+        ]),
+        el("p", { className: "law-index-meta" }, [a.figuresDiffer ? el("span", { className: "law-index-warn", text: "Figures differ: check the enacted Act. " }) : null, `From ${a.effectiveFrom ? formatDate(a.effectiveFrom) : "a date not confirmed"} · `, badge(a.verificationStatus, a.verificationLabel)]),
+      ]);
+    }));
+  }
+
   function actStatusText(act) {
     if (act.billStatus === "bill") return "Bill only: no report of its passing was found";
     const parts = [];
@@ -231,6 +260,7 @@
     return el("details", { className: "law-amendments" }, [
       el("summary", { text: `Changes made in 2026 (${data.amendments.length})` }),
       el("p", { className: "ch-muted", text: `${data.note}${conflicts ? ` ${conflicts} change${conflicts === 1 ? " has" : "s have"} different figures in the Bill and in the reports of the enacted Act: both are shown.` : ""}` }),
+      headlineCards(data),
       ...groups.map(({ act, changes }) => el("section", { className: "law-amendments-act" }, [
         el("h4", { text: act.title }),
         el("p", { className: "law-index-meta", text: [actStatusText(act), act.principalTitle ? `amends the ${act.principalTitle}${act.principalChapter ? `, ${act.principalChapter}` : ""}` : null].filter(Boolean).join(" · ") }),
@@ -315,5 +345,5 @@
     });
   }
 
-  return { load, findSections, cite, initialize, search, showSection, toInstrument, groupAmendments, figureLines };
+  return { load, findSections, cite, initialize, search, showSection, toInstrument, groupAmendments, figureLines, beforeAfter, HEADLINE_CHANGES };
 });

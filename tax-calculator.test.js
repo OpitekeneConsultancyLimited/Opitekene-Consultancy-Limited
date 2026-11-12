@@ -504,3 +504,18 @@ test("applies the user-confirmed presumptive rate and rejects unsupported turnov
   assert.throws(() => calculatePresumptiveTax(150_000_001, 1.5), RangeError);
   assert.throws(() => calculatePresumptiveTax(40_000_000, Number.NaN), RangeError);
 });
+
+test("PAYE tax-year switch: FY 2025/26 bands beside FY 2026/27, resident only", () => {
+  const { calculatePayeForFinancialYear, comparePayeAcrossFinancialYears, payeFinancialYears } = require("./tax-calculator.js");
+  assert.deepEqual([...payeFinancialYears], ["2026/27", "2025/26"]);
+  const at = (pay, year) => Math.round(calculatePayeForFinancialYear(pay, year).monthlyTax);
+  // FY 2025/26: nil to 235,000 a month, 10% to 335,000, 20% to 410,000, 30% above, +10% above 10m.
+  assert.deepEqual([235_000, 335_000, 410_000, 1_500_000, 12_000_000].map((p) => at(p, "2025/26")), [0, 10_000, 25_000, 352_000, 3_702_000]);
+  assert.deepEqual([335_000, 410_000, 1_500_000, 2_000_000].map((p) => at(p, "2026/27")), [0, 15_000, 338_250, 488_250]);
+  const earlier = calculatePayeForFinancialYear(1_500_000, "2025/26");
+  assert.equal(earlier.taxRuleSet.approvalStatus, "pending-primary-source-verification");
+  assert.equal(earlier.taxRuleSet.approvedForFiling, false);
+  assert.throws(() => calculatePayeForFinancialYear(1_000_000, "2025/26", false), /only resident bands/);
+  assert.throws(() => calculatePayeForFinancialYear(1_000_000, "2024/25"), RangeError);
+  assert.deepEqual(comparePayeAcrossFinancialYears(1_000_000, false).map((r) => r.financialYear), ["2026/27"], "non-resident: current year only");
+});

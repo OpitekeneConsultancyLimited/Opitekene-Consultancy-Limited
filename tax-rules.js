@@ -171,6 +171,65 @@
 
   deepFreeze(financialYears);
 
+  // Resident individual bands for earlier years, for the PAYE tax-year switch only
+  // (the other calculators use the current year's full rule set). Pending
+  // verification like the rest: the 2026 Amendment Bill replaced Schedule 4,
+  // Part I, so these are the rates it replaced, not yet checked against the
+  // official text of the Income Tax Act, Cap. 338.
+  const earlierIndividualBands = deepFreeze({
+    "2025/26": {
+      id: "UG-FY2025-26-individual-v1",
+      financialYear: "2025/26",
+      effectiveFrom: "2025-07-01",
+      effectiveTo: "2026-06-30",
+      approvalStatus: "pending-primary-source-verification",
+      approvedForFiling: false,
+      ruleStatus: "pending-review",
+      note: "Rates before the Income Tax (Amendment) Act, 2026. Pending verification against Schedule 4, Part I of the Income Tax Act, Cap. 338 as it stood in FY 2025/26.",
+      sources: [
+        {
+          label: "TaxComp FY 2025/26 rule notes (rates replaced in 2026)",
+          url: "./tax-law-notes.md#rules-represented-in-the-calculators",
+          sourceType: "curated-secondary-summary",
+        },
+        {
+          label: "Income Tax (Amendment) Bill, 2026, clause 20(a) (replaces Schedule 4, Part I)",
+          url: "https://www.parliament.go.ug/sites/default/files/Income%20Tax%20(Amendment)%20Bill%2C%202026.pdf",
+          sourceType: "uganda-bill",
+        },
+      ],
+      residentBands: [
+        { label: "UGX 0 – 2,820,000", lower: 0, upper: 2_820_000, rate: 0 },
+        { label: "UGX 2,820,001 – 4,020,000", lower: 2_820_000, upper: 4_020_000, rate: 0.1 },
+        { label: "UGX 4,020,001 – 4,920,000", lower: 4_020_000, upper: 4_920_000, rate: 0.2 },
+        { label: "UGX 4,920,001 – 120,000,000", lower: 4_920_000, upper: 120_000_000, rate: 0.3 },
+        { label: "Above UGX 120,000,000", lower: 120_000_000, upper: Infinity, rate: 0.4 },
+      ],
+    },
+  });
+  const payeFinancialYears = Object.freeze([currentFinancialYear, ...Object.keys(earlierIndividualBands)]);
+
+  /** Individual bands and their rule-set details for a tax year (resident only before FY 2026/27). */
+  function getIndividualBandsForFinancialYear(financialYear, isResident = true) {
+    if (financialYear === currentFinancialYear || Object.hasOwn(financialYears, financialYear)) {
+      const rules = financialYears[financialYear];
+      return {
+        id: rules.id, financialYear: rules.financialYear, effectiveFrom: rules.effectiveFrom, effectiveTo: rules.effectiveTo,
+        approvalStatus: rules.approvalStatus, approvedForFiling: rules.approvedForFiling, ruleStatus: rules.ruleStatus || "pending-review",
+        sources: rules.individualIncomeTax.sources,
+        bands: isResident ? rules.individualIncomeTax.residentBands : rules.individualIncomeTax.nonResidentBands,
+      };
+    }
+    if (!Object.hasOwn(earlierIndividualBands, financialYear)) {
+      throw new RangeError(`No configured Uganda individual tax bands for FY ${financialYear}.`);
+    }
+    if (!isResident) {
+      throw new RangeError(`TaxComp holds only resident bands for FY ${financialYear}. Non-resident PAYE for that year is not calculated.`);
+    }
+    const rules = earlierIndividualBands[financialYear];
+    return { ...rules, bands: rules.residentBands };
+  }
+
   function cloneValue(value) {
     if (Array.isArray(value)) return value.map(cloneValue);
     if (value && typeof value === "object") {
@@ -633,5 +692,7 @@
     transitionRuleStatus,
     getLegacyEstimateRulesForFinancialYear,
     getRulesForFinancialYear,
+    getIndividualBandsForFinancialYear,
+    payeFinancialYears,
   });
 });
