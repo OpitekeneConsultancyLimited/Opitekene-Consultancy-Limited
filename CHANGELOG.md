@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-12 - The assistant answers ordinary questions properly
+
+- **Guided answers** (`worker/challenge/guides.mts`) for the questions people ask most:
+  - Do I need a TIN?
+  - Which taxes apply to a small business?
+  - What are my PAYE obligations as an employer?
+  - How do I claim tax withheld from my payments?
+  - Must a business that is not operating still file returns?
+  - What happens if I file or pay late?
+  - Which expenses can I deduct?
+
+  Each is a plain answer written by TaxComp, with a Professional version. It cites the provisions it rests on, resolved by heading from the legislative database. It is labelled as general guidance, not statutory wording, and states no rate, amount or deadline. The answers work without the AI provider, and are given to the AI as evidence when it is used.
+- **Conversations.** When the assistant needs facts for a calculation, the user can reply in the chat (for example "180 million" or "yes, resident, main employer") and the calculation completes.
+- **Retrieval.** Sections behind a guided answer or calculation are cited first. The oil pipeline Act and the mutual-assistance convention appear only when the question is about them. Ordinary words such as TIN, returns, late, expenses and employees point to the right Act.
+- **No more "not a tax topic" replies** to questions about a TIN, returns, filing, deductions or penalties.
+- Service worker `taxcomp-app-v47`.
+
 ## 2026-11-12 - Impact Intelligence: Tax Impact Assessment
 
 - **Tax Impact Assessment** (Tax Tools; `POST /api/impact`).

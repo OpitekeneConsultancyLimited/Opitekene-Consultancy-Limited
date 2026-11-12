@@ -44,6 +44,14 @@ The engine follows the brief's six steps.
 
 Anything else is reported as "not covered" and the user is pointed to the assistant.
 
+## 2a. Guided answers and conversations
+
+`worker/challenge/guides.mts` answers the brief's common questions in plain words. Each answer also has a Professional version and cites the provisions it rests on, resolved by heading from the legislative database. It is labelled as general guidance, not statutory wording, and states no rate, amount or deadline. The answers work without the AI provider and are given to the AI as evidence when it is used.
+
+- **Which answer is used.** `assistFor` in `worker/index.mjs` chooses. A guided answer leads, unless the message gives figures to calculate or continues an assessment.
+- **Conversations.** The chat sends back `impactContext {scenario, facts, pending}`, which is validated like any input. `answersFrom` reads replies such as "180 million" or "yes, resident, main employer" as answers to the pending questions.
+- **Retrieval.** The sections behind the answer are cited first. Specialist Acts are excluded unless the question names them.
+
 ## 3. API
 
 | Method and path | Access | Does |

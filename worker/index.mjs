@@ -11,7 +11,8 @@ import { withSupabaseStorage } from "./supabase-storage.mjs";
 import { withMalwareScanner } from "./malware-scanner.mjs";
 import { handleBillingRequest, hasPremiumAccess } from "./billing.mjs";
 import { handleChallengeRequest } from "./challenge/api.mts";
-import { handleImpactRequest, impactEvidence, assessImpact, interpretQuestion } from "./challenge/impact.mts";
+import { amountsIn, answersFrom, assessImpact, handleImpactRequest, impactEvidence, interpretQuestion, readImpactContext, SCENARIO_HEADINGS } from "./challenge/impact.mts";
+import { guideAnswer, guideEvidence, guideText, matchGuide } from "./challenge/guides.mts";
 import taxCalculatorModule from "../tax-calculator.js";
 import { runLawWatch } from "./challenge/lawwatch.mts";
 import { checkCitations, handleLegislationRequest, legislationEvidence, legislationForResponse, legislationSummary, retrieveLegislation } from "./challenge/legislation.mts";
@@ -678,13 +679,14 @@ async function handleWebSearch(body, query, env, corsHeaders) {
 }
 
 /** Uganda legislation for a question from the legislative database (Supabase only); null if unavailable. */
-async function retrieveLegislationFor(env, question, taxPeriod) {
+async function retrieveLegislationFor(env, question, taxPeriod, preferred = []) {
   if (env.DATABASE_PROVIDER !== "supabase" || !env.UNANSWERED_QUESTIONS) return null;
   try {
     const startYear = String(taxPeriod || "").match(/^(20\d{2})\//)?.[1];
     return await retrieveLegislation(env.UNANSWERED_QUESTIONS, question, {
       onDate: startYear ? `${startYear}-07-01` : null,
       today: new Date().toISOString().slice(0, 10),
+      preferred,
     });
   } catch (error) {
     console.warn("Legislation retrieval failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
@@ -692,10 +694,20 @@ async function retrieveLegislationFor(env, question, taxPeriod) {
   }
 }
 
-/** The impact assessment for a chat question, when it matches a scenario TaxComp can calculate. */
-async function impactFor(env, question) {
+/**
+ * The impact assessment for a chat message: either the continuation of one the
+ * chat is in the middle of (the message answers its questions), or a new one
+ * when the message matches a scenario TaxComp can calculate.
+ */
+async function impactFor(env, question, context = null) {
   if (env.DATABASE_PROVIDER !== "supabase" || !env.UNANSWERED_QUESTIONS) return null;
   try {
+    if (context) {
+      const answers = answersFrom(question, context.pending);
+      if (Object.keys(answers).length) {
+        return await assessImpact(env.UNANSWERED_QUESTIONS, taxCalculatorModule, { question: "", scenario: context.scenario, userType: null, facts: { ...context.facts, ...answers } });
+      }
+    }
     const interpretation = interpretQuestion(question);
     if (!interpretation.scenario) return null;
     return await assessImpact(env.UNANSWERED_QUESTIONS, taxCalculatorModule, { question, scenario: null, userType: null, facts: {} });
@@ -703,6 +715,39 @@ async function impactFor(env, question) {
     console.warn("Impact assessment for chat failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
     return null;
   }
+}
+
+/**
+ * What TaxComp itself can say about a message, before any AI: a guided answer
+ * for common questions, an impact assessment for calculable ones, and the
+ * sections to cite first. A guide leads unless the message gives figures to
+ * calculate with or continues an assessment.
+ */
+async function assistFor(env, question, body) {
+  const context = readImpactContext(body.impactContext);
+  const professional = body.profile?.experienceMode === "professional";
+  const matched = matchGuide(question);
+  const continuing = Boolean(context && Object.keys(answersFrom(question, context.pending)).length);
+  const wantsCalculation = continuing || amountsIn(question).length > 0;
+  let guide = null;
+  if (matched && !wantsCalculation && env.DATABASE_PROVIDER === "supabase" && env.UNANSWERED_QUESTIONS) {
+    try {
+      guide = await guideAnswer(env.UNANSWERED_QUESTIONS, matched, question);
+    } catch (error) {
+      console.warn("Guided answer failed", { errorName: error instanceof Error ? error.name : "UnknownError" });
+    }
+  }
+  const impact = guide ? null : await impactFor(env, question, context);
+  const preferred = guide ? guide.headings : impact?.scenario ? SCENARIO_HEADINGS[impact.scenario] : [];
+  return { impact: impact?.status === "not_covered" ? null : impact, guide, preferred, professional };
+}
+
+/** The opening of an answer given without the AI provider. */
+function leadText(guide, impact, professional) {
+  if (guide) return guideText(guide, professional);
+  if (impact?.status === "assessed" && impact.explanation) return `${professional ? impact.explanation.professional : impact.explanation.simple}${impact.conflicts.length ? `\n${impact.conflicts.join(" ")}` : ""}`;
+  if (impact?.status === "needs_facts") return `To work out the effect for you (${impact.title}), I need: ${impact.questions.map((q) => q.question).join(" ")} You can answer here, or use Tax Tools → Tax Impact Assessment.`;
+  return "";
 }
 
 function impactNote(impact) {
@@ -713,10 +758,16 @@ function impactNote(impact) {
 function impactForResponse(impact) {
   return {
     status: impact.status, scenario: impact.scenario, title: impact.title,
-    questions: impact.questions.map((q) => ({ key: q.key, question: q.question })),
+    facts: impact.facts,
+    questions: impact.questions.map((q) => ({ key: q.key, type: q.type, question: q.question })),
     outcomes: impact.outcomes, conflicts: impact.conflicts,
+    explanation: impact.explanation,
     link: "#impact-assessment",
   };
+}
+
+function guideForResponse(guide) {
+  return { id: guide.id, title: guide.title, label: guide.label, provisions: guide.provisions, tool: guide.tool };
 }
 
 function legislationIndicator(legislation) {
@@ -739,8 +790,8 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
   }
 
   try {
-    const legislation = await retrieveLegislationFor(env, question, taxPeriod);
-    const impact = await impactFor(env, question);
+    const { impact, guide, preferred, professional } = await assistFor(env, question, body);
+    const legislation = await retrieveLegislationFor(env, question, taxPeriod, preferred);
     let unmatchedCitations = [];
     const records = await loadLegalSourceRecords(env);
     const legalSourceRegistry = createLegalSourceRegistry(records);
@@ -754,6 +805,8 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
           const knowledge = retrieveKnowledge(scopedQuestion);
           const evidence = buildEvidence(knowledge);
           if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
+          if (guide) evidence.text += `\n\n${guideEvidence(guide)}`;
+          if (impact) evidence.text += `\n\n${impactNote(impact)}`;
           const profileNote = userContext(body.profile);
           if (profileNote) evidence.text += `\n\nUser context (from their TaxComp profile; not evidence of any fact about their tax position): ${profileNote}`;
           const result = await callWebResearch(scopedQuestion, [], evidence, env);
@@ -789,9 +842,7 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
       url: citation.url,
       sourceType: citation.authorityType,
     }));
-    const impactText = impact?.status === "assessed" && impact.explanation ? impact.explanation.simple
-      : impact?.status === "needs_facts" ? `To work out the effect for you, TaxComp needs: ${impact.questions.map((q) => q.question).join(" ")} Use Tax Tools → Tax Impact Assessment, or tell me here.` : "";
-    const legislationText = [impactText, legislation ? legislationSummary(legislation) : ""].filter(Boolean).join("\n\n");
+    const legislationText = [leadText(guide, impact, professional), legislation && !guide ? legislationSummary(legislation) : ""].filter(Boolean).join("\n\n");
     const responseBody = {
       answer: legislationText ? `${legislationText}\n\n${result.answer}` : result.answer,
       answerSource: "advisor",
@@ -843,6 +894,10 @@ async function handleAdvisorRequest(body, question, taxPeriod, env, corsHeaders)
     }
     if (impact) {
       responseBody.impact = impactForResponse(impact);
+      responseBody.verificationRequired = true;
+    }
+    if (guide) {
+      responseBody.guide = guideForResponse(guide);
       responseBody.verificationRequired = true;
     }
     return jsonResponse(responseBody, 200, corsHeaders);
@@ -1517,8 +1572,8 @@ export async function handleRequest(request, env) {
     : question;
 
   const knowledge = retrieveKnowledge(researchQuestion);
-  const isTaxQuestion = /\b(?:tax(?:es|ed|ing|ation|payers?|able)?|ura|paye|vat|wht|withh?old(?:ing|s)?|winnings|stamp duty|payroll|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal)\b/i
-    .test(question);
+  const isTaxQuestion = /\b(?:tax(?:es|ed|ing|ation|payers?|able)?|ura|tin|paye|vat|wht|withh?old(?:ing|s)?|winnings|stamp duty|payroll|excise|customs|duty|income|rental|treaty|efris|transfer pricing|capital allowance|wear and tear|depreciation|tax return|tax appeal|tax tribunal|returns?|filing|deduct\w*|penalt(?:y|ies)|dormant|nil return)\b/i
+    .test(question) || Boolean(matchGuide(question)) || Boolean(interpretQuestion(question).scenario) || Boolean(readImpactContext(body.impactContext));
   if (!isTaxQuestion) {
     return jsonResponse({
       answer: "I can help with Uganda tax, tax procedure and related international-tax questions. Please ask me about a tax topic.",
@@ -1538,9 +1593,10 @@ export async function handleRequest(request, env) {
   const evidence = buildEvidence(knowledge);
   // Uganda legislation from the legislative database (structure, and wording
   // only where entered from an official source), for the tax period asked about.
-  const legislation = await retrieveLegislationFor(env, question, taxPeriod);
+  const { impact, guide, preferred, professional } = await assistFor(env, question, body);
+  const legislation = await retrieveLegislationFor(env, question, taxPeriod, preferred);
   if (legislation) evidence.text += `\n\n${legislationEvidence(legislation)}`;
-  const impact = await impactFor(env, question);
+  if (guide) evidence.text += `\n\n${guideEvidence(guide)}`;
   if (impact) evidence.text += `\n\n${impactNote(impact)}`;
   const profileNote = userContext(body.profile);
   if (profileNote) evidence.text += `\n\nUser context (from their TaxComp profile; not evidence of any fact about their tax position): ${profileNote}`;
@@ -1562,11 +1618,15 @@ export async function handleRequest(request, env) {
       answerSource: result.answerSource,
     };
   let unmatchedCitations = [];
-  if (impact?.status === "assessed" && result.fallback && impact.explanation) answer.answer = `${impact.explanation.simple}\n\n${answer.answer}`;
+  if (result.fallback) {
+    // Without the AI provider: lead with the guided answer or the impact result, then the law it rests on.
+    const lead = leadText(guide, impact, professional);
+    const summary = legislation && !guide ? legislationSummary(legislation) : "";
+    answer.answer = [lead, summary, lead ? "" : answer.answer].filter(Boolean).join("\n\n");
+  }
   if (legislation) {
     if (result.fallback) {
-      const summary = legislationSummary(legislation);
-      if (summary) answer.answer = `${summary}\n\n${answer.answer}`;
+      // already included above
     } else {
       const checked = checkCitations(answer.answer, legislation);
       answer.answer = checked.answer;
@@ -1585,6 +1645,10 @@ export async function handleRequest(request, env) {
   }
   if (impact) {
     metadata.impact = impactForResponse(impact);
+    metadata.verificationRequired = true;
+  }
+  if (guide) {
+    metadata.guide = guideForResponse(guide);
     metadata.verificationRequired = true;
   }
   const providerStatus = premiumRequired
