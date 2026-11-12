@@ -700,6 +700,11 @@ function showPaye() {
     ? grossInput.valueAsNumber
     : primaryMonthlyIncome;
   const isResident = document.querySelector("#paye-residency").value === "resident";
+  const period = document.querySelector("#paye-period")?.value || "2026/27";
+  if (period !== "2026/27") {
+    showPayeEarlierYear(period, { isResident, isSecondary, salary, taxableItems, primaryMonthlyIncome, secondaryMonthlyIncome, primaryMonthlyGross });
+    return;
+  }
   const estimate = ugandaTax.calculatePayeWithSecondaryEmployment(
     primaryMonthlyIncome,
     secondaryMonthlyIncome,
@@ -744,6 +749,7 @@ function showPaye() {
       { label: "Combined annual employment income (assuming 12 equal months)", rate: null, amount: estimate.combinedAnnualTaxableIncome },
       { label: "Indicative monthly tax on combined income using progressive bands", rate: null, amount: estimate.estimatedMonthlyTaxOnCombinedIncome },
       { label: "Withholding above/(below) combined-income band estimate", rate: null, amount: estimate.monthlyWithholdingDifference },
+      ...payeEarlierYearComparison(primaryMonthlyIncome, isResident, estimate.primaryMonthlyTax),
       ...(!isSecondary
         ? [
           { label: "Employee NSSF at primary employer (separate contribution)", rate: 0.05, amount: estimate.monthlyEmployeeNssf },
@@ -755,6 +761,44 @@ function showPaye() {
     breakdownCaption: "Primary progressive PAYE and secondary 40% withholding; NSSF is separate",
     taxRuleSet: estimate.taxRuleSet,
     note: `Assumes a ${isResident ? "resident" : "non-resident"} employee with the same monthly income for 12 months. The employer selected above is treated as ${isSecondary ? "secondary" : "primary"}; primary employment uses progressive bands and secondary employment withholding is estimated at 40%, based on a reported URA clarification. This FY 2026/27 rate remains pending primary-source verification and must be confirmed with URA before payroll use. The combined-income progressive estimate is only an indicative comparison before credits, reliefs or annual adjustments, not a final assessment or refund calculation. Enter the primary and secondary taxable pay once each; assess benefits separately and do not double count them. NSSF is shown only when primary employment is selected; assess each employer's obligations separately. The estimator does not value benefits, determine exemptions, or calculate special treatment for lump sums, share schemes or termination pay.`,
+  });
+}
+
+/** Comparison rows: the same primary pay under FY 2025/26 bands (resident only). */
+function payeEarlierYearComparison(monthlyIncome, isResident, currentMonthlyTax) {
+  if (!isResident || typeof ugandaTax.calculatePayeForFinancialYear !== "function") return [];
+  const earlier = ugandaTax.calculatePayeForFinancialYear(monthlyIncome, "2025/26", true);
+  return [
+    { label: "Comparison: same primary pay under FY 2025/26 bands", rate: null, amount: earlier.monthlyTax },
+    { label: "Change in monthly PAYE from FY 2025/26 to FY 2026/27", rate: null, amount: currentMonthlyTax - earlier.monthlyTax },
+  ];
+}
+
+/** PAYE for an earlier tax year: one resident, primary employer (the bands TaxComp holds). */
+function showPayeEarlierYear(period, { isResident, isSecondary, salary, taxableItems, primaryMonthlyIncome, secondaryMonthlyIncome, primaryMonthlyGross }) {
+  if (!isResident) throw new RangeError(`TaxComp holds only resident bands for FY ${period}. Choose FY 2026/27 for a non-resident employee.`);
+  if (isSecondary || secondaryMonthlyIncome > 0) throw new RangeError(`The FY ${period} calculation covers one primary employer only. Remove the secondary employment income, or choose FY 2026/27.`);
+  const earlier = ugandaTax.calculatePayeForFinancialYear(primaryMonthlyIncome, period, true);
+  const current = ugandaTax.calculatePayeForFinancialYear(primaryMonthlyIncome, "2026/27", true);
+  const nssf = ugandaTax.calculatePaye(primaryMonthlyIncome, true, primaryMonthlyGross);
+  renderResult({
+    value: earlier.monthlyTax,
+    label: `Estimated monthly PAYE for FY ${period}`,
+    context: `Primary employment, resident · Marginal rate: ${formatPercent(earlier.marginalRate)} · The same pay in FY 2026/27: ${formatUgx(current.monthlyTax)}/month`,
+    breakdown: earlier.breakdown.map((band) => ({ label: `FY ${period} — ${band.label}`, rate: band.rate, amount: band.tax })),
+    extraRows: [
+      { label: "Primary employment — monthly cash salary", rate: null, amount: salary },
+      ...taxableItems.map((item) => ({ label: `Primary employment — ${item.label}`, rate: null, amount: item.amount })),
+      { label: "Primary employment — monthly taxable income", rate: null, amount: primaryMonthlyIncome },
+      { label: `Comparison: same pay under FY 2026/27 bands`, rate: null, amount: current.monthlyTax },
+      { label: `Change in monthly PAYE from FY ${period} to FY 2026/27`, rate: null, amount: current.monthlyTax - earlier.monthlyTax },
+      { label: "Employee NSSF (separate contribution)", rate: 0.05, amount: nssf.monthlyEmployeeNssf },
+      { label: "Employer NSSF (separate contribution)", rate: 0.1, amount: nssf.monthlyEmployerNssf },
+    ],
+    breakdownHeading: `Monthly PAYE for FY ${period}`,
+    breakdownCaption: `FY ${period} resident bands, with the FY 2026/27 figure for comparison; NSSF is separate`,
+    taxRuleSet: earlier.taxRuleSet,
+    note: `Uses the resident individual bands for FY ${period} (July ${period.slice(0, 4)} to June 20${period.slice(5)}): the rates the Income Tax (Amendment) Act, 2026 replaced from 1 July 2026. ${earlier.taxRuleSet.note} Assumes the same monthly income for 12 months, one primary employer and no other income. Use it to check or correct pay for months before July 2026; it is not a final assessment.`,
   });
 }
 

@@ -254,6 +254,47 @@
     };
   }
 
+  /**
+   * Monthly PAYE on one employment for a chosen tax year (the tax-year switch).
+   * Uses that year's individual bands; FY 2025/26 is resident only.
+   */
+  function calculatePayeForFinancialYear(monthlyTaxableIncome, financialYear, isResident = true) {
+    requireNonNegative(monthlyTaxableIncome, "Monthly taxable employment income");
+    if (financialYear === taxRuleSetMetadata.financialYear) {
+      const current = calculatePaye(monthlyTaxableIncome, isResident);
+      return { financialYear, monthlyTax: current.monthlyTax, breakdown: current.breakdown, marginalRate: current.marginalRate, taxRuleSet: current.taxRuleSet };
+    }
+    const year = taxRules.getIndividualBandsForFinancialYear(financialYear, isResident);
+    const annual = monthlyTaxableIncome * 12;
+    const breakdown = year.bands.map((band) => {
+      const taxableAmount = Math.max(0, Math.min(annual, band.upper) - band.lower);
+      return { label: band.label, rate: band.rate, tax: (taxableAmount * band.rate) / 12 };
+    });
+    return {
+      financialYear,
+      monthlyTax: breakdown.reduce((total, band) => total + band.tax, 0),
+      breakdown,
+      marginalRate: [...year.bands].reverse().find((band) => annual > band.lower)?.rate ?? 0,
+      taxRuleSet: Object.freeze({
+        id: year.id, financialYear: year.financialYear, approvalStatus: year.approvalStatus, approvedForFiling: year.approvedForFiling,
+        status: year.ruleStatus, legacyEstimate: true, ruleIds: Object.freeze([`ug-income-tax-individual-resident-fy${financialYear.replace("/", "-")}`]),
+        sourceReferences: Object.freeze([...year.sources]), note: year.note,
+      }),
+    };
+  }
+
+  /** The same monthly pay under each configured tax year, newest first. */
+  function comparePayeAcrossFinancialYears(monthlyTaxableIncome, isResident = true) {
+    return taxRules.payeFinancialYears.flatMap((financialYear) => {
+      try {
+        return [calculatePayeForFinancialYear(monthlyTaxableIncome, financialYear, isResident)];
+      } catch (error) {
+        if (error instanceof RangeError) return [];
+        throw error;
+      }
+    });
+  }
+
   function calculatePayeWithSecondaryEmployment(
     primaryMonthlyTaxableIncome,
     secondaryMonthlyTaxableIncome = 0,
@@ -785,6 +826,9 @@
   }
 
   return {
+    calculatePayeForFinancialYear,
+    comparePayeAcrossFinancialYears,
+    payeFinancialYears: taxRules.payeFinancialYears,
     calculateChargeableIncome,
     calculateCompanyTaxBase,
     calculateWearAndTear,

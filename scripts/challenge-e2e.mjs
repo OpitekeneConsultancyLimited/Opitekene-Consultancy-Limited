@@ -316,6 +316,10 @@ check("Knowledge Centre lists the 53 changes made in 2026 by Act", amendmentsTex
 check("the VAT threshold change shows the Bill figure and the reported enacted figure, flagged", amendmentsText.includes("UGX 250,000,000") && amendmentsText.includes("UGX 300,000,000")
   && (await page.$$eval("#kb-law-index .law-amendments-list li.is-conflict", (n) => n.length)) === 5);
 check("Bill-only changes are labelled as not confirmed as enacted", amendmentsText.includes("In the published Bill only; not confirmed as enacted"));
+check("before-and-after cards lead the 2026 changes; the VAT card shows the Bill and the reported figure",
+  (await page.$$eval("#kb-law-index .law-change-card", (n) => n.length)) === 6
+  && ((await page.textContent("#kb-law-index .law-change-card.is-conflict")) || "").includes("UGX 150,000,000"));
+
 check("the 2026 amendment is flagged as not reflected", ((await page.textContent("details[data-law='ita']")) || "").includes("Not reflected here: Income Tax (Amendment) Act, 2026"));
 await page.click("details[data-law='vata'] > summary");
 await page.waitForSelector("#law-vata-s16", { timeout: 5000 }).catch(() => {});
@@ -336,6 +340,24 @@ if (await lawHit.count()) {
   check("choosing it opens the Act at that section", await page.$eval("details[data-law='ita']", (d) => d.open) && Boolean(await page.$("#law-ita-s80")));
 }
 await page.fill("#kb-search", "");await axeScan(page, "structure of the tax Acts", "#tax-laws");
+// PAYE tax-year switch: the same pay under FY 2025/26 and FY 2026/27.
+{
+  await page.evaluate(() => { location.hash = "calc-paye"; });
+  await page.waitForSelector("#paye-period:not([disabled])", { timeout: 5000 }).catch(() => {});
+  await page.selectOption("#paye-period", "2025/26");
+  await page.fill("#monthly-salary", "1500000");
+  await page.locator("#tax-form [type=submit]").first().click();
+  await page.waitForTimeout(400);
+  const payeText = (await page.textContent("#estimator")) || "";
+  check("PAYE tax-year switch: FY 2025/26 gives UGX 352,000 and shows FY 2026/27 (UGX 338,250) for comparison", payeText.includes("352,000") && payeText.includes("338,250") && payeText.includes("FY 2025/26"), payeText.slice(0, 200));
+  await page.selectOption("#paye-residency", "nonresident");
+  await page.locator("#tax-form [type=submit]").first().click();
+  await page.waitForTimeout(300);
+  check("FY 2025/26 refuses a non-resident instead of guessing", ((await page.textContent("#estimator")) || "").includes("only resident bands for FY 2025/26"));
+  await page.selectOption("#paye-residency", "resident");
+  await page.selectOption("#paye-period", "2026/27");
+  await axeScan(page, "PAYE tax-year switch", "#estimator");
+}
 
 // Guided international tax question: asks for missing facts, answers in the
 // standard order, cites a reviewed record, and hands over to the calculator.
@@ -420,6 +442,9 @@ const dashText = (await page.textContent("#dashboard-root")) || "";
 check("dashboard is set up for a small business owner, in Simple mode", dashText.includes("SMALL BUSINESS OWNER") && (await page.getAttribute("#dashboard-root .dash-mode button:has-text('Simple')", "aria-pressed")) === "true");
 check("a beginner sees the Tax Companion first and the learning module", Boolean(await page.$("#dashboard-root .dash-companion.is-prominent")) && Boolean(await page.$("[data-module='learning']")) && Boolean(await page.$("[data-module='corporation-tax']")));
 check("recommendations say why", dashText.includes("Find out which taxes may apply to your business.") && dashText.includes("Why:"));
+check("the dashboard shows 2026 changes for a small business, with both VAT threshold figures",
+  dashText.includes("Changed in 2026: may affect you") && Boolean(await page.$("[data-change='change-vat-2026-s7-registration-threshold'].is-conflict"))
+  && dashText.includes("Published Bill: UGX 250,000,000. Reported as enacted: UGX 300,000,000."));
 await axeScan(page, "personalised dashboard", "#dashboard-root");
 await page.selectOption("#dash-fact-employsStaff", "yes");
 await page.selectOption("#dash-fact-vatRegistered", "no");

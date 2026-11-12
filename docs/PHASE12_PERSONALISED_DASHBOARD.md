@@ -61,6 +61,22 @@ Each recommendation names the data it comes from.
 | Client deadlines (accountants and consultants) | Practice-workspace obligations due within 30 days or overdue, for organisations where the user is an active member other than a client |
 | Bill changes and the coverage note (professional categories) | The legislative watch, and the legislative database's coverage note |
 
+## Changed in 2026
+
+`changes2026` in `personalise.mts` picks records from the 2026 amendments register (`legislation_amendments`) that match the user's category and answers. The dashboard shows them first, under "Changed in 2026: may affect you".
+
+| Shown to | Change |
+| --- | --- |
+| Individuals and employees, or anyone who answers "employed" | Income tax bands (Schedule 4, Part I) |
+| Employers: answered "employs staff", or a small business, company, finance manager or accountant who did not answer "no" | The same bands, worded for payroll |
+| Businesses and professionals, and anyone VAT-registered or self-employed | The VAT registration threshold, with both the Bill and the reported figure |
+| Anyone VAT-registered | VAT withholding when an e-invoice or e-receipt is issued |
+| Anyone with excisable goods | The excise rate changes |
+| Anyone with rental income | Monthly provisional rental returns |
+| Professionals | A summary of the register (changes, and how many have differing figures) |
+
+The text and figures come from the register. Each item states its evidence (Bill only, or Bill and report) and its verification status.
+
 ## Tests
 
 - `worker/personalise.test.mjs`:

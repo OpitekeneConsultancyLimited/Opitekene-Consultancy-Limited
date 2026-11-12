@@ -6,6 +6,7 @@
 // verification status. Nothing here states a rate, threshold or deadline that
 // TaxComp has not verified; recommendations name the data they come from.
 import type { Database } from "./store.mts";
+import { amendmentFigures, listAmendments } from "./legislation.mts";
 
 export const CATEGORIES = ["individual", "employee", "self_employed", "small_business", "company", "accountant", "consultant", "finance_manager", "tax_administrator"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -374,7 +375,51 @@ export async function discoverObligations(db: Database, profile: Profile, now: s
 }
 
 // ------------------------------------------------------------------ recommendations
-export interface Recommendation { id: string; text: string; evidence: string; action: Link; kind: "profile" | "obligation" | "case" | "client" | "legislation" }
+export interface Recommendation { id: string; text: string; evidence: string; action: Link; kind: "profile" | "obligation" | "case" | "client" | "legislation" | "change_2026"; conflict?: boolean }
+
+const PERSONAL = ["individual", "employee"];
+const BUSINESS = ["self_employed", "small_business", "company"];
+const PROFESSIONAL = ["accountant", "consultant", "finance_manager", "tax_administrator"];
+
+/**
+ * 2026 changes from the amendments register that the user's category or answers
+ * point to. Text and figures come from the register (both figures where the
+ * Bill and the reported Act differ), never from this code.
+ */
+export async function changes2026(db: Database, profile: Profile | null): Promise<Recommendation[]> {
+  if (!profile?.userCategory && !Object.keys(profile?.facts ?? {}).length) return [];
+  const category = profile?.userCategory ?? "";
+  const facts = profile?.facts ?? {};
+  const wanted: Array<[string, string, Link]> = [];
+  const employer = facts.employsStaff === "yes" || (facts.employsStaff !== "no" && ["small_business", "company", "finance_manager", "accountant"].includes(category));
+  if (PERSONAL.includes(category) || facts.employed === "yes") wanted.push(["ita-2026-sch4-individual-rates", "Your income tax bands changed from 1 July 2026.", { label: "PAYE calculator", href: "#calc-paye" }]);
+  else if (employer) wanted.push(["ita-2026-sch4-individual-rates", "Payroll from July 2026 uses new PAYE bands; months before July use the old ones.", { label: "PAYE calculator", href: "#calc-paye" }]);
+  if (BUSINESS.includes(category) || PROFESSIONAL.includes(category) || facts.vatRegistered === "yes" || facts.selfEmployed === "yes") {
+    wanted.push(["vat-2026-s7-registration-threshold", "The VAT registration threshold was raised in 2026.", { label: "VAT calculator", href: "#calc-vat" }]);
+  }
+  if (facts.vatRegistered === "yes") wanted.push(["vat-2026-s5-withholding-einvoice", "VAT withholding changed for supplies with an e-invoice or e-receipt.", { label: "Changes made in 2026", href: "#kb-laws" }]);
+  if (facts.excisableGoods === "yes") wanted.push(["eda-2026-motor-spirit", "Excise duty rates changed in 2026, for example on fuel, cement, sugar and cooking oil.", { label: "Changes made in 2026", href: "#kb-laws" }]);
+  if (facts.rentalIncome === "yes") wanted.push(["ita-2026-s124-rental-monthly", "Individuals with rental income may now file monthly provisional rental returns.", { label: "Rental tax calculator", href: "#calc-rental" }]);
+  if (!wanted.length) return [];
+  const register = new Map((await listAmendments(db, {})).map((a) => [a.id, a]));
+  const out: Recommendation[] = [];
+  for (const [id, text, action] of wanted) {
+    const a = register.get(id);
+    if (!a) continue;
+    const figures = amendmentFigures(a);
+    out.push({
+      id: `change-${id}`, kind: "change_2026", text, action, conflict: a.figuresDiffer,
+      evidence: `${a.principalAct}, ${a.provision}: ${a.summary}${figures ? ` ${figures}` : ""} ${a.evidenceLabel}; ${a.verificationLabel.toLowerCase()}.`,
+    });
+  }
+  if (PROFESSIONAL.includes(category)) {
+    const all = [...register.values()];
+    const differ = all.filter((a) => a.figuresDiffer).length;
+    out.push({ id: "change-register", kind: "change_2026", text: `${all.length} changes made by the 2026 amendments are in TaxComp's register; ${differ} have different figures in the Bill and the reported Act.`,
+      evidence: "From TaxComp's 2026 amendments register: the Bills as published by Parliament and reports of the enacted Acts, not yet verified against the gazetted Acts.", action: { label: "Changes made in 2026", href: "#kb-laws" }, conflict: differ > 0 });
+  }
+  return out;
+}
 
 export async function recommendations(db: Database, profile: Profile | null, userId: string, today: string): Promise<Recommendation[]> {
   const recs: Recommendation[] = [];
@@ -411,9 +456,9 @@ export async function recommendations(db: Database, profile: Profile | null, use
   if (["accountant", "consultant", "finance_manager", "tax_administrator", "company"].includes(category ?? "")) {
     const bills = await db.prepare(`SELECT count(*)::int AS n FROM law_watch_bills WHERE last_changed_at >= ?`).bind(new Date(Date.parse(`${today}T00:00:00Z`) - 30 * 86_400_000).toISOString()).first<Row>();
     if (Number(bills?.n ?? 0) > 0) recs.push({ id: "bills", text: `${Number(bills?.n)} tax Bill${Number(bills?.n) === 1 ? "" : "s"} changed stage in Parliament in the last 30 days.`, evidence: "From TaxComp's legislative watch of Parliament's Bill Tracker.", action: { label: "Tax legislation", href: "#kb-laws" }, kind: "legislation" });
-    recs.push({ id: "law-edition", text: "TaxComp's legislation database holds the FY 2024/25 structure; the 2026 amendments are not yet captured.", evidence: "From the legislative database's coverage gaps.", action: { label: "Structure of the tax Acts", href: "#kb-laws" }, kind: "legislation" });
+    recs.push({ id: "law-edition", text: "TaxComp's legislation database holds the FY 2024/25 section headings; the six Acts amended in 2026 are marked for amendment review.", evidence: "From the legislative database and the 2026 amendments register.", action: { label: "Structure of the tax Acts", href: "#kb-laws" }, kind: "legislation" });
   }
-  return recs;
+  return [...await changes2026(db, profile), ...recs];
 }
 
 /** Short profile context for the AI assistant (enumerated values only). */

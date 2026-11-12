@@ -1344,6 +1344,16 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .law-amendments-figures { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 4px 0; font-size: .9rem; }
 .law-amendments-figures dt { font-weight: 600; color: var(--navy-600); }
 .law-amendments-figures dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.law-change-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 10px 0 4px; }
+.law-change-card { display: grid; gap: 8px; padding: 12px; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--teal-700, #0f766e); border-radius: 8px; min-width: 0; }
+.law-change-card.is-conflict { border-top-color: #b7791f; }
+.law-change-title { margin: 0; font-weight: 700; color: var(--navy-600); font-size: .95rem; }
+.law-change-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.law-change-pair span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--slate-600, #475569); }
+.law-change-pair strong { display: block; overflow-wrap: anywhere; font-size: .95rem; }
+.law-change-pair p { margin: 0 0 4px; }
+.law-change-before strong { color: var(--slate-600, #475569); text-decoration: line-through; text-decoration-thickness: 1px; }
+.law-change-arrow { font-size: 1.2rem; color: var(--teal-700, #0f766e); }
 .tax-chat-legislation { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--slate-50); }
 .tax-chat-legislation summary { cursor: pointer; font-weight: 600; }
 .tax-chat-legislation ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
@@ -1365,6 +1375,11 @@ html { scroll-padding-top: calc(var(--header-h) + 16px); }
 .dash-warn { color: #7a5518; font-weight: 600; }
 .dash-recs ul, .dash-notes, .dash-provisions { margin: 0; padding-left: 18px; display: grid; gap: 10px; }
 .dash-rec-text { font-weight: 600; color: var(--ink); }
+.dash-changes { border-left: 4px solid var(--teal-600); }
+.dash-changes ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.dash-changes li { padding: 10px 12px; background: var(--slate-50); border-radius: 8px; border-left: 3px solid var(--slate-300); display: grid; gap: 4px; }
+.dash-changes li.is-conflict { border-left-color: #b7791f; }
+.dash-changes li p { margin: 0; overflow-wrap: anywhere; }
 .dash-companion.is-prominent { border-color: var(--teal-600); box-shadow: var(--shadow-lg); }
 .dash-companion-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 .dash-companion-form label { grid-column: 1 / -1; font-weight: 600; }
