@@ -1,4 +1,4 @@
-// Public front page (#auth-gate): the 4-tab quick calculator, the phone menu,
+// Corporate site (index.html): the 4-tab quick calculator, the phone menu,
 // "print summary" and the advisory-request form.
 // Every tax figure comes from the real engine (window.ugandaTax,
 // tax-calculator.js, FY 2026/27 rules); this file does no tax maths itself,
@@ -98,7 +98,7 @@
       button.setAttribute("aria-selected", String(on));
       button.tabIndex = on ? 0 : -1;
     });
-    document.querySelectorAll("#auth-gate .pc-panel").forEach((panel) => {
+    document.querySelectorAll(".pc-panel").forEach((panel) => {
       panel.hidden = panel.id !== `pc-panel-${id}`;
     });
     calculate();

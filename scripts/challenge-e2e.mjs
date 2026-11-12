@@ -80,7 +80,8 @@ let failNextApi = false;
 await context.route("https://cdn.jsdelivr.net/npm/@supabase/**", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: FAKE_SUPABASE_JS }));
 await context.route("https://fonts.googleapis.com/**", (route) => route.fulfill({ status: 200, contentType: "text/css", body: "" }));
 await context.route(`${SITE}/**`, (route) => {
-  const p = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/, "") || "index.html";
+  const raw = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/, "");
+  const p = !raw ? "index.html" : raw.endsWith("/") ? `${raw}index.html` : raw;
   try {
     const body = readFileSync(path.join(root, p));
     const type = p.endsWith(".html") ? "text/html" : p.endsWith(".js") ? "application/javascript" : p.endsWith(".css") ? "text/css" : p.endsWith(".png") ? "image/png" : p.endsWith(".webmanifest") ? "application/manifest+json" : "application/octet-stream";
@@ -105,7 +106,7 @@ const root$ = "#challenge-root";
 const text = async () => (await page.textContent(root$)) || "";
 const clickButton = async (name) => { await page.getByRole("button", { name, exact: false }).first().click(); await page.waitForFunction(() => !document.querySelector("#challenge-root")?.textContent?.includes("Working…")); };
 
-await page.goto(`${SITE}/index.html#challenge`);
+await page.goto(`${SITE}/taxcomp/index.html#challenge`);
 await page.waitForFunction(() => document.documentElement.dataset.auth === "in", null, { timeout: 15_000 });
 check("sign-in gate opens through account.js", true);
 await page.waitForSelector(`${root$} >> text=Before you upload anything`, { timeout: 15_000 });
@@ -463,15 +464,31 @@ check("chat answer says only headings are held and no wording is invented", chat
 await page.click("#tax-chat-clear");
 check("Clear removes the saved history from the device", await page.evaluate((id) => localStorage.getItem(`taxcomp-chat-history:${id}`) === null, userId) && !((await page.textContent("#tax-chat-messages")) || "").includes("Saved answer"));
 
+// Corporate website (index.html): separate from TaxComp, public, works on a phone.
+{
+  const corp = await context.newPage();
+  await corp.goto(`${SITE}/index.html`);
+  await corp.waitForFunction(() => document.querySelector("#pc-result-amount")?.textContent?.startsWith("UGX"), null, { timeout: 8000 }).catch(() => {});
+  check("corporate: public page with the seven-item navigation and no sign-in wall", (await corp.$$eval(".pc-nav a", (n) => n.map((a) => a.textContent.trim()).join("|"))) === "Home|About Us|Services|Training|Insights|TaxComp|Contact Us" && !(await corp.$("#auth-gate")) && await corp.isVisible("#services"));
+  check("corporate: the quick PAYE estimate uses the tax engine", ((await corp.textContent("#pc-result-amount")) || "").startsWith("UGX"));
+  check("corporate: no horizontal scrolling on a phone", await corp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await axeScan(corp, "corporate website", "body");
+  await corp.close();
+  const old = await context.newPage();
+  await old.goto(`${SITE}/index.html#workspace`);
+  await old.waitForURL(/\/taxcomp\//, { timeout: 5000 }).catch(() => {});
+  check("corporate: an old app link (#workspace) is forwarded to TaxComp", /\/taxcomp\/#workspace$/.test(old.url()), old.url());
+  await old.close();
+}
 // Phase 12: personalised dashboard.
 // Opening the site with no section in the address while signed in lands on the dashboard; #home still shows Home.
 {
   const landing = await context.newPage();
-  await landing.goto(`${SITE}/index.html`);
+  await landing.goto(`${SITE}/taxcomp/index.html`);
   await landing.waitForFunction(() => document.documentElement.dataset.view === "workspace", null, { timeout: 8000 }).catch(() => {});
   check("signed in with no section in the address: the site opens on My dashboard",
     await landing.evaluate(() => document.documentElement.dataset.view === "workspace" && location.hash === "#workspace" && !document.querySelector("[data-pane='dashboard']").hidden));
-  await landing.goto(`${SITE}/index.html#home`);
+  await landing.goto(`${SITE}/taxcomp/index.html#home`);
   await landing.waitForTimeout(500);
   check("the Home link still shows Home", await landing.evaluate(() => document.documentElement.dataset.view === "home"));
   await landing.close();

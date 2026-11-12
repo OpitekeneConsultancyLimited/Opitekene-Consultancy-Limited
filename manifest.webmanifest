@@ -4,7 +4,7 @@
     "short_name":  "TaxComp",
     "description":  "Uganda tax estimates, source-linked guidance and professional support.",
     "lang":  "en-UG",
-    "start_url":  "./",
+    "start_url":  "./taxcomp/",
     "scope":  "./",
     "display":  "standalone",
     "orientation":  "portrait-primary",

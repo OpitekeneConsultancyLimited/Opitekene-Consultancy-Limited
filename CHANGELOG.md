@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-12 - Corporate site and TaxComp separated; audit and security fixes
+
+- **Audit** (`docs/platform/`): architecture audit, feature inventory, technical debt register, security audit, implementation roadmap, target architecture and deployment checklist.
+- **Two products.**
+  - The corporate website is at `/`: Home, About Us, Services (8), Training (QuickBooks Online and Desktop, Zoho Books, Xero, Odoo and more), Insights, TaxComp, Contact Us, and a public privacy policy and terms.
+  - TaxComp moves to `/taxcomp/`, with its own sign-in screen and navigation: Dashboard, Ask TaxComp, Tax Tools, Law & Knowledge, Compliance, Workspace.
+  - Old links, sign-in and password emails and payment returns are forwarded to the app, which payment returns now open directly.
+- **Security.**
+  - GitHub Pages published the whole repository, including a copyrighted compendium PDF and internal files. It now publishes only the files the pages use (`scripts/build-pages.mjs`), checked in CI.
+  - The compendium PDF is removed from the repository; it remains in git history until the owner approves a rewrite.
+- **Fix.** `styles.css` was corrupted by PR #29: every `.` had been replaced with `b`. It is restored, with the intended contrast fixes re-applied. The restore also fixed contrast on the calculation note and on the owner's design colours.
+- Service worker `taxcomp-app-v48`. The installed app opens TaxComp.
+
 ## 2026-11-12 - The assistant answers ordinary questions properly
 
 - **Guided answers** (`worker/challenge/guides.mts`) for the questions people ask most:

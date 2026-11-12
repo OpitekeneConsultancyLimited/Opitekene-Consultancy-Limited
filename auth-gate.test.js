@@ -1,10 +1,10 @@
-// Guards the "sign in before anything else" wall in index.html / account.js.
+// Guards the "sign in before anything else" wall in taxcomp/index.html / account.js.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "taxcomp", "index.html"), "utf8");
 const accountJs = fs.readFileSync(path.join(__dirname, "account.js"), "utf8");
 
 test("the site starts hidden and the sign-in screen is the first thing in the page", () => {
@@ -19,7 +19,7 @@ test("the site starts hidden and the sign-in screen is the first thing in the pa
   const body = html.slice(html.indexOf("<body>") + "<body>".length).trimStart();
   assert.ok(body.startsWith('<div id="auth-gate"'), "sign-in screen is the first element in <body>");
   assert.match(html, /id="auth-gate-root"/);
-  assert.match(html, /<script src="account\.js\?v=[^"]+" defer><\/script>/);
+  assert.match(html, /<script src="\.\.\/account\.js\?v=[^"]+" defer><\/script>/);
 });
 
 test("account.js only reveals the site for a signed-in session", () => {

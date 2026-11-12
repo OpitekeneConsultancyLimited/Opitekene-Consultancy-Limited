@@ -43,6 +43,9 @@ jobs:
       - name: Test Python suites
         run: python -m unittest discover -s . -q
 
+      - name: Check the publish allowlist
+        run: node scripts/build-pages.mjs --check
+
   deploy:
     needs: test
     environment:
@@ -53,13 +56,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Build the site from the allowlist (only files the pages reference)
+        run: node scripts/build-pages.mjs _site
+
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
