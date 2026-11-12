@@ -479,6 +479,23 @@
 
         // Provisions retrieved from the legislative database, with their status.
         const legislation = metadata.legislation;
+        // Impact assessment for this question: the follow-up facts it needs, or its result, with a link to the tool.
+        const impact = metadata.impact;
+        if (impact && (impact.status === "needs_facts" || impact.status === "assessed")) {
+          const box = document.createElement("div");
+          box.className = "tax-chat-legislation";
+          const heading = document.createElement("p");
+          heading.className = "tax-chat-legislation-note";
+          heading.textContent = impact.status === "needs_facts"
+            ? `To work out the effect for you (${impact.title}), TaxComp needs: ${impact.questions.map((q) => q.question).join(" ")}`
+            : `TaxComp's calculation (${impact.title}): ${impact.outcomes.map((o) => `${o.label}: ${o.result}`).join(" · ")}${impact.conflicts.length ? ` · ${impact.conflicts[0]}` : ""}`;
+          const open = document.createElement("a");
+          open.href = impact.link || "#impact-assessment";
+          open.textContent = "Open the Tax Impact Assessment";
+          box.append(heading, open);
+          article.append(box);
+        }
+
         const changes2026 = Array.isArray(legislation?.amendments) ? legislation.amendments : [];
         if (legislation && (legislation.provisions.length || changes2026.length)) {
           const details = document.createElement("details");

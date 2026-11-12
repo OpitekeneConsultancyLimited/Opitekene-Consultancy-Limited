@@ -323,6 +323,8 @@ check("before-and-after cards lead the 2026 changes; the VAT card shows the Bill
 check("the 2026 amendment is flagged as not reflected", ((await page.textContent("details[data-law='ita']")) || "").includes("Not reflected here: Income Tax (Amendment) Act, 2026"));
 await page.click("details[data-law='vata'] > summary");
 await page.waitForSelector("#law-vata-s16", { timeout: 5000 }).catch(() => {});
+await page.waitForSelector("#law-vata-s7 .law-amended-mark", { timeout: 5000 }).catch(() => {});
+check("sections changed in 2026 are marked in the Act (VAT s.7)", ((await page.textContent("#law-vata-s7").catch(() => "")) || "").includes("Amended in 2026"));
 check("expanding the VAT Act shows its Parts, sections and schedules", ((await page.textContent("details[data-law='vata']")) || "").includes("Part IV – Supplies of Goods and Services") && (await page.textContent("#law-vata-s16"))?.includes("Place of supply of services") && ((await page.textContent("details[data-law='vata']")) || "").includes("Schedule 3 – Exempt supplies"));
 for (const [query, expected] of [["foreign tax credit", "Section 80 – Foreign tax credit"], ["international payments", "Section 82 – Tax on international payments"], ["place of supply of services", "Section 16 – Place of supply of services"]]) {
   await page.fill("#law-search", query);
@@ -357,6 +359,32 @@ await page.fill("#kb-search", "");await axeScan(page, "structure of the tax Acts
   await page.selectOption("#paye-residency", "resident");
   await page.selectOption("#paye-period", "2026/27");
   await axeScan(page, "PAYE tax-year switch", "#estimator");
+}
+// Tax Impact Assessment: ordinary-language question, missing fact, before/after with the conflict, sources, what-if, save.
+{
+  await page.evaluate(() => { location.hash = "impact-assessment"; });
+  await page.waitForSelector("#impact-examples .chip", { timeout: 5000 }).catch(() => {});
+  await page.locator("#impact-examples .chip").first().click();
+  await page.waitForSelector("#impact-result .impact-questions", { timeout: 8000 }).catch(() => {});
+  check("impact: asks whether the stated revenue is taxable supplies, suggesting the figure", (await page.inputValue("#impact-q-taxableSupplies12m").catch(() => "")) === "180000000");
+  await page.click("#impact-result .impact-questions button[type=submit]");
+  await page.waitForSelector("#impact-result .impact-table", { timeout: 8000 }).catch(() => {});
+  const impactText = (await page.textContent("#impact-result")) || "";
+  check("impact: before, Bill and reported positions, the conflict disclosed, plain conclusion", (await page.$$eval("#impact-result .impact-table tbody tr", (n) => n.length)) === 3 && impactText.includes("does not choose") && impactText.includes("helps you"));
+  for (const summary of await page.$$("#impact-result .impact-details > summary")) await summary.click();
+  const panels = (await page.textContent("#impact-result")) || "";
+  check("impact: working and a source panel with legal status and the official Bill", panels.includes("Official primary source") && panels.includes("awaiting official verification") && panels.includes("Assumptions") && Boolean(await page.$("#impact-result .impact-sources a[href^='https://www.parliament.go.ug/']")));
+  check("impact: no invented Act numbers or 'Verified' labels", !/Act \d+ of 2026|Cap\. 349|\bVerified\b/.test(panels));
+  await page.locator("#impact-result .impact-mode button", { hasText: "Professional" }).click();
+  check("impact: Professional mode cites the provision", ((await page.textContent("#impact-result .impact-conclusion")) || "").includes("Value Added Tax Act, Cap. 344"));
+  await page.$eval("#impact-whatif", (el) => { el.value = "350000000"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+  await page.waitForFunction(() => document.querySelector("#impact-result .impact-conclusion")?.textContent.includes("indicated on either 2026 figure"), null, { timeout: 8000 }).catch(() => {});
+  check("impact: the what-if slider re-runs the assessment", ((await page.textContent("#impact-result .impact-conclusion")) || "").includes("indicated on either 2026 figure"));
+  await axeScan(page, "Tax Impact Assessment", "#impact-assessment");
+  await page.fill("#impact-save-name", "My VAT check");
+  await page.locator("#impact-result .impact-save button").click();
+  await page.waitForFunction(() => document.querySelector("#impact-result .impact-save [role=status]")?.textContent.includes("Saved"), null, { timeout: 8000 }).catch(() => {});
+  check("impact: a signed-in user can save the assessment", ((await page.textContent("#impact-result .impact-save")) || "").includes("Saved"));
 }
 
 // Guided international tax question: asks for missing facts, answers in the
@@ -441,6 +469,7 @@ await page.waitForSelector("#dashboard-root .dash-head", { timeout: 8000 }).catc
 const dashText = (await page.textContent("#dashboard-root")) || "";
 check("dashboard is set up for a small business owner, in Simple mode", dashText.includes("SMALL BUSINESS OWNER") && (await page.getAttribute("#dashboard-root .dash-mode button:has-text('Simple')", "aria-pressed")) === "true");
 check("a beginner sees the Tax Companion first and the learning module", Boolean(await page.$("#dashboard-root .dash-companion.is-prominent")) && Boolean(await page.$("[data-module='learning']")) && Boolean(await page.$("[data-module='corporation-tax']")));
+check("the dashboard lists saved assessments", dashText.includes("My saved assessments") && dashText.includes("My VAT check"));
 check("recommendations say why", dashText.includes("Find out which taxes may apply to your business.") && dashText.includes("Why:"));
 check("the dashboard shows 2026 changes for a small business, with both VAT threshold figures",
   dashText.includes("Changed in 2026: may affect you") && Boolean(await page.$("[data-change='change-vat-2026-s7-registration-threshold'].is-conflict"))
@@ -453,6 +482,10 @@ await page.waitForSelector("[data-obligation='corporation-tax']", { timeout: 800
 const cit = (await page.textContent("[data-obligation='corporation-tax']").catch(() => "")) || "";
 check("obligation check: corporation tax applies on the facts, citing the database", cit.includes("Applies on the facts you gave") && cit.includes("Income Tax Act (Cap. 338), s.7"));
 check("obligation check: VAT registration needs checking, not assumed", ((await page.textContent("[data-obligation='vat-registration']").catch(() => "")) || "").includes("May apply") && !(await page.$("[data-obligation='vat']")));
+await page.selectOption("[data-obligation='corporation-tax'] .dash-progress select", "in_progress").catch(() => {});
+await page.waitForTimeout(800);
+const progressRow = (await pg.query("SELECT obligation_status_json AS p FROM taxcomp.user_profiles")).rows.map((r) => r.p).join(" ");
+check("Compliance Action Centre: progress on an obligation is saved", progressRow.includes('"corporation-tax":"in_progress"') && (await page.inputValue("[data-obligation='corporation-tax'] .dash-progress select").catch(() => "")) === "in_progress");
 check("recommendations follow the obligation check", ((await page.textContent("#dashboard-root .dash-recs")) || "").includes("You may need to review your corporation income tax obligations for the current year."));
 await page.locator("#dashboard-root .dash-mode button", { hasText: "Professional" }).click();
 await page.waitForFunction(() => document.querySelector("#dashboard-root .dash-mode button[aria-pressed='true']")?.textContent === "Professional", null, { timeout: 5000 }).catch(() => {});

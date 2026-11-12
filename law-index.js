@@ -130,7 +130,9 @@
     details.dataset.loaded = "loading";
     const body = details.querySelector(".law-index-body");
     try {
-      const [detail, sections] = await Promise.all([getJson(`/api/legislation/${law.id}`), getJson(`/api/legislation/${law.id}/sections?pageSize=200`)]);
+      const [detail, sections, changes] = await Promise.all([getJson(`/api/legislation/${law.id}`), getJson(`/api/legislation/${law.id}/sections?pageSize=200`),
+        getJson(`/api/legislation/amendments?law=${encodeURIComponent(law.id)}`).catch(() => null)]);
+      const amendedSections = amendedBySection(changes);
       const nodes = [];
       let part = null;
       let division;
@@ -151,6 +153,7 @@
           el("span", { className: "law-index-number", text: `${s.sectionNumber}.` }), ` ${s.heading}`,
           s.flags.includes("numbering-check") ? el("span", { className: "law-index-flag", text: " (numbering to be checked)" }) : null,
           s.verificationStatus !== "unverified" ? el("span", { text: " " }) : null, s.verificationStatus !== "unverified" ? badge(s.verificationStatus, s.verificationLabel) : null,
+          amendedSections.has(s.sectionNumber) ? el("span", { className: "law-amended-mark", title: amendedSections.get(s.sectionNumber).map((a) => `${a.amendingTitle}: ${a.summary} (${a.evidenceLabel})`).join(" | "), text: amendedSections.get(s.sectionNumber).some((a) => a.evidence === "bill_only") && amendedSections.get(s.sectionNumber).every((a) => a.evidence === "bill_only") ? "Bill proposed a 2026 change" : "Amended in 2026" }) : null,
         ]));
       }
       if (detail.schedules.length) {
@@ -213,6 +216,17 @@
       a.billFigure ? ["Published Bill", a.billFigure] : null,
       a.reportedFigure ? ["Reported as enacted", a.reportedFigure] : null,
     ].filter(Boolean);
+  }
+
+  /** Section number → the 2026 changes recorded against it (knowledge-graph link from a section to its amendments). */
+  function amendedBySection(data) {
+    const map = new Map();
+    for (const a of data?.amendments || []) {
+      if (!a.sectionNumber) continue;
+      if (!map.has(a.sectionNumber)) map.set(a.sectionNumber, []);
+      map.get(a.sectionNumber).push(a);
+    }
+    return map;
   }
 
   // Changes most people ask about, shown first as before-and-after cards.
@@ -345,5 +359,5 @@
     });
   }
 
-  return { load, findSections, cite, initialize, search, showSection, toInstrument, groupAmendments, figureLines, beforeAfter, HEADLINE_CHANGES };
+  return { load, findSections, cite, initialize, search, showSection, toInstrument, groupAmendments, figureLines, beforeAfter, HEADLINE_CHANGES, amendedBySection };
 });

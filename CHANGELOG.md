@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-12 - Impact Intelligence: Tax Impact Assessment
+
+- **Tax Impact Assessment** (Tax Tools; `POST /api/impact`).
+  - Describe a situation in ordinary words. TaxComp asks only for missing facts, then shows the position before and after the 2026 change, and under both the Bill and the reported figure where they differ.
+  - Each result includes the working, the assumptions, the tax year, a source panel with legal status and the kind of source, compliance actions, and Simple and Professional explanations.
+  - Figures come from TaxComp's calculators, run in the Worker, never from AI.
+  - Scenarios: the VAT registration threshold, PAYE across FY 2025/26 and FY 2026/27, and withholding on the payments changed in 2026.
+  - A "What if?" slider re-runs the assessment.
+- **Saved assessments.** The server recomputes the result before storing it; the user sees them under "My saved assessments" on the dashboard. **Compliance progress** can be recorded on each obligation.
+- **Assistant.** Questions that match a scenario get TaxComp's deterministic result in the model's evidence. When facts are missing, the assistant asks for them. The tax-topic filter now also recognises "withhold", "winnings", "stamp duty" and "payroll".
+- **Knowledge graph.** Sections changed in 2026 are marked in the Act view.
+- **Migration `20261112000600`.** Adds `saved_assessments` and `user_profiles.obligation_status_json`.
+- **Docs:** `docs/IMPACT_INTELLIGENCE.md` (audit, architecture, API, tests, limitations, user guide). Service worker `taxcomp-app-v46`.
+
 ## 2026-11-12 - Tax-year switch, before-and-after cards, 2026 changes on the dashboard
 
 The useful ideas from the owner's React mock-up are built into the live site using sourced data. The mock-up's unconfirmed Act numbers, assent dates and "verified" labels were left out.

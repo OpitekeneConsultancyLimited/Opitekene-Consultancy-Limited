@@ -46,6 +46,8 @@ export const TABLE_ORDER = Object.freeze([
   "legislation_relations", "legislation_coverage_gaps", "legislation_amendments", "legislation_history",
   // Phase 12: personalised dashboard profiles.
   "user_profiles",
+  // Tax Impact Assessment: saved assessments.
+  "saved_assessments",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

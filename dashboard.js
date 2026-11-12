@@ -28,6 +28,9 @@
     { id: "assessment", pattern: /\b(?:assessment|ura (?:letter|notice|demand)|objection|object to|dispute|penal tax|received .* from ura)\b/i,
       simple: "Upload or type in the URA assessment. TaxComp explains what URA is asking for, how many days you have to object, and helps you prepare a response.",
       professional: "Open Challenge an Assessment: deadline computation, item analysis, Tribunal case law and response pack.", action: { label: "Challenge an assessment", href: "#challenge" } },
+    { id: "impact", pattern: /\b(?:affect(?:s|ed)?|impact|how (?:do|does|did|will) .{0,40}(?:change|amendment)s?)\b/i,
+      simple: "The Tax Impact Assessment shows how a tax change affects you: describe your situation and it shows before and after, with the working.",
+      professional: "Tax Impact Assessment: deterministic before/after under the Bill and reported figures, with sources and legal status.", action: { label: "Tax Impact Assessment", href: "#impact-assessment" } },
     { id: "small-business", pattern: /\b(?:small business|my business|what taxes (?:might|may|do|will) apply|which taxes|taxes .* apply)\b/i,
       simple: "It depends on your business. Answer a few questions and TaxComp lists the taxes that may apply and why, without assuming you have every tax.",
       professional: "Obligation discovery by facts: registration, income tax, VAT, PAYE, withholding, presumptive tax and others, with provisions.", action: { label: "Discover my tax obligations", href: "#ws-dashboard-discover" } },
@@ -55,7 +58,7 @@
   }
 
   // ------------------------------------------------------------------ API
-  let state = { data: null, editing: false, busy: false, message: "", discovery: null };
+  let state = { data: null, editing: false, busy: false, message: "", discovery: null, saved: null };
 
   function apiBase() {
     try {
@@ -251,6 +254,40 @@
     ["instruments", "Do you sign documents like leases, land transfers or loan agreements?", null],
   ];
 
+  /** The user's own progress on an obligation (Compliance Action Centre). */
+  function progressControl(o) {
+    const labels = state.data.options?.progress || { not_started: "Not started", in_progress: "In progress", done: "Done" };
+    const current = state.data.profile.progress?.[o.id] || "not_started";
+    const id = `dash-progress-${o.id}`;
+    const select = h("select", { id }, Object.entries(labels).map(([value, text]) => h("option", { value, text, selected: value === current })));
+    select.addEventListener("change", () => act(async () => { state.data = await call("/api/challenge/profile", { method: "POST", body: { progress: { [o.id]: select.value } } }); }, "Saved."));
+    return h("div", { className: "dash-progress" }, [h("label", { for: id, text: "My progress" }), select]);
+  }
+
+  /** Impact assessments the user saved (Tax Tools → Tax Impact Assessment). */
+  function savedCard() {
+    const saved = state.saved;
+    if (!saved) return null;
+    return h("section", { className: "dash-card dash-saved", "aria-labelledby": "dash-saved-title" }, [
+      h("h3", { id: "dash-saved-title", text: "My saved assessments" }),
+      saved.length ? h("ul", {}, saved.map((a) => h("li", { "data-saved": a.id }, [
+        h("p", { className: "dash-rec-text", text: a.title }),
+        h("p", { className: "dash-muted", text: `${new Date(a.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} · ${a.summary}` }),
+        a.conflicts.length ? h("p", { className: "dash-warn", text: a.conflicts[0] }) : null,
+        h("button", { type: "button", className: "btn btn-small btn-secondary", text: "Delete", "aria-label": `Delete ${a.title}`, disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/assessments/${a.id}`, { method: "DELETE" }); await loadSaved(); }, "Deleted.") }),
+      ]))) : h("p", { className: "dash-muted", text: "None yet. Run a Tax Impact Assessment and choose “Save to my dashboard”." }),
+      h("a", { className: "btn btn-small", href: "#impact-assessment", text: "Tax Impact Assessment" }),
+    ]);
+  }
+
+  async function loadSaved() {
+    try {
+      state.saved = (await call("/api/challenge/assessments")).assessments;
+    } catch {
+      state.saved = null;
+    }
+  }
+
   function discovery() {
     const p = state.data.profile;
     const category = p.userCategory;
@@ -273,7 +310,7 @@
     const result = p.discovery;
     const simple = p.experienceMode === "simple";
     return h("section", { id: "dash-discover", className: "dash-card dash-discover", "aria-labelledby": "dash-discover-title" }, [
-      h("h3", { id: "dash-discover-title", text: "Discover my tax obligations" }),
+      h("h3", { id: "dash-discover-title", text: "Discover my tax obligations: Compliance Action Centre" }),
       h("p", { className: "dash-muted", text: simple ? "Answer what you can. TaxComp only lists taxes your answers point to, and says which ones need checking." : "Facts-based obligation mapping against the legislative database; statuses distinguish facts-based obligations from those needing verification." }),
       form,
       result ? h("div", { className: "dash-obligations" }, [
@@ -287,6 +324,7 @@
           h("p", { text: `What to do: ${o.todo.join(" ")}` }),
           h("p", { className: "dash-muted", text: `When: ${o.when}` }),
           o.documents.length ? h("p", { className: "dash-muted", text: `Documents: ${o.documents.join(", ")}` }) : null,
+          progressControl(o),
           o.tool ? link(o.tool) : null,
         ])),
         h("ul", { className: "dash-notes" }, result.notes.map((n) => h("li", { text: n }))),
@@ -311,6 +349,7 @@
       parts.push(changesCard());
       if (d.dashboard.companionProminent) parts.push(companion());
       parts.push(recommendationsCard());
+      parts.push(savedCard());
       parts.push(modules());
       if (!d.dashboard.companionProminent) parts.push(companion());
       parts.push(discovery());
@@ -321,6 +360,7 @@
   async function load() {
     try {
       state.data = await call("/api/challenge/profile");
+      await loadSaved();
       state.message = "";
     } catch (error) {
       rootNode?.replaceChildren(h("p", { className: "ws-empty", text: error.status === 401 ? "Sign in to see your personalised dashboard." : [404, 503].includes(error.status) ? "Your personalised dashboard is not switched on yet. Your other workspace sections still work." : error.message }));
@@ -339,9 +379,14 @@
   function initialize() {
     rootNode = document.querySelector("#dashboard-root");
     if (!rootNode) return;
-    const maybeLoad = () => { if (/^#(?:workspace|ws-dashboard)/.test(root.location.hash)) { if (state.data) focusFromHash(); else load(); } };
+    const maybeLoad = () => {
+      if (!/^#(?:workspace|ws-dashboard)/.test(root.location.hash)) return;
+      if (!state.data) { load(); return; }
+      focusFromHash();
+      loadSaved().then(render); // an assessment may have been saved elsewhere since
+    };
     root.addEventListener("hashchange", maybeLoad);
-    root.TaxCompAccount?.onChange?.(() => { state = { data: null, editing: false, busy: false, message: "", discovery: null }; maybeLoad(); });
+    root.TaxCompAccount?.onChange?.(() => { state = { data: null, editing: false, busy: false, message: "", discovery: null, saved: null }; maybeLoad(); });
     maybeLoad();
   }
 

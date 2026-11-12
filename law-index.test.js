@@ -89,3 +89,16 @@ test("2026 before-and-after cards: both figures when the Bill and the reported A
   assert.deepEqual(lawIndex.beforeAfter({ previousFigure: null, billFigure: "UGX 1", reportedFigure: null, figuresDiffer: false }), { before: "None", after: [["Published Bill", "UGX 1"]] });
   assert.ok(lawIndex.HEADLINE_CHANGES.includes("vat-2026-s7-registration-threshold"));
 });
+test("impact page: answers merge into the facts sent back; numbers are parsed, empty answers dropped", () => {
+  const impact = require("./impact-assessment.js");
+  assert.deepEqual(impact.mergeFacts({ statedAmount: 1 }, { taxableSupplies12m: "180,000,000", resident: "yes", stake: "" }), { statedAmount: 1, taxableSupplies12m: 180_000_000, resident: "yes" });
+  assert.equal(impact.EXAMPLES.length, 3);
+  assert.equal(impact.WHAT_IF.vat_registration.key, "taxableSupplies12m");
+});
+
+test("Act view: sections are linked to their 2026 changes", () => {
+  const map = lawIndex.amendedBySection({ amendments: [{ sectionNumber: "7", id: "a" }, { sectionNumber: "7", id: "b" }, { sectionNumber: null, id: "c" }] });
+  assert.deepEqual([...map.keys()], ["7"]);
+  assert.equal(map.get("7").length, 2);
+  assert.equal(lawIndex.amendedBySection(null).size, 0);
+});
