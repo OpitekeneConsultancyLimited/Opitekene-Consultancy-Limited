@@ -807,7 +807,7 @@
   function validSupabaseConfig() {
     try {
       const parsed = new URL(supabaseUrl);
-      return parsed.protocol === "https:" && supabaseKey.length >= 20;
+      return (parsed.protocol === "https:" || (parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname))) && supabaseKey.length >= 20;
     } catch {
       return false;
     }

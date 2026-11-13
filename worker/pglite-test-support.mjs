@@ -49,8 +49,13 @@ CREATE TABLE IF NOT EXISTS storage.buckets (
   file_size_limit bigint, allowed_mime_types text[]
 );`;
 
-export async function createMigratedDatabase() {
-  const pg = new PGlite({ parsers: numberParsers });
+/**
+ * A migrated database. In memory by default (tests); pass `dataDir` for one
+ * kept on disk between runs (local offline development). Migrations are
+ * idempotent, so they are re-applied on every start.
+ */
+export async function createMigratedDatabase({ dataDir } = {}) {
+  const pg = new PGlite({ parsers: numberParsers, ...(dataDir ? { dataDir } : {}) });
   await pg.waitReady;
   await pg.exec(SUPABASE_STUBS);
   for (const file of await migrationFiles()) await pg.exec(await readFile(file, "utf8"));

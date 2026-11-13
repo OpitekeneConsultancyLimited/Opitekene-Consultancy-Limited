@@ -12,6 +12,8 @@
   const meta = (name) => (document.querySelector(`meta[name="${name}"]`)?.content || "").trim();
   const supabaseUrl = meta("taxcomp-supabase-url");
   const supabaseKey = meta("taxcomp-supabase-anon-key");
+  // HTTPS, or plain HTTP only on this computer (local development with npm run dev).
+  const secureOrLocal = (url) => url.protocol === "https:" || (url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname));
   const chatEndpoint = meta("taxcomp-chat-endpoint");
   const formatUgx = (amount) => `UGX ${Number(amount).toLocaleString("en-UG")}`;
   const formatDate = (iso) => new Date(iso).toLocaleDateString("en-UG", { day: "numeric", month: "long", year: "numeric" });
@@ -330,7 +332,7 @@
 
   async function start() {
     let configured = false;
-    try { configured = new URL(supabaseUrl).protocol === "https:" && supabaseKey.length >= 20 && Boolean(apiBase); } catch { configured = false; }
+    try { configured = secureOrLocal(new URL(supabaseUrl)) && supabaseKey.length >= 20 && Boolean(apiBase); } catch { configured = false; }
     if (!configured) return render();
     const linkType = new URLSearchParams(window.location.hash.slice(1)).get("type");
     try {

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-13 - Local development on Supabase (offline)
+
+- **`npm run dev`** runs the whole system on this computer against a local Supabase: Postgres, Auth with ES256 keys and email confirmation, Storage, and email capture. The real Worker code runs in-process. It works offline after a one-time setup (Docker Desktop, plus the first run online).
+- **`npm run dev:lite`** runs without Docker, using an in-memory database and a local sign-in.
+- **`npm run dev:stop`** stops the local Supabase containers.
+- Local settings are in `local/supabase/`, separate from the live project's `supabase/config.toml`; the local signing key is never committed.
+- account.js and the workspace accept a plain-HTTP Supabase address only for `localhost`. Guide: `docs/LOCAL_DEVELOPMENT.md`. Service worker `taxcomp-app-v49`.
+
 ## 2026-11-12 - Corporate site and TaxComp separated; audit and security fixes
 
 - **Audit** (`docs/platform/`): architecture audit, feature inventory, technical debt register, security audit, implementation roadmap, target architecture and deployment checklist.

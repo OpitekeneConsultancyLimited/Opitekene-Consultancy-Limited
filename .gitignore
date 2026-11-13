@@ -8,3 +8,11 @@ __pycache__/
 supabase/d1-data-import.sql
 supabase/.temp/
 .e2e-screens/
+
+# Local offline development data (npm run dev)
+.local-data/
+# Local Supabase (npm run dev): private local signing key, CLI state, copied migrations
+local/supabase/signing_keys.json
+local/supabase/.temp/
+local/supabase/.branches/
+local/supabase/migrations/
