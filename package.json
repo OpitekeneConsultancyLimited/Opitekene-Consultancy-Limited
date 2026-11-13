@@ -5,6 +5,9 @@
   "description": "TaxComp Uganda site and Cloudflare Worker",
   "scripts": {
     "test": "node --test *.test.js worker/*.test.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:lite": "node scripts/dev.mjs --lite",
+    "dev:stop": "npx --yes supabase@2.121.0 stop --workdir local",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
