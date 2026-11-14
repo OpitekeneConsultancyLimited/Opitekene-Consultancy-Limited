@@ -17,6 +17,16 @@ GEMINI_MODEL = "gemini-3.5-flash-lite"
 # Supabase project (public URL). Phase 6 sign-in (Supabase Auth) and documents
 # (Supabase Storage) also need the SUPABASE_SERVICE_ROLE_KEY Worker secret.
 SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
+# Public (publishable) key, the same one the site's pages carry. Lets the admin
+# pages sign a named administrator in with email, password and two-step code.
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_IdpY6dnVzJXUl05vqTlHmg_Xta-oZRF"
+# N8: the old shared ADMIN_DASHBOARD_TOKEN still works while this is "true" (every
+# use is logged; it never reaches launch gates). Set to "false" once each
+# administrator signs in with their own account (docs/remediation/ACCESS_CONTROLS.md).
+ADMIN_SHARED_TOKEN_ENABLED = "true"
+# M4: reviewers and administrators must have signed in with two-step
+# verification. Leave unset (= required); "false" exists only for tests.
+# PRIVILEGED_MFA_REQUIRED = "false"
 # Paid accounts (worker/billing.mjs, BILLING.md). Checkout works once the
 # FLW_SECRET_KEY and FLW_WEBHOOK_HASH secrets are set (Flutterwave dashboard);
 # until then the site says online payment is being set up.
@@ -26,7 +36,10 @@ PUBLIC_SITE_URL = "https://opitekeneconsultancylimited.github.io/Opitekene-Consu
 # also needs the MALWARE_SCANNER_TOKEN secret. Empty = uploads stay disabled.
 MALWARE_SCANNER_URL = ""
 PHASE10_OPERATIONS_ANALYTICS_ENABLED = "false"
+# Deploy-time launch flags. Launch also needs every gate approved, with evidence,
+# in the launch-gate register (/admin/gates); see LAUNCH_GATE_REGISTER.md.
 PHASE11_LEGAL_REVIEW_APPROVED = "false"
+PHASE11_TAX_CALCULATION_APPROVED = "false"
 PHASE11_SECURITY_REVIEW_APPROVED = "false"
 PHASE11_PRIVACY_REVIEW_APPROVED = "false"
 PHASE11_OPERATIONS_READY = "false"

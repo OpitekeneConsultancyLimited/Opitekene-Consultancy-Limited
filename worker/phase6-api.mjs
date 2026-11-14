@@ -19,6 +19,7 @@ import { createSupabaseAdmin, createSupabaseTokenVerifier, isServiceRoleKey, nor
 import { validateDeploymentReadiness } from "./deployment-security.mjs";
 import { createOperationsAnalyticsService } from "./operations-analytics.mjs";
 import { getCommercialLaunchReadiness } from "./commercial-governance.mjs";
+import { listGates } from "./launch-gates.mjs";
 
 const { createClientManagementService } = clientManagementModule;
 const { createClientRecord } = clientModelModule;
@@ -1647,7 +1648,13 @@ export async function handlePhase6Request(request, env) {
       if (!hasPermission(principal.role, "read", "users")) {
         return response({ error: "Forbidden." }, 403, corsHeaders);
       }
-      const readiness = getCommercialLaunchReadiness(env);
+      let gates = null;
+      try {
+        gates = await listGates(env.UNANSWERED_QUESTIONS, new Date().toISOString().slice(0, 10));
+      } catch {
+        gates = null; // register unavailable (for example the legacy D1 store): launch stays blocked
+      }
+      const readiness = getCommercialLaunchReadiness(env, gates);
       await audit(env.UNANSWERED_QUESTIONS, principal, "governance.readiness-viewed", "launch-readiness", principal.organizationId, {
         status: readiness.status,
       });

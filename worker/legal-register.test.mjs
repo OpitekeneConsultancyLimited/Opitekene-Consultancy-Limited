@@ -1,4 +1,4 @@
-﻿// Phase 2b: legal verification register, independent two-person review,
+// Phase 2b: legal verification register, independent two-person review,
 // emergency withdrawal and the protected audit trail (migration 20261114000100).
 // Records here are synthetic test data; nothing in this file is a statement
 // about what Ugandan law says.
@@ -31,7 +31,7 @@ async function setup() {
     return { status: response.status, json: await response.json().catch(() => ({})), headers: response.headers };
   };
   const person = async (email, { reviewer = true, approver = false } = {}) => {
-    const user = await supabase.issueToken({ email });
+    const user = await supabase.issueToken({ email, aal: "aal2" });
     if (reviewer) await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, $2, $3, now()::text)", [user.userId, email, approver ? 1 : 0]);
     return user;
   };

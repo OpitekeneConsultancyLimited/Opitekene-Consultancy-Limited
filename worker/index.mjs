@@ -1,5 +1,7 @@
 import { retrieveKnowledge, sources as knowledgeSources } from "./knowledge.mjs";
 import { efrisDashboardResponse, handleEfrisApi } from "./efris.mjs";
+import { ADMIN_LOGIN_SCRIPT, ADMIN_LOGIN_STYLE, adminLoginFormHtml, adminPageHeaders, adminPageNonce, authenticateAdmin, logSecurityEvent } from "./admin-access.mjs";
+import { gatesDashboardResponse, handleGatesApi } from "./launch-gates-admin.mjs";
 import advisorModule from "../ai-tax-advisor.js";
 import legalSourceModule from "../legal-source-registry.js";
 import caseLawModule from "../case-law-registry.js";
@@ -1093,20 +1095,8 @@ function createLocalFallback(knowledge) {
   };
 }
 
-function equalSecret(expected, supplied) {
-  if (typeof expected !== "string" || !expected ||
-      expected.length < 32 || typeof supplied !== "string" ||
-      supplied.length < 32 || expected.length !== supplied.length) {
-    return false;
-  }
-  let difference = 0;
-  for (let index = 0; index < expected.length; index += 1) {
-    difference |= expected.charCodeAt(index) ^ supplied.charCodeAt(index);
-  }
-  return difference === 0;
-}
-
-function adminDashboardResponse() {
+function adminDashboardResponse(env) {
+  const nonce = adminPageNonce();
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -1119,6 +1109,7 @@ h1{font-size:1.8rem}form{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.5rem 0}
 input,button{font:inherit;padding:.6rem}input{min-width:16rem;flex:1}
 button{cursor:pointer}li{margin:1rem 0;padding:1rem;border:1px solid #ccd4df;border-radius:.5rem}
 time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
+${ADMIN_LOGIN_STYLE}
 </style>
 </head>
 <body>
@@ -1127,39 +1118,33 @@ time{display:block;color:#546176;font-size:.9rem}.error{color:#a11616}
 <p>Only questions submitted with explicit user consent appear here. Consent timestamps are recorded; records expire after 90 days. Treat them as confidential.</p>
 <p><a href="/admin/efris">Open the EFRIS management workspace</a></p>
 <p><a href="/admin/legal-sources">Open legal-source review</a></p>
-<form id="login"><label for="token">Admin access token</label><input id="token" type="password" autocomplete="current-password" required><button>Load questions</button></form>
+<p><a href="/admin/gates">Open the launch-gate register</a></p>
+${adminLoginFormHtml(env, { buttonText: "Load questions" })}
 <p id="status" role="status" aria-live="polite"></p>
 <ul id="questions"></ul>
 </main>
-<script>
-const form=document.querySelector("#login"),tokenInput=document.querySelector("#token"),status=document.querySelector("#status"),list=document.querySelector("#questions");
+<script nonce="${nonce}">
+${ADMIN_LOGIN_SCRIPT}
+const form=document.querySelector("#login"),status=document.querySelector("#status"),list=document.querySelector("#questions");
 let token="";
 async function loadQuestions(){status.textContent="Loading…";list.replaceChildren();const response=await fetch("/admin/questions",{headers:{Authorization:"Bearer "+token}});const data=await response.json();if(!response.ok)throw new Error(data.error||"Could not load questions.");for(const row of data.questions){const item=document.createElement("li"),question=document.createElement("p"),time=document.createElement("time"),consent=document.createElement("small"),button=document.createElement("button");question.textContent=row.question;time.textContent=new Date(row.createdAt).toLocaleString();time.dateTime=row.createdAt;consent.textContent=row.consentedAt?"Consent recorded "+new Date(row.consentedAt).toLocaleString():"Consent timestamp unavailable for this older record.";button.type="button";button.textContent="Delete";button.addEventListener("click",async()=>{const result=await fetch("/admin/questions/"+encodeURIComponent(row.id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});if(!result.ok){status.textContent="Could not delete the question.";return}item.remove()});item.append(question,time,consent,button);list.append(item)}status.textContent=data.questions.length?data.questions.length+" question(s).":"No unanswered questions recorded."}
-form.addEventListener("submit",async event=>{event.preventDefault();token=tokenInput.value;try{await loadQuestions()}catch(error){status.textContent=error.message;status.className="error";token=""}});
+form.addEventListener("submit",async event=>{event.preventDefault();status.className="";try{token=await adminToken(form);await loadQuestions()}catch(error){status.textContent=error.message;status.className="error";token=""}});
 </script>
 </body>
 </html>`;
-  return new Response(html, {
-    status: 200,
-    headers: {
-      "Cache-Control": "no-store",
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
-      "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "DENY",
-      "Referrer-Policy": "no-referrer",
-    },
-  });
+  return new Response(html, { status: 200, headers: adminPageHeaders(env, nonce) });
 }
 
-function legalSourceDashboardResponse() {
+function legalSourceDashboardResponse(env) {
+  const nonce = adminPageNonce();
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TaxComp legal source review</title>
 <style>
 body{font:15px/1.5 system-ui,sans-serif;max-width:1080px;margin:2rem auto;padding:0 1rem;color:#203027}h1{font-size:1.75rem}h2{font-size:1.2rem}form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem 1rem;margin:1.2rem 0}label{display:grid;gap:.25rem;font-size:.9rem;font-weight:650}input,select,textarea,button{font:inherit;padding:.55rem;border:1px solid #cbd6cc;border-radius:4px}textarea{min-height:70px}button{cursor:pointer;background:#edf5ee;color:#285d3c}button:disabled{opacity:.5;cursor:wait}.wide{grid-column:1/-1}.source{border-top:1px solid #d5ded6;padding:1rem 0}.source h3{margin:.2rem 0}.source-actions{display:flex;flex-wrap:wrap;gap:.5rem}.muted{color:#5d6a60}.status{min-height:1.5rem}.source-url{overflow-wrap:anywhere}@media(max-width:640px){form{grid-template-columns:1fr}.wide{grid-column:auto}}
+${ADMIN_LOGIN_STYLE}form.admin-login{display:grid;grid-template-columns:1fr}
 </style></head><body><main><p><a href="/admin">Admin home</a></p><h1>Legal source review</h1>
 <p>New records are saved as pending review. Approval requires checking the source document, provision, dates, and period. Never approve a source you have not inspected.</p>
-<form id="login"><label class="wide" for="token">Admin access token<input id="token" type="password" autocomplete="current-password" required></label><button class="wide">Load source registry</button></form>
+${adminLoginFormHtml(env, { buttonText: "Load source registry" })}
 <p id="status" class="status" role="status" aria-live="polite"></p>
 <section id="workspace" hidden><h2>Source record</h2><form id="source-form">
 <label>Source ID<input name="sourceId" required maxlength="120"></label>
@@ -1177,8 +1162,9 @@ body{font:15px/1.5 system-ui,sans-serif;max-width:1080px;margin:2rem auto;paddin
 <label>Reviewer name<input name="reviewer" required maxlength="120"></label><label>Review date<input name="reviewDate" type="date" required></label>
 <label class="wide">Review notes or rejection reason<textarea name="notes" required maxlength="2000"></textarea></label>
 </form><h2>Registered sources</h2><ul id="sources"></ul></section>
-</main><script>
-const tokenField=document.querySelector('#token'),login=document.querySelector('#login'),workspace=document.querySelector('#workspace'),status=document.querySelector('#status'),sourceForm=document.querySelector('#source-form'),reviewForm=document.querySelector('#review-form'),sourceList=document.querySelector('#sources'),saveButton=document.querySelector('#save-source'),cancelEdit=document.querySelector('#cancel-edit');
+</main><script nonce="${nonce}">
+${ADMIN_LOGIN_SCRIPT}
+const login=document.querySelector('#login'),workspace=document.querySelector('#workspace'),status=document.querySelector('#status'),sourceForm=document.querySelector('#source-form'),reviewForm=document.querySelector('#review-form'),sourceList=document.querySelector('#sources'),saveButton=document.querySelector('#save-source'),cancelEdit=document.querySelector('#cancel-edit');
 let token='',editingId=null,records=[];
 async function api(path,method='GET',body){const response=await fetch(path,{method,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw new Error(data.error||'Legal-source request failed.');return data}
 function splitList(value){return value.split(',').map(item=>item.trim()).filter(Boolean)}
@@ -1188,22 +1174,12 @@ function renderSources(){sourceList.replaceChildren();for(const item of records)
 function editSource(record){editingId=record.sourceId;for(const [key,value] of Object.entries(record)){const field=sourceForm.elements[key];if(!field)continue;if(field.type==='checkbox')field.checked=value===true;else if(Array.isArray(value))field.value=value.join(', ');else if(value!==null&&value!==undefined)field.value=String(value)}sourceForm.elements.sourceId.disabled=true;saveButton.textContent='Update pending draft';cancelEdit.hidden=false;sourceForm.scrollIntoView({behavior:'smooth'})}
 function resetForm(){sourceForm.reset();sourceForm.elements.sourceId.disabled=false;editingId=null;saveButton.textContent='Submit pending draft';cancelEdit.hidden=true}
 async function loadSources(){const data=await api('/admin/legal-sources/api');records=data.sources||[];renderSources();workspace.hidden=false;status.textContent=records.length+' source record(s). Pending records are not treated as verified authority.'}
-login.addEventListener('submit',async event=>{event.preventDefault();token=tokenField.value;try{await loadSources()}catch(error){token='';status.textContent=error.message}});
+login.addEventListener('submit',async event=>{event.preventDefault();try{token=await adminToken(login);await loadSources()}catch(error){token='';status.textContent=error.message}});
 sourceForm.addEventListener('submit',async event=>{event.preventDefault();saveButton.disabled=true;try{const source=sourcePayload();if(editingId){await api('/admin/legal-sources/'+encodeURIComponent(editingId),'PUT',{updatedBy:reviewForm.elements.reviewer.value,updates:source})}else{await api('/admin/legal-sources/api','POST',{submittedBy:reviewForm.elements.reviewer.value,record:source})}resetForm();await loadSources()}catch(error){status.textContent=error.message}finally{saveButton.disabled=false}});
 async function reviewSource(id,decision){const reviewer=reviewForm.elements.reviewer.value.trim(),reviewDate=reviewForm.elements.reviewDate.value,notes=reviewForm.elements.notes.value.trim();if(!reviewer||!reviewDate||!notes){status.textContent='Enter reviewer, review date, and notes before a decision.';reviewForm.scrollIntoView({behavior:'smooth'});return}try{await api('/admin/legal-sources/'+encodeURIComponent(id)+'/review','POST',{decision,reviewer,reviewDate,notes});await loadSources()}catch(error){status.textContent=error.message}}
 cancelEdit.addEventListener('click',resetForm);
 </script></body></html>`;
-  return new Response(html, {
-    status: 200,
-    headers: {
-      "Cache-Control": "no-store",
-      "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
-      "X-Content-Type-Options": "nosniff",
-      "X-Frame-Options": "DENY",
-      "Referrer-Policy": "no-referrer",
-    },
-  });
+  return new Response(html, { status: 200, headers: adminPageHeaders(env, nonce) });
 }
 
 async function cleanupExpiredQuestions(env) {
@@ -1337,13 +1313,18 @@ async function handleLegalSourceAdminApi(request, env, url, sourceId) {
 async function handleAdminRequest(request, env) {
   const url = new URL(request.url);
   if (url.pathname === "/admin" && request.method === "GET") {
-    return adminDashboardResponse();
+    return adminDashboardResponse(env);
   }
   if (url.pathname === "/admin/legal-sources" && request.method === "GET") {
-    return legalSourceDashboardResponse();
+    return legalSourceDashboardResponse(env);
+  }
+  if (url.pathname === "/admin/gates" && request.method === "GET") {
+    return gatesDashboardResponse(env);
   }
   const efrisDashboard = url.pathname === "/admin/efris" && request.method === "GET";
-  if (efrisDashboard) return efrisDashboardResponse();
+  if (efrisDashboard) return efrisDashboardResponse(env);
+  const gatesApi = url.pathname === "/admin/gates/api" || url.pathname.startsWith("/admin/gates/api/");
+  const meApi = url.pathname === "/admin/me" && request.method === "GET";
   const efrisApi = url.pathname === "/admin/efris/api";
   const legalSourcesApi = url.pathname === "/admin/legal-sources/api";
   const legalSourceMatch = url.pathname === "/admin/legal-sources/api"
@@ -1353,7 +1334,7 @@ async function handleAdminRequest(request, env) {
   const legalSourceReview = Boolean(legalSourceId && url.pathname.endsWith("/review"));
   const questionsApi = url.pathname === "/admin/questions" ||
       /^\/admin\/questions\/[a-f0-9-]{36}$/i.test(url.pathname);
-  if (!efrisApi && !questionsApi && !legalSourcesApi && !legalSourceId) {
+  if (!efrisApi && !questionsApi && !legalSourcesApi && !legalSourceId && !gatesApi && !meApi) {
     return jsonResponse({ error: "The requested admin endpoint was not found." }, 404);
   }
   if (efrisApi && request.method !== "GET" && request.method !== "POST") {
@@ -1365,11 +1346,6 @@ async function handleAdminRequest(request, env) {
   if ((legalSourcesApi && request.method !== "GET" && request.method !== "POST") ||
       (legalSourceId && (legalSourceReview ? request.method !== "POST" : request.method !== "PUT"))) {
     return jsonResponse({ error: "Use GET/POST for the source collection, PUT for a draft, or POST for its review decision." }, 405);
-  }
-  if (typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
-      env.ADMIN_DASHBOARD_TOKEN.length < 32) {
-    console.error("Admin dashboard token is missing or shorter than the minimum length");
-    return jsonResponse({ error: "Admin authentication is not configured safely." }, 503);
   }
   if (!env.CHAT_LIMITER || typeof env.CHAT_LIMITER.limit !== "function") {
     console.error("Admin request rate limiter is not configured");
@@ -1387,16 +1363,22 @@ async function handleAdminRequest(request, env) {
     return jsonResponse({ error: "Too many admin requests. Please wait a minute and try again." }, 429);
   }
 
-  const authorization = request.headers.get("Authorization") || "";
-  const supplied = authorization.startsWith("Bearer ")
-    ? authorization.slice("Bearer ".length)
-    : "";
-  if (!equalSecret(env.ADMIN_DASHBOARD_TOKEN, supplied)) {
-    return jsonResponse({ error: "Admin authentication is required." }, 401);
-  }
+  // Named administrators (two-step sign-in), or the shared token while it is
+  // still switched on. Launch gates and /admin/me need a named person.
+  const auth = await authenticateAdmin(request, env, { route: url.pathname, allowSharedToken: !gatesApi && !meApi });
+  if (!auth.ok) return jsonResponse(auth.body, auth.status);
+  const principal = auth.principal;
   if (!env.UNANSWERED_QUESTIONS) {
     console.error("Admin data database binding is missing");
     return jsonResponse({ error: "The admin data store is not configured." }, 503);
+  }
+  if (meApi) {
+    return jsonResponse({ admin: { displayName: principal.displayName, email: principal.email, canOperate: principal.canOperate, canManageGates: principal.canManageGates, canApproveGates: principal.canApproveGates } }, 200);
+  }
+  if (gatesApi) return handleGatesApi(request, env, principal, url.pathname);
+  if (!principal.canOperate) {
+    await logSecurityEvent(env.UNANSWERED_QUESTIONS, { type: "admin.permission", outcome: "refused", userId: principal.userId, email: principal.email, route: url.pathname, details: { needed: "can_operate" } });
+    return jsonResponse({ error: "Your administrator account does not include this area." }, 403);
   }
 
   if (efrisApi) return handleEfrisApi(request, env);
@@ -1426,9 +1408,11 @@ async function handleAdminRequest(request, env) {
 }
 
 async function recordUnansweredQuestion(env, question) {
-  if (!env.UNANSWERED_QUESTIONS ||
-      typeof env.ADMIN_DASHBOARD_TOKEN !== "string" ||
-      env.ADMIN_DASHBOARD_TOKEN.length < 32) {
+  // Store questions only when someone can read and delete them: a named
+  // administrator sign-in (Supabase) or the shared token.
+  const adminReadable = (typeof env.SUPABASE_PUBLISHABLE_KEY === "string" && env.SUPABASE_PUBLISHABLE_KEY.length >= 20 && Boolean(env.SUPABASE_URL)) ||
+    (env.ADMIN_SHARED_TOKEN_ENABLED === "true" && typeof env.ADMIN_DASHBOARD_TOKEN === "string" && env.ADMIN_DASHBOARD_TOKEN.length >= 32);
+  if (!env.UNANSWERED_QUESTIONS || !adminReadable) {
     console.error("Unanswered-question storage is missing its database or admin credential");
     return false;
   }

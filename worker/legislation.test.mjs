@@ -158,7 +158,7 @@ test("verification workflow: owners cannot; reviewers mark under review; only ap
     return { status: response.status, json: await response.json() };
   };
   const owner = await supabase.issueToken({ email: "owner@example.com" });
-  const reviewer = await supabase.issueToken({ email: "reviewer@example.com" });
+  const reviewer = await supabase.issueToken({ email: "reviewer@example.com", aal: "aal2" });
   const law = "/api/challenge/review/legislation/ug-rev-2024/ita";
   assert.equal((await call("/api/challenge/review/legislation", owner.token)).status, 403);
   assert.equal((await call(`${law}/status`, owner.token, { method: "POST", body: { status: "verified" } })).status, 403);
@@ -174,7 +174,7 @@ test("verification workflow: owners cannot; reviewers mark under review; only ap
   assert.equal((await call(`${law}/sections/80/status`, reviewer.token, { method: "POST", body: { status: "under_review", heading: "Changed" } })).status, 403, "headings: approvers only");
 
   await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
-  const approver = await supabase.issueToken({ email: "approver@example.com" });
+  const approver = await supabase.issueToken({ email: "approver@example.com", aal: "aal2" });
   await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text)", [approver.userId]);
   const decide = (token, id) => call(`/api/challenge/review/register/requests/${id}/decision`, token, { method: "POST", body: { decision: "approve", note: "Checked the source myself." } });
   assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "ok" } })).status, 400, "verifying needs the source and a note");
@@ -317,7 +317,7 @@ test("2026 amendments register: Bill and reported figures side by side, conflict
   // Review: reviewers mark under review; only approvers verify, with the source; logged.
   const supabase = await createFakeSupabase(pg);
   const renv = envFor(db, { SUPABASE_URL: supabase.url, SUPABASE_FETCH: supabase.fetch });
-  const reviewer = await supabase.issueToken({ email: "reviewer@example.com" });
+  const reviewer = await supabase.issueToken({ email: "reviewer@example.com", aal: "aal2" });
   await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, 'reviewer@example.com', now()::text)", [reviewer.userId]);
   const post = async (path, body) => {
     const response = await handleRequest(new Request(`https://worker.example${path}`, { method: "POST", headers: { Origin: origin, Authorization: `Bearer ${reviewer.token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) }), renv);
@@ -329,7 +329,7 @@ test("2026 amendments register: Bill and reported figures side by side, conflict
   // Phase 2b: the reviewer prepares; a different legal approver decides. (Test figures only: not a finding about the enacted Act.)
   const prepared = await post(path, { status: "verified", note: "Synthetic test: section 7(2) as enacted checked.", officialSourceUrl: "https://example.org/vat-amendment-act-2026" });
   assert.equal(prepared.status, 202);
-  const approver = await supabase.issueToken({ email: "approver@example.com" });
+  const approver = await supabase.issueToken({ email: "approver@example.com", aal: "aal2" });
   await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text)", [approver.userId]);
   const decided = await handleRequest(new Request(`https://worker.example/api/challenge/review/register/requests/${prepared.json.request.id}/decision`, { method: "POST", headers: { Origin: origin, Authorization: `Bearer ${approver.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ decision: "approve", note: "Checked." }) }), renv);
   assert.equal(decided.status, 200);

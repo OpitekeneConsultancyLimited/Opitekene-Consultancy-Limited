@@ -92,10 +92,21 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   // plus 13 Challenge an Assessment tables, public_holidays and 3 legislative-watch tables.
   // Plus the 2026 amendments register and saved impact assessments.
   // Plus the Phase 2b legal verification register (requests, register, withdrawals, audit log).
-  assert.equal(tables.rows.length, 70);
+  // Plus Phase 2c: admin_users, security_events, launch_gates, launch_gate_events.
+  assert.equal(tables.rows.length, 74);
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
   const policies = await pg.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'taxcomp' AND policyname = 'taxcomp_worker_all'");
-  assert.equal(policies.rows[0].n, 70);
+  assert.equal(policies.rows[0].n, 74);
+  const phase2c = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
+    FROM information_schema.role_table_grants
+    WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp' AND table_name IN ('admin_users', 'security_events', 'launch_gates', 'launch_gate_events')
+    GROUP BY table_name ORDER BY table_name`);
+  assert.deepEqual(phase2c.rows, [
+    { table_name: "admin_users", privileges: "SELECT" },
+    { table_name: "launch_gate_events", privileges: "INSERT,SELECT" },
+    { table_name: "launch_gates", privileges: "SELECT,UPDATE" },
+    { table_name: "security_events", privileges: "INSERT,SELECT" },
+  ], "the Worker cannot add administrators, delete gates or edit security and gate history");
   const challengeGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
     FROM information_schema.role_table_grants
     WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp'

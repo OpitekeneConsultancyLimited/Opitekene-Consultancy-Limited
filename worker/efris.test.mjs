@@ -267,10 +267,13 @@ test("creates a client-scoped internal draft without a fiscalisation action", as
 });
 
 test("serves a syntactically valid, non-fiscalising dashboard", async () => {
-  const response = efrisDashboardResponse();
+  const response = efrisDashboardResponse({ ADMIN_SHARED_TOKEN_ENABLED: "true" });
   const html = await response.text();
-  const scriptTagStart = html.indexOf("<script>");
-  const scriptStart = scriptTagStart + "<script>".length;
+  const tag = html.match(/<script nonce="([A-Za-z0-9]+)">/);
+  assert.ok(tag, "the page script carries the per-response CSP nonce");
+  assert.match(response.headers.get("Content-Security-Policy"), new RegExp(`script-src 'nonce-${tag[1]}'`));
+  const scriptTagStart = tag.index;
+  const scriptStart = scriptTagStart + tag[0].length;
   const scriptEnd = html.indexOf("</script>", scriptStart);
   assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.match(html, /manual\/import workflow only/i);

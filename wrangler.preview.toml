@@ -16,8 +16,12 @@ head_sampling_rate = 0.1
 ALLOWED_ORIGIN = "https://prototype-preview.taxcomp-prototype-preview.pages.dev"
 GEMINI_MODEL = "gemini-3.5-flash-lite"
 SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_IdpY6dnVzJXUl05vqTlHmg_Xta-oZRF"
+# Staging: named administrators only (no shared token).
+ADMIN_SHARED_TOKEN_ENABLED = "false"
 PHASE10_OPERATIONS_ANALYTICS_ENABLED = "false"
 PHASE11_LEGAL_REVIEW_APPROVED = "false"
+PHASE11_TAX_CALCULATION_APPROVED = "false"
 PHASE11_SECURITY_REVIEW_APPROVED = "false"
 PHASE11_PRIVACY_REVIEW_APPROVED = "false"
 PHASE11_OPERATIONS_READY = "false"
