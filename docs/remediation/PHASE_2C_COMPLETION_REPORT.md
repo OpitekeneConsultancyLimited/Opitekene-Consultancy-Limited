@@ -1,6 +1,6 @@
 # Phase 2c completion report: access controls, launch gates, upload scanning, CSP, email and infrastructure
 
-**Date:** 14 November 2026. **Authorised by:** the owner's instruction to start Phase 2c after the Phase 2b report. **Delivered in:** PR #38.
+**Date:** 14 November 2026. **Authorised by:** the owner's instruction to start Phase 2c after the Phase 2b report. **Delivered in:** PR #38 (merged as `62fc662`). **Live:** migration `20261114000200` applied after a backup (92,488 bytes) and a dry run; Worker `8360931b`; site cache v51.
 
 > Nothing in this phase approves a launch gate, a legal record or a tax calculation. All eight launch gates start as **Not started**, with no responsible person named.
 
@@ -39,4 +39,4 @@ Tests: **490/490** unit (was 472). Browser e2e **154/154** locally in Edge (was 
 
 ## 4. Verdict
 
-Phase 2c is **implemented and tested**. M2, M3, M4 and L4 remain open on owner and management actions. N8 and N17 are closed in code, but N8 stays open in operation until administrators are added and the shared token is off. Deployment status is recorded in the tracker.
+Phase 2c is **implemented, tested and deployed**. Live checks: 74 tables with RLS, 8 gates not started, 0 admins; admin and gate APIs refuse unsigned calls (401) and the refusal is logged; both public pages serve the CSP with 0 violations in a real browser (real supabase-js, fonts). M2, M3, M4 and L4 remain open on owner and management actions. N8 and N17 are closed in code, but N8 stays open in operation until administrators are added and the shared token is off. H1 (legal content) is unchanged: 0 legal records are verified.
