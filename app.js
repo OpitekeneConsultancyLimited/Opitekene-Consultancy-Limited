@@ -1293,6 +1293,18 @@ form.addEventListener("submit", (event) => {
 
   if (!form.reportValidity()) return;
 
+  // Phase 2b: a rule set withdrawn by TaxComp's legal reviewers shows their reason, never figures.
+  const taxHead = form.dataset.taxHead;
+  const earlierYear = (taxHead === "paye" || taxHead === "individual") && document.querySelector("#paye-period")?.value === "2025/26";
+  const withdrawal = window.taxcompLegalStatus?.calculatorBlock(taxHead, earlierYear ? "UG-FY2025-26-individual-v1" : "UG-FY2026-27-v1");
+  if (withdrawal) {
+    calculatedResults.hidden = true;
+    emptyResults.hidden = false;
+    formError.textContent = `This calculator has been withdrawn by TaxComp's legal reviewers while it is corrected: ${String(withdrawal.reason).replace(/[.\s]*$/, ".")} No figures are shown. Please ask a tax professional.`;
+    formError.hidden = false;
+    return;
+  }
+
   try {
     calculations[form.dataset.taxHead]();
   } catch (error) {

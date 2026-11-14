@@ -159,7 +159,7 @@ export async function loadVersions(db: Database): Promise<ProvisionVersion[]> {
     text_verified_by AS "textVerifiedBy", bill_status AS "billStatus", assent_date AS "assentDate", commencement_date AS "commencementDate",
     applies_from_period AS "appliesFromPeriod", applies_to_period AS "appliesToPeriod", amended_by_statute_id AS "amendedByStatuteId",
     computation_json AS "computationJson", approved_for_computation AS "approved", source_url AS "sourceUrl", note
-    FROM law_provision_versions ORDER BY topic, applies_from_period`).all<Row>();
+    FROM law_provision_versions WHERE withdrawn = 0 ORDER BY topic, applies_from_period`).all<Row>();
   return results.map((row) => ({
     id: String(row.id), statuteId: String(row.statuteId), topic: String(row.topic), section: String(row.section), heading: String(row.heading),
     textOrSummary: String(row.textOrSummary), textVerified: row.textVerifiedBy !== null && row.textVerifiedBy !== undefined,
@@ -171,14 +171,19 @@ export async function loadVersions(db: Database): Promise<ProvisionVersion[]> {
 }
 
 export async function loadRuleSet(db: Database): Promise<RuleSet | null> {
-  const set = await db.prepare(`SELECT version, title, sources_json AS "sourcesJson", approved_for_computation AS "approved"
+  const set = await db.prepare(`SELECT version, title, sources_json AS "sourcesJson", approved_for_computation AS "approved", withdrawn
     FROM procedure_rule_sets WHERE active = 1 ORDER BY created_at DESC LIMIT 1`).first<Row>();
   if (!set) return null;
+  // Phase 2b: a withdrawn rule set is returned (so the seed rules are NOT used instead) but marked, and no deadline is computed from it.
+  const withdrawal = Number(set.withdrawn) === 1
+    ? await db.prepare(`SELECT reason FROM legal_withdrawals WHERE entity_type = 'rule_set' AND entity_id = ? AND lifted_at IS NULL`).bind(set.version).first<Row>()
+    : null;
   const { results } = await db.prepare(`SELECT rule_key AS "ruleKey", label, trigger_event AS "triggerEvent", period_days AS "periodDays", urgent_days AS "urgentDays",
     exclude_trigger_day AS "excludeTriggerDay", weekend_holiday_rule AS "weekendHolidayRule", counting_todo_verify AS "countingTodoVerify",
     payment_fraction AS "paymentFraction", description, source_url AS "sourceUrl" FROM procedure_rules WHERE rule_set_version = ?`).bind(set.version).all<Row>();
   return {
-    version: String(set.version), title: String(set.title), approvedForComputation: Number(set.approved) === 1, sources: parse<string[]>(set.sourcesJson, []),
+    version: String(set.version), title: String(set.title), approvedForComputation: Number(set.approved) === 1 && Number(set.withdrawn) !== 1, sources: parse<string[]>(set.sourcesJson, []),
+    ...(Number(set.withdrawn) === 1 ? { withdrawn: { reason: String(withdrawal?.reason ?? "withdrawn for correction") } } : {}),
     rules: results.map((row) => ({
       ruleKey: String(row.ruleKey) as RuleSet["rules"][number]["ruleKey"], label: String(row.label), triggerEvent: String(row.triggerEvent),
       periodDays: num(row.periodDays), urgentDays: num(row.urgentDays), excludeTriggerDay: Number(row.excludeTriggerDay) === 1,
@@ -192,7 +197,7 @@ export async function loadRuleSet(db: Database): Promise<RuleSet | null> {
 export async function loadHolidays(db: Database, today: string): Promise<PublicHoliday[]> {
   const from = `${Number(today.slice(0, 4)) - 1}-01-01`;
   const { results } = await db.prepare(`SELECT holiday_date AS "date", name, verified_by AS "verifiedBy", source_url AS "sourceUrl", note
-    FROM public_holidays WHERE holiday_date >= ? ORDER BY holiday_date, name`).bind(from).all<Row>();
+    FROM public_holidays WHERE holiday_date >= ? AND withdrawn = 0 ORDER BY holiday_date, name`).bind(from).all<Row>();
   return results.map((row) => ({
     date: String(row.date), name: String(row.name), verified: row.verifiedBy !== null && row.verifiedBy !== undefined,
     sourceUrl: str(row.sourceUrl), note: String(row.note ?? ""),
@@ -202,7 +207,7 @@ export async function loadHolidays(db: Database, today: string): Promise<PublicH
 export async function loadCaseLaw(db: Database): Promise<CaseLaw[]> {
   const { results } = await db.prepare(`SELECT id, citation, parties, decision_date AS "decisionDate", forum, background, legal_question AS "legalQuestion",
     decision, principle, summary_status AS "summaryStatus", summary_source AS "summarySource", issue_tags_json AS "issueTagsJson", search_terms AS "searchTerms",
-    source_url AS "sourceUrl", appeal_status AS "appealStatus" FROM tax_case_law ORDER BY decision_date DESC NULLS LAST LIMIT 2000`).all<Row>();
+    source_url AS "sourceUrl", appeal_status AS "appealStatus" FROM tax_case_law WHERE withdrawn = 0 ORDER BY decision_date DESC NULLS LAST LIMIT 2000`).all<Row>();
   return results.map((row) => ({
     id: String(row.id), citation: String(row.citation), parties: String(row.parties), decisionDate: str(row.decisionDate), forum: "TAT",
     background: str(row.background), legalQuestion: str(row.legalQuestion), decision: str(row.decision), principle: str(row.principle),

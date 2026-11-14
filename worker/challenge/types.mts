@@ -61,6 +61,8 @@ export interface RuleSet {
   approvedForComputation: boolean;
   sources: string[];
   rules: ProcedureRule[];
+  /** Phase 2b: withdrawn by a legal approver. No deadline is computed while this is set. */
+  withdrawn?: { reason: string };
 }
 
 export interface Statute {

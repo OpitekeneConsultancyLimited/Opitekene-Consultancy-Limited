@@ -745,6 +745,7 @@ async function assistFor(env, question, body) {
 /** The opening of an answer given without the AI provider. */
 function leadText(guide, impact, professional) {
   if (guide) return guideText(guide, professional);
+  if (impact?.status === "withdrawn") return impact.understanding;
   if (impact?.status === "assessed" && impact.explanation) return `${professional ? impact.explanation.professional : impact.explanation.simple}${impact.conflicts.length ? `\n${impact.conflicts.join(" ")}` : ""}`;
   if (impact?.status === "needs_facts") return `To work out the effect for you (${impact.title}), I need: ${impact.questions.map((q) => q.question).join(" ")} You can answer here, or use Tax Tools → Tax Impact Assessment.`;
   return "";
@@ -752,6 +753,9 @@ function leadText(guide, impact, professional) {
 
 function impactNote(impact) {
   if (impact.status === "assessed") return impactEvidence(impact);
+  if (impact.status === "withdrawn") {
+    return `${impact.understanding} Do not calculate, estimate or state any rate, threshold or amount for this; tell the user plainly that the calculation is temporarily unavailable and suggest a tax professional.`;
+  }
   return `TaxComp impact assessment (${impact.title}) needs these facts before it can calculate. Ask the user for them in plain words and do not compute figures yourself:\n${impact.questions.map((q) => `- ${q.question} (${q.help})`).join("\n")}`;
 }
 

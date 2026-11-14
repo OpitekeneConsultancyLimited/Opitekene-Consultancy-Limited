@@ -73,7 +73,8 @@ test("migration: seeds are drafts, the Primer is metadata only, and the database
   assert.equal(events, seeded.length);
   await assert.rejects(pg.query(`INSERT INTO taxcomp.knowledge_records (id, title, layer, country, tax_category, source_kind, source_organisation, source_reference, content_kind, licence, body, created_at, updated_at)
     VALUES ('bad.excerpt', 'x', 'international', 'INTL', 'beps', 'textbook', 'Publisher', 'Book', 'licensed_excerpt', 'restricted_no_text', 'copied text', 'now', 'now')`), /knowledge_/);
-  await assert.rejects(pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified' WHERE id = 'intl.beps'"), /knowledge_verified_reviewed/, "verification needs a reviewer");
+  await assert.rejects(pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified' WHERE id = 'intl.beps'"), /legal_two_person_required/, "verification needs an approved two-person request");
+  await assert.rejects(pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified', reviewed_by = 'x', reviewed_at = 'now' WHERE id = 'intl.beps'"), /legal_two_person_required/, "even with a reviewer named");
   await pg.close();
 });
 
@@ -108,26 +109,46 @@ test("review workflow: reviewers draft, approvers verify, users see only verifie
   assert.equal((await call("/api/challenge/review/knowledge", reviewer.token, { method: "POST", body: { ...base, statuteId: "no-such-act" } })).status, 400);
   const saved = await call("/api/challenge/review/knowledge", reviewer.token, { method: "POST", body: base });
   assert.equal(saved.status, 200, JSON.stringify(saved.json));
-  assert.equal((await call(`/api/challenge/review/knowledge/${base.id}/decision`, reviewer.token, { method: "POST", body: { decision: "verify", note: "Checked against chapter 4." } })).status, 403, "verifying needs approver rights");
+  // Phase 2b: verifying is PREPARED by any reviewer and DECIDED by a different legal approver.
+  const approver = await supabase.issueToken({ email: "approver@example.com" });
+  const third = await supabase.issueToken({ email: "third@example.com" });
+  await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text), ($2, 'third@example.com', 1, now()::text)", [approver.userId, third.userId]);
+  const decideAs = (token, requestId, decision = "approve") => call(`/api/challenge/review/register/requests/${requestId}/decision`, token, { method: "POST", body: { decision, note: "Checked the chapter reference." } });
 
-  await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
   const lazy = await call("/api/challenge/review/knowledge/intl.foreign-tax-credit/decision", reviewer.token, { method: "POST", body: { decision: "verify" } });
   assert.equal(lazy.status, 400);
   assert.match(lazy.json.error, /written by AI/);
-  const ok = await call("/api/challenge/review/knowledge/intl.foreign-tax-credit/decision", reviewer.token, { method: "POST", body: { decision: "verify", note: "Checked against chapter 4 and the Income Tax Act." } });
+  const prepared = await call("/api/challenge/review/knowledge/intl.foreign-tax-credit/decision", reviewer.token, { method: "POST", body: { decision: "verify", note: "Checked against chapter 4 and the Income Tax Act." } });
+  assert.equal(prepared.status, 202, JSON.stringify(prepared.json));
+  assert.deepEqual((await call("/api/challenge/knowledge?q=foreign+tax+credit", owner.token)).json.results, [], "nothing is published until a second person approves");
+  assert.equal((await decideAs(reviewer.token, prepared.json.request.id)).status, 403, "a reviewer without approver rights cannot decide");
+  await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1 WHERE user_id = $1", [reviewer.userId]);
+  const own = await decideAs(reviewer.token, prepared.json.request.id);
+  assert.equal(own.status, 403, "nobody approves their own submission");
+  assert.match(own.json.error, /different legal approver/);
+  const ok = await decideAs(approver.token, prepared.json.request.id);
   assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.equal(ok.json.contentClass, "professional_commentary", "a verified note is commentary, never verified law");
   const after = await call("/api/challenge/knowledge?q=foreign+tax+credit&onDate=2026-11-12", owner.token);
   assert.deepEqual(after.json.results.map((r) => r.id), ["intl.foreign-tax-credit"]);
   const shown = after.json.results[0];
   assert.equal(shown.current, true);
+  assert.equal(shown.legalClassLabel, "Professional commentary");
   assert.match(shown.chapterRef, /Chapter 4/);
   assert.ok(shown.lastReviewed);
   assert.equal(shown.licenceNote, undefined, "internal licence notes are not published");
 
-  // Retire it in favour of the reviewer's record (verified first), then edit: back to draft.
-  assert.equal((await call(`/api/challenge/review/knowledge/${base.id}/decision`, reviewer.token, { method: "POST", body: { decision: "verify", note: "Own note, checked against chapter 4." } })).status, 200);
-  const retired = await call("/api/challenge/review/knowledge/intl.foreign-tax-credit/decision", reviewer.token, { method: "POST", body: { decision: "outdated", supersededBy: base.id, note: "Replaced." } });
-  assert.equal(retired.status, 200);
+  // The reviewer's own note: its author cannot be the independent approver, even when someone else submits it.
+  const ownNote = await call(`/api/challenge/review/knowledge/${base.id}/decision`, approver.token, { method: "POST", body: { decision: "verify", note: "Own note, checked against chapter 4." } });
+  assert.equal(ownNote.status, 202);
+  const byAuthor = await decideAs(reviewer.token, ownNote.json.request.id);
+  assert.equal(byAuthor.status, 403);
+  assert.match(byAuthor.json.error, /wrote or entered this content/);
+  assert.equal((await decideAs(third.token, ownNote.json.request.id)).status, 200);
+  // Retire the first record in favour of the reviewer's: also two people.
+  const retired = await call("/api/challenge/review/knowledge/intl.foreign-tax-credit/decision", reviewer.token, { method: "POST", body: { decision: "outdated", supersededBy: base.id, note: "Replaced by the reviewer's own note." } });
+  assert.equal(retired.status, 202);
+  assert.equal((await decideAs(approver.token, retired.json.request.id)).status, 200);
   const marked = (await call("/api/challenge/knowledge?q=foreign+tax+credit", owner.token)).json.results;
   assert.deepEqual(marked.map((r) => [r.id, r.status, r.current]), [[base.id, "verified", true], ["intl.foreign-tax-credit", "outdated", false]], "outdated records are shown last and marked");
   assert.equal((await call("/api/challenge/review/knowledge", reviewer.token, { method: "POST", body: { ...base, body: "Edited wording of the note." } })).status, 200);

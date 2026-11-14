@@ -77,6 +77,8 @@
   }
 
   function say(text, kind = "notice") { state.message = text; state.messageKind = kind; }
+  /** Phase 2b: verifying now waits for a second legal approver; say so instead of "Saved". */
+  function saidSaved(result, fallback = "Saved.") { say(result && result.pending ? result.message : fallback, "success"); }
 
   async function act(fn, success) {
     if (state.busy) return;
@@ -167,9 +169,10 @@
       ]),
     ];
     if (me.reviewer) {
-      parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["law", "Law and cases admin"]].map(([key, text]) =>
-        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); state.legislation = await call("/api/challenge/review/legislation?flagged=1&pageSize=200"); } }), text }))));
+      parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["register", "Verification register"], ["law", "Law and cases admin"]].map(([key, text]) =>
+        h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "register") { state.register = await call("/api/challenge/review/register"); state.registerEntry = null; } if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); state.legislation = await call("/api/challenge/review/legislation?flagged=1&pageSize=200"); } }), text }))));
       if (state.panel === "queue") return [...parts, queueScreen()];
+      if (state.panel === "register") return [...parts, registerPanel()];
       if (state.panel === "law") return [...parts, lawAdminScreen()];
     }
     if (!me.consented) return [...parts, consentScreen()];
@@ -661,9 +664,9 @@
       const q = new URLSearchParams({ pageSize: "200", ...(filters.law ? { law: filters.law } : {}), ...(filters.status ? { status: filters.status } : {}), ...(filters.flagged ? { flagged: "1" } : {}) });
       state.legislation = await call(`/api/challenge/review/legislation?${q}`);
     };
+    // "Verified" and "Superseded" prepare a two-person request; any reviewer can prepare one.
     const statusSelect = (current, label) => h("select", { "aria-label": label }, Object.entries(leg.statuses)
-      .filter(([value]) => leg.canApprove || !["verified", "superseded"].includes(value) || value === current)
-      .map(([value, text]) => h("option", { value, text, selected: value === current ? "" : null })));
+      .map(([value, text]) => h("option", { value, text: ["verified", "superseded"].includes(value) && value !== current ? `${text} (needs a second approver)` : text, selected: value === current ? "" : null })));
     const lawRow = (law) => {
       const status = statusSelect(law.verificationStatus, `Status of ${law.officialTitle}`);
       const note = h("input", { type: "text", "aria-label": `Verification note for ${law.officialTitle}`, placeholder: "What was checked, against which edition" });
@@ -677,10 +680,11 @@
         h("div", { className: "ch-fields" }, [status, note, source, ...(leg.canApprove ? [chapter, commencement] : [])].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
         h("div", { className: "ch-actions" }, [
           h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
-            await call(`/api/challenge/review/legislation/${leg.edition.id}/${law.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
+            const result = await call(`/api/challenge/review/legislation/${leg.edition.id}/${law.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
               ...(leg.canApprove ? { chapter: chapter.value.trim() || undefined, commencementDate: commencement.value || undefined } : {}) } });
             await reload();
-          }, "Saved."), text: "Save status" }),
+            saidSaved(result);
+          }), text: "Save status" }),
           h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { state.legislationHistory = await call(`/api/challenge/review/legislation/history?id=${encodeURIComponent(`${leg.edition.id}/${law.id}`)}`); }), text: "History" }),
         ]),
       ]);
@@ -695,10 +699,11 @@
         h("span", { className: "ch-muted", text: ` · ${s.verificationLabel}${s.flags.length ? ` · ${s.flags.join(", ")}` : ""}` }),
         h("div", { className: "ch-fields" }, [status, note, source, ...(leg.canApprove ? [heading] : [])].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
         h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
-          await call(`/api/challenge/review/legislation/${leg.edition.id}/${s.lawId}/sections/${s.sectionNumber}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
+          const result = await call(`/api/challenge/review/legislation/${leg.edition.id}/${s.lawId}/sections/${s.sectionNumber}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined,
             ...(leg.canApprove && heading.value.trim() !== s.heading ? { heading: heading.value.trim() } : {}) } });
           await reload();
-        }, "Saved."), text: "Save" }),
+          saidSaved(result);
+        }), text: "Save" }),
       ]);
     };
     const amendmentRow = (a) => {
@@ -715,9 +720,10 @@
         h("p", { className: "ch-muted", text: `${a.evidenceLabel}. ${a.billReference}.${a.note ? ` ${a.note}` : ""}` }),
         h("div", { className: "ch-fields" }, [status, note, source].map((input) => h("div", { className: "ch-field" }, [h("label", { text: input.getAttribute("aria-label") }), input]))),
         h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
-          await call(`/api/challenge/review/legislation/amendments/${a.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined } });
+          const result = await call(`/api/challenge/review/legislation/amendments/${a.id}/status`, { method: "POST", body: { status: status.value, note: note.value.trim(), officialSourceUrl: source.value.trim() || undefined } });
           await reload();
-        }, "Saved."), text: "Save" }),
+          saidSaved(result);
+        }), text: "Save" }),
       ]);
     };
     const lawFilter = h("select", { "aria-label": "Law" }, [h("option", { value: "", text: "All laws" }), ...leg.laws.map((l) => h("option", { value: l.id, text: l.officialTitle, selected: filters.law === l.id ? "" : null }))]);
@@ -731,7 +737,7 @@
     const history = state.legislationHistory;
     return h("section", { className: "ch-kb", "aria-labelledby": "ch-leg-title" }, [
       h("h3", { id: "ch-leg-title", text: "Legislation verification" }),
-      h("p", { className: "ch-muted", text: `${leg.edition.label}. Every captured record starts unverified. Check each Act's chapter, commencement, Parts, section numbers and headings against the official Uganda Law Reform Commission edition. Only legal approvers can mark records verified (with the official source) or superseded.` }),
+      h("p", { className: "ch-muted", text: `${leg.edition.label}. Every captured record starts unverified. Check each Act's chapter, commencement, Parts, section numbers and headings against the official Uganda Law Reform Commission edition. Verifying or superseding needs two people: you submit it with the official source, and a different legal approver approves it in the Verification register.` }),
       h("details", {}, [h("summary", { text: `Acts and regulations (${leg.laws.length})` }), h("ul", { className: "ch-law-list" }, leg.laws.map(lawRow))]),
       h("details", { open: "" }, [
         h("summary", { text: "Sections" }),
@@ -771,12 +777,13 @@
     const row = (r) => {
       const note = h("input", { type: "text", "aria-label": `Review note for ${r.id}`, placeholder: r.aiGenerated ? "What you checked it against (required for AI-written notes)" : "Review note" });
       const replacement = h("input", { type: "text", "aria-label": `Record that replaces ${r.id}`, placeholder: "Replaced by (record id, optional)" });
-      const decide = (decision) => act(async () => { await call(`/api/challenge/review/knowledge/${r.id}/decision`, { method: "POST", body: { decision, note: note.value.trim(), supersededBy: replacement.value.trim() || undefined } }); await reload(); }, "Saved.");
+      const decide = (decision) => act(async () => { const result = await call(`/api/challenge/review/knowledge/${r.id}/decision`, { method: "POST", body: { decision, note: note.value.trim(), supersededBy: replacement.value.trim() || undefined } }); await reload(); saidSaved(result); });
       const buttons = [];
+      // Verifying or retiring is prepared by any reviewer and approved by a different legal approver.
+      if (r.status === "draft" || r.status === "outdated") buttons.push(h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => decide("verify"), text: "Submit for verification" }));
+      if (r.status === "verified") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("outdated"), text: "Submit as outdated" }));
       if (state.me.canApproveLaw) {
-        if (r.status === "draft" || r.status === "outdated") buttons.push(h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => decide("verify"), text: "Verify" }));
         if (r.status === "draft") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("reject"), text: "Reject" }));
-        if (r.status === "verified") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("outdated"), text: "Mark outdated" }));
         if (r.status === "verified" || r.status === "rejected") buttons.push(h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => decide("reopen"), text: "Reopen as draft" }));
       }
       return h("li", { className: `ch-law-row ch-kb-${r.status}` }, [
@@ -821,6 +828,132 @@
     ]);
   }
 
+  /**
+   * Phase 2b verification register: outstanding two-person reviews, conflicts,
+   * withdrawn material, emergency withdrawal, record history and the audit trail.
+   * A reviewer prepares; a DIFFERENT legal approver decides. The Worker and the
+   * database enforce this; the buttons only reflect it.
+   */
+  function registerPanel() {
+    const reg = state.register;
+    if (!reg) return h("p", { text: "Loading…" });
+    const reload = async () => { state.register = await call("/api/challenge/review/register"); };
+    const who = (id) => (id === state.me.userId ? "you" : id ? `reviewer ${String(id).slice(0, 8)}` : "—");
+    const when = (iso) => (iso ? String(iso).slice(0, 16).replace("T", " ") : "—");
+    const typeLabel = (t) => reg.options.entityTypes.find((x) => x.id === t)?.label || t;
+    const field = (id, label, input) => h("div", { className: "ch-field" }, [h("label", { for: id, text: label }), input]);
+    const typeSelect = (id) => h("select", { id }, reg.options.entityTypes.map((t) => h("option", { value: t.id, text: t.label })));
+
+    const requestRow = (r) => {
+      const noteId = `reg-note-${r.id}`;
+      const note = h("input", { id: noteId, type: "text", placeholder: "Decision note (required to reject)" });
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: `${r.entityLabel}: ${r.instrumentTitle}${r.provision ? `, ${r.provision}` : ""}` }),
+        h("span", { className: "ch-muted", text: ` · ${r.action} · ${r.entityId}` }),
+        h("p", { className: "ch-muted", text: `Source: ${r.categoryLabel}${r.instrumentNumber ? ` (${r.instrumentNumber})` : ""}${r.documentReference ? ` · ${r.documentReference}` : ""}${r.commencementDate ? ` · commenced ${r.commencementDate}` : ""}${r.effectiveFrom ? ` · effective ${r.effectiveFrom}${r.effectiveTo ? ` to ${r.effectiveTo}` : ""}` : ""}` }),
+        r.sourceUrl ? h("p", {}, [link(r.sourceUrl, r.sourceUrl)]) : null,
+        h("p", { text: `What was checked: ${r.evidenceNote}` }),
+        h("p", { className: "ch-muted", text: `Prepared by ${who(r.preparedBy)} on ${when(r.preparedAt)}.` }),
+        r.preparedByMe ? h("p", { className: "ch-muted", text: "You prepared this, so a different legal approver must decide it." }) : null,
+        r.canDecide ? field(noteId, "Decision note", note) : null,
+        h("div", { className: "ch-actions" }, [
+          r.canDecide ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/register/requests/${r.id}/decision`, { method: "POST", body: { decision: "approve", note: note.value.trim() } }); await reload(); }, "Approved. The record now shows its new status everywhere."), text: "Approve" }) : null,
+          r.canDecide ? h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/register/requests/${r.id}/decision`, { method: "POST", body: { decision: "reject", note: note.value.trim() } }); await reload(); }, "Rejected."), text: "Reject" }) : null,
+          r.preparedByMe ? h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/register/requests/${r.id}/cancel`, { method: "POST" }); await reload(); }, "Cancelled."), text: "Cancel my request" }) : null,
+        ]),
+      ]);
+    };
+
+    const withdrawnRow = (w) => {
+      const src = h("input", { id: `reg-rsrc-${w.id}`, type: "url", placeholder: "https://… evidence it is now correct" });
+      const why = h("input", { id: `reg-rnote-${w.id}`, type: "text", placeholder: "What was corrected and checked" });
+      return h("li", { className: "ch-law-row" }, [
+        h("strong", { text: `${typeLabel(w.entityType)}: ${w.entityId}` }),
+        h("p", { text: `Withdrawn ${when(w.withdrawnAt)} by ${who(w.withdrawnBy)}: ${w.reason}` }),
+        field(`reg-rsrc-${w.id}`, "Source", src), field(`reg-rnote-${w.id}`, "Evidence note", why),
+        h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => {
+          await call("/api/challenge/review/register/requests", { method: "POST", body: { entityType: w.entityType, entityId: w.entityId, action: "reinstate", sourceUrl: src.value.trim() || undefined, evidenceNote: why.value.trim(), legalCategory: w.entityType === "case_law" ? "judgment" : "act" } });
+          await reload();
+        }, "Reinstatement sent for a second approver. Once approved the record returns as pending verification."), text: "Request reinstatement" }),
+      ]);
+    };
+
+    const sub = { type: typeSelect("reg-type"), id: h("input", { id: "reg-id", type: "text", placeholder: "e.g. ug-rev-2024/vata/s16, or 2027-03-10|Eid al-Fitr" }),
+      action: h("select", { id: "reg-action" }, [h("option", { value: "verify", text: "Verify" }), h("option", { value: "supersede", text: "Mark superseded" })]),
+      title: h("input", { id: "reg-title", type: "text", placeholder: "Defaults to the record's title" }), number: h("input", { id: "reg-number", type: "text", placeholder: "e.g. Act 12 of 2026, S.I. No. 5 of 2026" }),
+      category: h("select", { id: "reg-category" }, reg.options.categories.map((c) => h("option", { value: c.id, text: `${c.label}${c.notEnacted ? " (cannot verify law)" : ""}` }))),
+      provision: h("input", { id: "reg-provision", type: "text" }), publication: h("input", { id: "reg-publication", type: "date" }), commencement: h("input", { id: "reg-commencement", type: "date" }),
+      from: h("input", { id: "reg-from", type: "date" }), to: h("input", { id: "reg-to", type: "date" }), year: h("input", { id: "reg-year", type: "text", placeholder: "2026/27" }),
+      source: h("input", { id: "reg-source", type: "url", placeholder: "https://… official text or Gazette" }), docref: h("input", { id: "reg-docref", type: "text", placeholder: "e.g. Uganda Gazette Vol. CXIX No. 33" }),
+      note: h("textarea", { id: "reg-evidence", rows: "3", placeholder: "What you checked, against what, and what it says" }) };
+    const submitBody = () => ({ entityType: sub.type.value, entityId: sub.id.value.trim(), action: sub.action.value, instrumentTitle: sub.title.value.trim() || undefined, instrumentNumber: sub.number.value.trim() || undefined,
+      legalCategory: sub.category.value, provision: sub.provision.value.trim() || undefined, publicationDate: sub.publication.value || undefined, commencementDate: sub.commencement.value || undefined,
+      effectiveFrom: sub.from.value || undefined, effectiveTo: sub.to.value || undefined, applicableTaxYear: sub.year.value.trim() || undefined, sourceUrl: sub.source.value.trim() || undefined,
+      documentReference: sub.docref.value.trim() || undefined, evidenceNote: sub.note.value.trim() });
+
+    const wd = { type: typeSelect("reg-wd-type"), id: h("input", { id: "reg-wd-id", type: "text", placeholder: "Record id, or UG-FY2026-27-v1 / UG-FY2026-27-v1#vat for a calculator" }),
+      reason: h("textarea", { id: "reg-wd-reason", rows: "2", placeholder: "Why (users see this)" }), sure: h("input", { id: "reg-wd-sure", type: "checkbox" }) };
+    const look = { type: typeSelect("reg-look-type"), id: h("input", { id: "reg-look-id", type: "text" }) };
+    const entry = state.registerEntry;
+    const chain = reg.audit;
+    return h("section", { className: "ch-card" }, [
+      h("h3", { text: "Verification register" }),
+      h("p", { className: "ch-muted", text: "Draft, then research, then a reviewer submits it with the authoritative source, then a different legal approver reviews and approves it, and it is published at once. Nobody can approve their own submission or content they wrote. A Bill, budget speech or press report is never evidence of enacted law. TaxComp does not certify the law: this register records who checked what, against which source." }),
+      h("p", { className: chain.intact ? "ch-muted" : "ch-message ch-error", role: chain.intact ? null : "alert", text: chain.intact ? `Audit trail: ${chain.entries} entries, hash chain intact.` : `Audit trail BROKEN at entry ${chain.brokenAt}. Report this to the owner now.` }),
+      h("div", { className: "ch-table-wrap", tabindex: "0", role: "region", "aria-label": "Verification counts by record type" }, [h("table", { className: "ch-table" }, [
+        h("thead", {}, [h("tr", {}, ["Record type", "Total", "Verified", "Disputed", "Withdrawn"].map((t) => h("th", { scope: "col", text: t })))]),
+        h("tbody", {}, reg.counts.map((c) => h("tr", {}, [h("th", { scope: "row", text: c.label }), ...[c.total, c.verified, c.disputed, c.withdrawn].map((n) => h("td", { text: String(n) }))]))),
+      ])]),
+      h("h4", { text: `Waiting for a decision (${reg.pending.length})` }),
+      reg.pending.length ? h("ul", { className: "ch-law-list" }, reg.pending.map(requestRow)) : h("p", { className: "ch-muted", text: "Nothing waiting." }),
+      h("h4", { text: `Conflicts and disputes (${reg.conflicts.length + reg.disputed.length})` }),
+      h("ul", { className: "ch-law-list" }, [
+        ...reg.conflicts.map((c) => h("li", { className: "ch-law-row" }, [h("strong", { text: `${c.principalAct}, ${c.provision}` }), h("p", { className: "ch-muted", text: `Bill: ${c.billFigure || "—"} · Reported as enacted: ${c.reportedFigure || "—"} · shown to users as a disputed legal position until verified against the enacted Act.` })])),
+        ...reg.disputed.map((d) => h("li", { className: "ch-law-row" }, [h("strong", { text: `${typeLabel(d.entityType)}: ${d.title || d.entityId}` }), h("p", { className: "ch-muted", text: `Marked disputed ${when(d.recordedAt)} by ${who(d.recordedBy)}: ${d.note}` })])),
+      ]),
+      h("h4", { text: `Withdrawn material (${reg.withdrawn.length})` }),
+      reg.withdrawn.length ? h("ul", { className: "ch-law-list" }, reg.withdrawn.map(withdrawnRow)) : h("p", { className: "ch-muted", text: "Nothing is withdrawn." }),
+      reg.canApprove ? h("details", {}, [
+        h("summary", { text: "Emergency withdrawal" }),
+        h("p", { className: "ch-muted", text: "Removes the record from every page, the assistant, deadlines and calculators at once. Use it when material is wrong or out of date. Putting it back needs a second approver." }),
+        h("div", { className: "ch-fields" }, [field("reg-wd-type", "Record type", wd.type), field("reg-wd-id", "Record id", wd.id), field("reg-wd-reason", "Reason", wd.reason)]),
+        h("label", { for: "reg-wd-sure" }, [wd.sure, " I understand users stop seeing this immediately"]),
+        h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => {
+          if (!wd.sure.checked) throw new Error("Tick the box to confirm the withdrawal.");
+          await call("/api/challenge/review/register/withdrawals", { method: "POST", body: { entityType: wd.type.value, entityId: wd.id.value.trim(), reason: wd.reason.value.trim() } });
+          await reload();
+        }, "Withdrawn. Users no longer see it."), text: "Withdraw now" }),
+      ]) : null,
+      h("details", {}, [
+        h("summary", { text: "Submit a record for verification, or mark it disputed" }),
+        h("div", { className: "ch-fields" }, [
+          field("reg-type", "Record type", sub.type), field("reg-id", "Record id", sub.id), field("reg-action", "Action", sub.action), field("reg-title", "Law or instrument", sub.title),
+          field("reg-number", "Instrument number", sub.number), field("reg-category", "Source type", sub.category), field("reg-provision", "Section or regulation", sub.provision),
+          field("reg-publication", "Publication / Gazette date", sub.publication), field("reg-commencement", "Commencement date", sub.commencement), field("reg-from", "Effective from", sub.from),
+          field("reg-to", "Effective to", sub.to), field("reg-year", "Tax year", sub.year), field("reg-source", "Source link", sub.source), field("reg-docref", "Document reference", sub.docref),
+          field("reg-evidence", "Evidence note", sub.note),
+        ]),
+        h("div", { className: "ch-actions" }, [
+          h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call("/api/challenge/review/register/requests", { method: "POST", body: submitBody() }); await reload(); }, "Sent for independent approval."), text: "Submit for independent approval" }),
+          h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { await call("/api/challenge/review/register/disputes", { method: "POST", body: { entityType: sub.type.value, entityId: sub.id.value.trim(), note: sub.note.value.trim() } }); await reload(); }, "Marked disputed. It is no longer shown as verified."), text: "Mark disputed" }),
+        ]),
+      ]),
+      h("details", { open: entry ? "" : null }, [
+        h("summary", { text: "Look up a record's history" }),
+        h("div", { className: "ch-fields" }, [field("reg-look-type", "Record type", look.type), field("reg-look-id", "Record id", look.id)]),
+        h("button", { type: "button", className: "btn btn-small btn-secondary", disabled: state.busy, onclick: () => act(async () => { state.registerEntry = await call(`/api/challenge/review/register/entry?type=${encodeURIComponent(look.type.value)}&id=${encodeURIComponent(look.id.value.trim())}`); }), text: "Show history" }),
+        entry ? h("div", {}, [
+          h("p", { text: `${entry.title}${entry.provision ? `, ${entry.provision}` : ""} · now: ${reg.options.classes[entry.contentClass] || entry.contentClass}` }),
+          h("ul", { className: "ch-law-list" }, [
+            ...entry.versions.map((v) => h("li", { text: `Version ${v.version} (${v.classLabel}) · ${when(v.recordedAt)}${v.supersededAt ? ` · replaced ${when(v.supersededAt)}` : " · current"}${v.approvedBy ? ` · prepared by ${who(v.preparedBy)}, approved by ${who(v.approvedBy)}` : ""}${v.sourceUrl ? ` · ${v.sourceUrl}` : ""}${v.note ? ` · ${v.note}` : ""}` })),
+            ...entry.audit.map((a) => h("li", { className: "ch-muted", text: `#${a.seq} ${when(a.occurredAt)} · ${a.action} · ${who(a.actor)}` })),
+          ]),
+        ]) : null,
+      ]),
+      reg.recent.length ? h("details", {}, [h("summary", { text: "Recent decisions" }), h("ul", { className: "ch-law-list" }, reg.recent.map((r) => h("li", { text: `${when(r.decidedAt || r.preparedAt)} · ${r.status} · ${r.entityLabel}: ${r.instrumentTitle} · prepared by ${who(r.preparedBy)}${r.decidedBy ? `, decided by ${who(r.decidedBy)}` : ""}${r.decisionNote ? ` · ${r.decisionNote}` : ""}` })))]) : null,
+    ]);
+  }
+
   function lawAdminScreen() {
     const law = state.law;
     if (!law) return h("p", { text: "Loading…" });
@@ -833,8 +966,8 @@
         h("span", { className: "ch-muted", text: ` ${p.textVerified ? "text verified" : "TODO_VERIFY"} · ${p.approvedForComputation ? "approved" : "not approved"}` }),
         section, text,
         h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/law/${p.id}`, { method: "POST", body: { text: text.value, section: section.value || undefined } }); state.law = await call("/api/challenge/law"); }, "Text saved as verified."), text: "Save verified text" }),
-        state.me.canApproveLaw ? formula : null,
-        state.me.canApproveLaw ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call(`/api/challenge/review/law/${p.id}/approve`, { method: "POST", body: formula.value ? { computation: JSON.parse(formula.value) } : {} }); state.law = await call("/api/challenge/law"); }, "Approved for computation."), text: "Approve for computation" }) : null,
+        formula,
+        h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { const result = await call(`/api/challenge/review/law/${p.id}/approve`, { method: "POST", body: formula.value ? { computation: JSON.parse(formula.value) } : {} }); state.law = await call("/api/challenge/law"); saidSaved(result); }), text: "Submit for approval for computation" }),
       ]);
     });
     const reloadLaw = async () => { state.law = await call("/api/challenge/law"); };
@@ -845,8 +978,8 @@
       return h("li", { className: "ch-law-row" }, [
         h("strong", { text: `${day.date} · ${day.name}` }),
         h("span", { className: "ch-muted", text: day.verified ? " · confirmed" : " · not yet confirmed" }),
-        state.me.canApproveLaw && !day.verified ? source : null,
-        state.me.canApproveLaw && !day.verified ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { await call("/api/challenge/review/holidays/verify", { method: "POST", body: { date: day.date, name: day.name, sourceUrl: source.value.trim() } }); await reloadLaw(); }, "Holiday confirmed."), text: "Confirm date" }) : null,
+        !day.verified ? source : null,
+        !day.verified ? h("button", { type: "button", className: "btn btn-small", disabled: state.busy, onclick: () => act(async () => { const result = await call("/api/challenge/review/holidays/verify", { method: "POST", body: { date: day.date, name: day.name, sourceUrl: source.value.trim() } }); await reloadLaw(); saidSaved(result); }), text: "Submit date for confirmation" }) : null,
       ]);
     });
     const hol = { date: h("input", { type: "date", "aria-label": "Holiday date" }), name: h("input", { "aria-label": "Holiday name" }), url: h("input", { type: "url", "aria-label": "Source link (optional)" }) };
@@ -872,7 +1005,8 @@
       knowledgePanel(),
       h("h3", { text: "Deadline rules" }),
       h("p", { text: `${law.ruleSet.version}: ${law.ruleSet.approvedForComputation ? "approved" : "pending legal review"}.` }),
-      state.me.canApproveLaw && !law.ruleSet.approvedForComputation ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); }, "Rules approved."), text: "Approve these rules (legal approver)" }) : null,
+      law.ruleSet.withdrawn ? h("p", { className: "ch-message ch-error", text: `Withdrawn: ${law.ruleSet.withdrawn.reason}. Users see no deadlines until it is reinstated and verified again.` }) : null,
+      !law.ruleSet.approvedForComputation && !law.ruleSet.withdrawn ? h("button", { type: "button", className: "btn btn-secondary", onclick: () => act(async () => { const result = await call(`/api/challenge/review/rules/${law.ruleSet.version}/approve`, { method: "POST", body: {} }); state.law = await call("/api/challenge/law"); saidSaved(result); }), text: "Submit these rules for approval" }) : null,
       h("h3", { text: "Public holidays" }),
       h("p", { className: "ch-muted", text: "When a deadline falls on a weekend or a listed holiday, users are told to lodge by the working day before. Only confirmed holidays can move a deadline later, and only if the deadline rules say a deadline moves to the next working day. Add Eid al-Fitr and Eid al-Adha each year once they are gazetted." }),
       h("details", { className: "ch-holidays" }, [

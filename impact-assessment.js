@@ -199,6 +199,8 @@
   function resultView(r) {
     const parts = [h("p", { className: "impact-understanding", text: r.understanding })];
     if (r.status === "needs_facts") return [...parts, questionsForm(r)];
+    // Phase 2b: withdrawn by TaxComp's legal reviewers; the notice is all that is shown.
+    if (r.status === "withdrawn") return [h("p", { className: "impact-understanding", role: "alert", text: r.understanding })];
     if (r.status === "not_covered") {
       return [...parts, h("p", { text: "The impact assessment covers the VAT registration threshold, PAYE across tax years, and withholding on payments changed in 2026. For anything else, ask the assistant: it answers from TaxComp's legislation database." }),
         h("a", { className: "btn btn-small", href: "#assistant", text: "Ask TaxComp" })];

@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 import { handleRequest } from "../worker/index.mjs";
 import { clearSupabaseKeyCache } from "../worker/supabase-auth.mjs";
-import { createMigratedDatabase } from "../worker/pglite-test-support.mjs";
+import { approveForTest, createMigratedDatabase } from "../worker/pglite-test-support.mjs";
 import { createFakeSupabase } from "../worker/supabase-test-fakes.mjs";
 import docx from "../challenge-docx.js";
 
@@ -390,7 +390,9 @@ await page.fill("#kb-search", "");await axeScan(page, "structure of the tax Acts
 
 // Guided international tax question: asks for missing facts, answers in the
 // standard order, cites a reviewed record, and hands over to the calculator.
-await pg.query("UPDATE taxcomp.knowledge_records SET status = 'verified', reviewed_by = 'e2e-approver', reviewed_at = $1, review_note = 'e2e' WHERE id = 'intl.foreign-tax-credit'", [new Date().toISOString()]);
+// Phase 2b: a record is verified only through an approved two-person request (test fixture).
+await approveForTest(pg, { entityType: "knowledge", entityId: "intl.foreign-tax-credit", approver: "e2e-approver",
+  sql: "UPDATE taxcomp.knowledge_records SET status = 'verified', reviewed_by = 'e2e-approver', reviewed_at = $1, review_note = 'e2e' WHERE id = 'intl.foreign-tax-credit'", params: [new Date().toISOString()] });
 await page.evaluate(() => { location.hash = "international-tax"; });
 await page.fill("#intl-guide-question", "I received consulting fees from a client in Kenya and tax was withheld there");
 await page.click("#intl-guide-form button[type=submit]");
@@ -533,6 +535,54 @@ check("Tax Companion sends a VAT question to the VAT calculator", (await page.ge
 await page.screenshot({ path: path.join(shots, "6-dashboard-360.png"), fullPage: false });
 await page.click("#dashboard-root .dash-head-actions button:has-text('Edit my profile')");
 check("the profile can be changed later", Boolean(await page.$("#dashboard-root form.dash-onboarding")) && (await page.inputValue("#dash-q-businessType")) === "company");
+
+// Phase 2b: verification register, two-person review and emergency withdrawal, in the browser.
+// The e2e user is a legal approver (above). One request was prepared by someone else, one by this user.
+{
+  const addRequest = (id, entityType, entityId, preparedBy, legalCategory = "gazette_notice") => pg.query(`INSERT INTO taxcomp.legal_verification_requests
+      (id, entity_type, entity_id, action, instrument_title, legal_category, source_url, evidence_note, prepared_by, prepared_at)
+    VALUES ($1, $2, $3, 'verify', 'E2E test record', $4, 'https://example.org/e2e-gazette', 'Synthetic e2e evidence note; not a legal finding.', $5, now()::text)`, [id, entityType, entityId, legalCategory, preparedBy]);
+  await addRequest("00000000-0000-4000-8000-0000000000e1", "holiday", "2026-12-25|Christmas Day", "e2e-other-reviewer");
+  await addRequest("00000000-0000-4000-8000-0000000000e2", "section", "ug-rev-2024/ita/s80", userId, "act");
+  await page.evaluate(() => { location.hash = "challenge"; });
+  await page.getByRole("tab", { name: "Verification register" }).first().click();
+  await page.waitForSelector(`${root$} >> text=Waiting for a decision`, { timeout: 10_000 });
+  const reg = await text();
+  check("register: two requests wait; the audit chain is reported intact", reg.includes("Waiting for a decision (2)") && reg.includes("hash chain intact"));
+  const ownRow = page.locator(`${root$} li`, { hasText: "ug-rev-2024/ita/s80" }).first();
+  check("register: you cannot approve a request you prepared", (await ownRow.textContent()).includes("You prepared this") && (await ownRow.getByRole("button", { name: "Approve" }).count()) === 0);
+  await axeScan(page, "verification register");
+  check("no sideways scroll on the verification register at 360 px", await page.evaluate(() => document.documentElement.scrollWidth <= 361));
+  await page.screenshot({ path: path.join(shots, "7-register-360.png"), fullPage: true });
+  const otherRow = page.locator(`${root$} li`, { hasText: "Christmas Day" }).first();
+  await otherRow.getByRole("button", { name: "Approve" }).click();
+  await page.waitForFunction(() => document.querySelector("#challenge-root")?.textContent?.includes("Approved."), null, { timeout: 8000 }).catch(() => {});
+  const holiday = (await pg.query("SELECT verified_by AS v FROM taxcomp.public_holidays WHERE holiday_date = '2026-12-25' AND name = 'Christmas Day'")).rows[0];
+  check("register: approving another reviewer's request applies it, with you as the approver", holiday?.v === userId);
+  // Emergency withdrawal of the PAYE calculator through the UI, then the calculator refuses to show figures.
+  await page.click(`${root$} details:has(> summary:text("Emergency withdrawal")) > summary`);
+  await page.selectOption("#reg-wd-type", "calculator_rules");
+  await page.fill("#reg-wd-id", "UG-FY2026-27-v1#paye");
+  await page.fill("#reg-wd-reason", "E2E test: PAYE bands under correction.");
+  await page.check("#reg-wd-sure");
+  await page.getByRole("button", { name: "Withdraw now" }).click();
+  await page.waitForFunction(() => document.querySelector("#challenge-root")?.textContent?.includes("Users no longer see it"), null, { timeout: 8000 }).catch(() => {});
+  check("register: an approver can withdraw material at once", ((await text()).includes("Withdrawn material (1)")));
+  await page.evaluate(() => window.taxcompLegalStatus.refresh());
+  await page.evaluate(() => { location.hash = "calc-paye"; });
+  await page.waitForSelector("#monthly-salary", { timeout: 5000 }).catch(() => {});
+  await page.fill("#monthly-salary", "1500000");
+  await page.locator("#tax-form [type=submit]").first().click();
+  await page.waitForTimeout(300);
+  const blocked = (await page.textContent("#estimator")) || "";
+  check("withdrawn PAYE calculator shows the reviewers' reason and no figures", blocked.includes("withdrawn by TaxComp's legal reviewers") && blocked.includes("PAYE bands under correction") && !(await page.isVisible("#calculated-results")));
+  // A withdrawn section is no longer served to the Knowledge Centre.
+  const withdrawnSection = await page.evaluate(async (worker) => (await fetch(`${worker}/api/legislation/vata/sections/16`, { cache: "no-store" })).status, WORKER);
+  check("before withdrawal: VAT Act s.16 is served", withdrawnSection === 200);
+  await handleRequest(new Request(`${WORKER}/api/challenge/review/register/withdrawals`, { method: "POST", headers: { Origin: SITE, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ entityType: "section", entityId: "ug-rev-2024/vata/s16", reason: "E2E test: heading withdrawn." }) }), env);
+  const afterStatus = await page.evaluate(async (worker) => (await fetch(`${worker}/api/legislation/vata/sections/16`, { cache: "no-store" })).status, WORKER);
+  check("after withdrawal: the section is refused (410)", afterStatus === 410);
+}
 
 check("no script errors", errors.length === 0, errors.join(" | "));
 

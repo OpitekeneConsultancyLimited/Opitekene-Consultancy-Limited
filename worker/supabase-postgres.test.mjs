@@ -91,10 +91,11 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   // phase6_password_resets (retired with Supabase Auth), plus 4 billing tables,
   // plus 13 Challenge an Assessment tables, public_holidays and 3 legislative-watch tables.
   // Plus the 2026 amendments register and saved impact assessments.
-  assert.equal(tables.rows.length, 66);
+  // Plus the Phase 2b legal verification register (requests, register, withdrawals, audit log).
+  assert.equal(tables.rows.length, 70);
   assert.deepEqual(tables.rows.filter((row) => !row.rowsecurity), []);
   const policies = await pg.query("SELECT count(*)::int AS n FROM pg_policies WHERE schemaname = 'taxcomp' AND policyname = 'taxcomp_worker_all'");
-  assert.equal(policies.rows[0].n, 66);
+  assert.equal(policies.rows[0].n, 70);
   const challengeGrants = await pg.query(`SELECT table_name, string_agg(privilege_type, ',' ORDER BY privilege_type) AS privileges
     FROM information_schema.role_table_grants
     WHERE grantee = 'taxcomp_worker' AND table_schema = 'taxcomp'
@@ -131,6 +132,7 @@ test("Supabase migration applies twice, enables RLS everywhere and keeps API rol
   assert.deepEqual(auditGrants.rows, [
     { table_name: "challenge_audit_log", privileges: "INSERT,SELECT" },
     { table_name: "efris_audit_log", privileges: "INSERT,SELECT" },
+    { table_name: "legal_audit_log", privileges: "INSERT,SELECT" },
     { table_name: "legal_source_audit", privileges: "INSERT,SELECT" },
     { table_name: "phase6_audit_log", privileges: "INSERT,SELECT" },
   ], "audit trails are append-only for the Worker role");

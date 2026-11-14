@@ -50,6 +50,24 @@ CREATE TABLE IF NOT EXISTS storage.buckets (
 );`;
 
 /**
+ * Test fixtures only: marks a legal record verified the way production does
+ * (Phase 2b): an approved two-person request is recorded first, then the
+ * change runs in the same transaction with that request named. `sql` must set
+ * the verifier column to `approver`.
+ */
+export async function approveForTest(pg, { entityType, entityId, sql, params = [], preparer = "test-preparer", approver = "test-approver" }) {
+  const id = crypto.randomUUID();
+  await pg.query(`INSERT INTO taxcomp.legal_verification_requests (id, entity_type, entity_id, action, instrument_title, legal_category, source_url, evidence_note, prepared_by, prepared_at, status, decided_by, decided_at)
+    VALUES ($1, $2, $3, 'verify', 'Test fixture', $4, 'https://example.org/test-fixture', 'Synthetic test fixture; not a legal finding.', $5, now()::text, 'approved', $6, now()::text)`,
+  [id, entityType, entityId, entityType === "knowledge" ? "commentary" : "act", preparer, approver]);
+  await pg.transaction(async (tx) => {
+    await tx.query("SELECT set_config('taxcomp.legal_request', $1, true)", [id]);
+    await tx.query(sql, params);
+  });
+  return id;
+}
+
+/**
  * A migrated database. In memory by default (tests); pass `dataDir` for one
  * kept on disk between runs (local offline development). Migrations are
  * idempotent, so they are re-applied on every start.

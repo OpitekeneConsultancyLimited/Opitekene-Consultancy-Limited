@@ -11,6 +11,7 @@
 // The calculator (tax-calculator.js) is passed in by the caller, so this
 // module stays pure and testable.
 import type { Database } from "./store.mts";
+import { calculatorWithdrawal } from "./register.mts";
 import { amendmentFigures, listAmendments, type AmendmentRecord } from "./legislation.mts";
 
 // ------------------------------------------------------------------ calculator contract
@@ -179,7 +180,7 @@ async function sourcesFor(db: Database, a: AmendmentRecord): Promise<SourceItem[
   }
   if (a.lawId && a.sectionNumber) {
     const s = await db.prepare(`SELECT s.heading, s.verification_status AS "status", v.official_title AS "title", v.chapter FROM legislation_sections s JOIN legislation_law_versions v ON v.id = s.law_version_id
-      WHERE v.law_id = ? AND s.section_number = ? ORDER BY v.edition_id DESC LIMIT 1`).bind(a.lawId, a.sectionNumber).first<Row>();
+      WHERE v.law_id = ? AND s.section_number = ? AND s.withdrawn = 0 AND v.withdrawn = 0 ORDER BY v.edition_id DESC LIMIT 1`).bind(a.lawId, a.sectionNumber).first<Row>();
     if (s) items.push({ title: `${String(s.title)}${s.chapter ? ` (${String(s.chapter)})` : ""}`, provision: `s.${a.sectionNumber} ${String(s.heading)}`, legalStatus: "Principal Act (2024 revised edition, as at FY 2024/25)",
       sourceKind: "official_legislation_structure", sourceKindLabel: SOURCE_KIND_LABEL.official_legislation_structure, url: null, verification: String(s.status) === "verified" ? "Heading verified" : "Heading unverified; wording not held", note: "Shows what the section is about; not its wording." });
   }
@@ -197,7 +198,8 @@ export interface Outcome { label: string; period: string; rule: string; result: 
 export interface Step { label: string; detail: string; amount: number | null }
 export interface Action { id: string; title: string; who: string; basis: string; due: string; documents: string[]; consequence: string }
 export interface ImpactResult {
-  status: "needs_facts" | "assessed" | "not_covered";
+  /** "withdrawn": the calculator rules were withdrawn by a legal approver (Phase 2b); no figures are produced. */
+  status: "needs_facts" | "assessed" | "not_covered" | "withdrawn";
   scenario: Scenario | null;
   title: string;
   understanding: string;
@@ -389,6 +391,18 @@ export async function assessImpact(db: Database, calc: Calculator, input: Return
   if (!scenario) {
     r.status = "not_covered";
     return r;
+  }
+  // Phase 2b: a withdrawn calculator rule set produces no figures, here or in the assistant.
+  const checks: Array<[string, string]> = scenario === "vat_registration" ? [["UG-FY2026-27-v1", "vat"]]
+    : scenario === "paye_change" ? [["UG-FY2026-27-v1", "paye"], ["UG-FY2025-26-individual-v1", "paye"]] : [["UG-FY2026-27-v1", "withholding"]];
+  for (const [ruleSet, head] of checks) {
+    const blocked = await calculatorWithdrawal(db, ruleSet, head);
+    if (blocked) {
+      r.status = "withdrawn";
+      r.understanding = `TaxComp's legal reviewers have withdrawn the ${SCENARIOS[scenario].toLowerCase()} calculation while it is corrected (${blocked.reason}). No figures are shown. Please ask a tax professional.`;
+      r.limits = ["This calculation is temporarily unavailable."];
+      return r;
+    }
   }
   if (scenario === "vat_registration") return vatRegistration(db, calc, r);
   if (scenario === "paye_change") return payeChange(db, calc, r);
