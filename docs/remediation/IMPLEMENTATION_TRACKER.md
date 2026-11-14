@@ -9,7 +9,7 @@ Programme: TaxComp audit remediation and production readiness (master prompt and
 | 1 | Baseline: inventory, architecture, findings, security baseline | **Done** (14 Nov) | this PR | Revalidated live; 13 new findings (N1–N13) |
 | 2a | Quick technical fixes: L1, L3, M5, H2 prevention, H3 tooling, N1, N4, N10, N13 | **Live** (14 Nov) | #35 | M5 still needs the Cloudflare token secrets |
 | 2b | H1 verification register, two-person review, emergency withdrawal, legal classes, audit chain | **Live** (14 Nov) | #36 | [Completion report](PHASE_2B_COMPLETION_REPORT.md). Content verification awaits reviewers; conflict and deadline evidence packs are the next H1 task |
-| 2c | M2 launch-gate register; M3 email guide; M4 interim auth controls; L2 CSP; L4 infrastructure note; N8 admin auth; N17 upload scanning | **Implemented** (14 Nov) | #38 | [Completion report](PHASE_2C_COMPLETION_REPORT.md). Owner: password-policy push, add administrators, scanner, SMTP |
+| 2c | M2 launch-gate register; M3 email guide; M4 interim auth controls; L2 CSP; L4 infrastructure note; N8 admin auth; N17 upload scanning | **Live** (14 Nov) | #38 | [Completion report](PHASE_2C_COMPLETION_REPORT.md). Owner: password-policy push, add administrators, scanner, SMTP |
 | 3 | Privacy documents (G1); tenant-isolation tests (G4); API review; audit trail (G5); DR (G6, N6) | Planned | — | |
 | 4 | Tax calculation inventory and test register (G2) | Planned | — | Expected answers must come from the tax reviewer |
 | 5 | AI evaluation and security (G3) | Planned | — | |
@@ -44,14 +44,14 @@ Programme: TaxComp audit remediation and production readiness (master prompt and
 
 | Item | Change | Test evidence | Still needed |
 |---|---|---|---|
-| Migration `20261114000200` | `admin_users`, `security_events`, `launch_gates` (8, none approved), `launch_gate_events` (hash chain), `challenge_documents.scan_status` | `access-controls.test.mjs` 7/7; `supabase-postgres.test.mjs` (74 tables, grants) | Apply with `db push` after backup and dry run |
+| Migration `20261114000200` | `admin_users`, `security_events`, `launch_gates` (8, none approved), `launch_gate_events` (hash chain), `challenge_documents.scan_status` | `access-controls.test.mjs` 7/7; `supabase-postgres.test.mjs` (74 tables, grants) | Applied 14 Nov after backup (92,488 bytes) and dry run; 74 tables, RLS on all, 8 gates not started |
 | N8 | `worker/admin-access.mjs`; every admin page signs in a named admin with two-step code; shared token logged and switchable | `access-controls.test.mjs`; e2e browser sign-in | Owner adds admins, then sets `ADMIN_SHARED_TOKEN_ENABLED = "false"` |
 | M4 | Two-step sign-in in Account; required for reviewers (`aal2`); password policy and rate limits in `config.toml` | `challenge-api.test.mjs` M4; e2e | Owner: `npx supabase@2.121.0 config push` (2 changes, previewed) |
 | M2 | Launch-gate register, `/admin/gates`, readiness needs flags and gates | `access-controls.test.mjs`, `commercial-governance.test.mjs`, e2e | People appointed; evidence |
 | N17 | Challenge uploads scanned before storage, fail closed | `challenge-api.test.mjs` N17 ×2 | Scanner on Fly.io (uploads off until then) |
 | L2 | Meta CSP on both pages, `scripts/site-csp.mjs --check` in CI | `site-csp.test.mjs`; e2e: 0 violations | Custom domain for header-based protection (management) |
 | M3, L4 | `TRANSACTIONAL_EMAIL.md` and templates; `INFRASTRUCTURE_RECOMMENDATION.md` | `config diff` accepted the template keys | Provider and DNS; plan decision |
-| Full suite | — | 490/490 unit; e2e 154/154 (Edge) | CI run |
+| Full suite | — | 490/490 unit; e2e 154/154 (Edge locally, Chrome in CI) | Worker `8360931b`; site SW v51; live CSP: 0 violations in a real browser |
 
 ## Decisions and actions waiting on management
 
