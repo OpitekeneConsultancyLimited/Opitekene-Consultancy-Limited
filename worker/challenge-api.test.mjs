@@ -24,14 +24,31 @@ Reasons: Expenses claimed were not supported by invoices.
 
 Issued under section 22 of the Tax Procedures Code Act.`;
 
-async function setup({ storage = true } = {}) {
+// A stand-in for the ClamAV scanner: flags any file containing this marker
+// (never the real EICAR string, which antivirus on a developer PC would quarantine).
+export const FAKE_MALWARE_MARKER = "TAXCOMP-TEST-MALWARE-MARKER";
+function fakeScanner(state) {
+  return {
+    async fetch(_url, init) {
+      state.scans += 1;
+      if (state.mode === "down") throw new Error("scanner unreachable");
+      if (state.mode === "error") return new Response("bad gateway", { status: 502 });
+      const text = new TextDecoder().decode(init.body);
+      return Response.json(text.includes(FAKE_MALWARE_MARKER) ? { clean: false, signature: "Test.Marker" } : { clean: true });
+    },
+  };
+}
+
+async function setup({ storage = true, scanner = "up" } = {}) {
   clearSupabaseKeyCache();
   const { pg, db } = await createMigratedDatabase();
   const supabase = await createFakeSupabase(pg);
+  const scan = { scans: 0, mode: scanner };
   const env = {
     UNANSWERED_QUESTIONS: db, DATABASE_PROVIDER: "supabase", ALLOWED_ORIGIN: origin,
     SUPABASE_URL: supabase.url, SUPABASE_FETCH: supabase.fetch,
     ...(storage ? { SUPABASE_SERVICE_ROLE_KEY: supabase.serviceKey } : {}),
+    ...(scanner !== "none" ? { PHASE6_MALWARE_SCANNER: fakeScanner(scan) } : {}),
     CHAT_LIMITER: { limit: async () => ({ success: true }) },
     CHALLENGE_CLOCK: () => NOW,
   };
@@ -46,10 +63,10 @@ async function setup({ storage = true } = {}) {
     return { status: response.status, body: type.includes("json") ? await response.json() : new Uint8Array(await response.arrayBuffer()), headers: response.headers };
   };
   const user = async (email) => {
-    const { token, userId } = await supabase.issueToken({ email });
+    const { token, userId } = await supabase.issueToken({ email, aal: "aal2" });
     return { token, userId };
   };
-  return { pg, db, env, supabase, call, user };
+  return { pg, db, env, supabase, call, user, scan };
 }
 
 async function newCase(t, who) {
@@ -206,6 +223,95 @@ test("uploads are type-checked, stored per owner folder, and one-click delete re
   }
   const trail = await t.pg.query("SELECT action FROM taxcomp.challenge_audit_log WHERE case_id = $1 ORDER BY occurred_at, action", [caseId]);
   assert.ok(trail.rows.map((r) => r.action).includes("case.delete"));
+  await t.pg.close();
+});
+
+test("N17: every upload is malware-scanned before storage; infected files and scanner outages store nothing", async () => {
+  const t = await setup();
+  const owner = await t.user("owner@example.com");
+  const caseId = await newCase(t, owner);
+  const upload = (text) => t.call(`/api/challenge/cases/${caseId}/documents`, { method: "POST", token: owner.token, raw: new TextEncoder().encode(text), contentType: "text/plain", headers: { "X-Document-Type": "correspondence" } });
+  const objectsBefore = t.supabase.objects.size;
+
+  const clean = await upload("Letter from URA about the assessment.");
+  assert.equal(clean.status, 201);
+  assert.equal(t.scan.scans, 1, "scanned once, before storage");
+  const stored = await t.pg.query("SELECT scan_status, sha256 FROM taxcomp.challenge_documents WHERE id = $1", [clean.body.document.id]);
+  assert.equal(stored.rows[0].scan_status, "clean");
+  assert.match(stored.rows[0].sha256, /^[0-9a-f]{64}$/);
+
+  const infected = await upload(`Looks harmless ${FAKE_MALWARE_MARKER}`);
+  assert.equal(infected.status, 422);
+  assert.match(infected.body.error, /failed the malware check and was not saved/);
+  assert.equal(t.supabase.objects.size, objectsBefore + 1, "the infected file never reached storage");
+
+  t.scan.mode = "down";
+  const outage = await upload("Another letter.");
+  assert.equal(outage.status, 503, "fails safe when the scanner cannot be reached");
+  assert.match(outage.body.error, /not available right now, so the file was not saved/);
+  t.scan.mode = "error";
+  assert.equal((await upload("And another.")).status, 503, "a scanner error is not treated as clean");
+  assert.equal(t.supabase.objects.size, objectsBefore + 1);
+  const rows = await t.pg.query("SELECT count(*)::int AS n FROM taxcomp.challenge_documents WHERE case_id = $1", [caseId]);
+  assert.equal(rows.rows[0].n, 1);
+
+  const trail = await t.pg.query("SELECT details_json FROM taxcomp.challenge_audit_log WHERE case_id = $1 AND action = 'document.rejected' ORDER BY occurred_at", [caseId]);
+  // The test clock is frozen, so compare as sorted lists.
+  assert.deepEqual(trail.rows.map((r) => JSON.parse(r.details_json).scan).sort(), ["infected", "unavailable", "unavailable"]);
+  const events = await t.pg.query("SELECT outcome, details_json FROM taxcomp.security_events WHERE event_type = 'upload.scan'");
+  assert.deepEqual(events.rows.map((r) => r.outcome).sort(), ["error", "error", "refused"]);
+  assert.ok(!events.rows.some((r) => r.details_json.includes("Looks harmless")), "file contents are never logged");
+
+  // A record that never passed a scan (for example from before this check) is neither served nor read.
+  await t.pg.query(`INSERT INTO taxcomp.challenge_documents (id, case_id, owner_user_id, storage_path, doc_type, file_name, content_type, size_bytes, uploaded_at)
+    VALUES ('00000000-0000-4000-8000-0000000000aa', $1, $2, 'x/y/z', 'other', 'old.txt', 'text/plain', 3, $3)`, [caseId, owner.userId, NOW.toISOString()]);
+  const oldDownload = await t.call(`/api/challenge/cases/${caseId}/documents/00000000-0000-4000-8000-0000000000aa`, { token: owner.token });
+  assert.equal(oldDownload.status, 409);
+  const oldRead = await t.call(`/api/challenge/cases/${caseId}/read`, { method: "POST", token: owner.token, body: { documentId: "00000000-0000-4000-8000-0000000000aa" } });
+  assert.equal(oldRead.status, 409);
+  await t.pg.close();
+});
+
+test("N17: with storage but no scanner, uploads stay switched off", async () => {
+  const t = await setup({ scanner: "none" });
+  const owner = await t.user("owner@example.com");
+  const caseId = await newCase(t, owner);
+  assert.equal((await t.call("/api/challenge/me", { token: owner.token })).body.uploadsEnabled, false);
+  const res = await t.call(`/api/challenge/cases/${caseId}/documents`, { method: "POST", token: owner.token, raw: new TextEncoder().encode("%PDF-1.7"), contentType: "application/pdf" });
+  assert.equal(res.status, 503);
+  assert.match(res.body.error, /paused until malware scanning is switched on/);
+  assert.equal(t.supabase.objects.size, 0);
+  await t.pg.close();
+});
+
+test("M4: staff need two-step sign-in; without it a reviewer is an ordinary user and is told why", async () => {
+  const t = await setup();
+  const owner = await t.user("owner@example.com");
+  const caseId = await newCase(t, owner);
+  const weak = await t.supabase.issueToken({ email: "reviewer@example.com", aal: "aal1" });
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, $2, 1, $3)", [weak.userId, "reviewer@example.com", NOW.toISOString()]);
+  await t.pg.query("UPDATE taxcomp.challenge_cases SET assigned_reviewer_id = $1 WHERE id = $2", [weak.userId, caseId]);
+
+  const me = await t.call("/api/challenge/me", { token: weak.token });
+  assert.equal(me.body.reviewer, false);
+  assert.equal(me.body.canApproveLaw, false);
+  assert.equal(me.body.staffMfaRequired, true);
+  assert.match(me.body.staffMfaMessage, /two-step sign-in/);
+  const queue = await t.call("/api/challenge/review/queue", { token: weak.token });
+  assert.equal(queue.status, 403);
+  assert.equal(queue.body.code, "mfa_required");
+  assert.equal((await t.call(`/api/challenge/cases/${caseId}`, { token: weak.token })).status, 404, "an assigned case is hidden until two-step sign-in");
+  const refused = await t.pg.query("SELECT outcome, actor_user_id FROM taxcomp.security_events WHERE event_type = 'staff.mfa'");
+  assert.equal(refused.rows.length, 1);
+  assert.equal(refused.rows[0].actor_user_id, weak.userId);
+
+  const strong = await t.supabase.issueToken({ email: "reviewer@example.com", userId: weak.userId, aal: "aal2" });
+  assert.equal((await t.call("/api/challenge/review/queue", { token: strong.token })).status, 200);
+  assert.equal((await t.call(`/api/challenge/cases/${caseId}`, { token: strong.token })).status, 200);
+  assert.equal((await t.call("/api/challenge/me", { token: strong.token })).body.staffMfaRequired, false);
+  // Owners never need it.
+  const plain = await t.supabase.issueToken({ email: "owner@example.com", userId: owner.userId, aal: "aal1" });
+  assert.equal((await t.call(`/api/challenge/cases/${caseId}`, { token: plain.token })).status, 200);
   await t.pg.close();
 });
 

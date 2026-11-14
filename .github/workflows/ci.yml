@@ -64,6 +64,9 @@ jobs:
       - name: Page DOM contract
         run: node scripts/check-dom-contract.mjs
 
+      - name: Content Security Policy is current (L2)
+        run: node scripts/site-csp.mjs --check
+
       - name: Worker bundles (no deploy)
         run: npx --yes wrangler@4.158.0 deploy --dry-run
 

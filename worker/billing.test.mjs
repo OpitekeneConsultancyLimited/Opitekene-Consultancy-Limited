@@ -297,7 +297,7 @@ test("Reviewed pack: pay UGX 250,000 for one case; the case gets the tier and go
 test("manual payments: only a legal approver records them, by the short case reference", async () => {
   const t = await setup({ paymentsConfigured: false });
   const owner = await t.supabase.issueToken({ email: "owner@example.com" });
-  const staff = await t.supabase.issueToken({ email: "staff@example.com" });
+  const staff = await t.supabase.issueToken({ email: "staff@example.com", aal: "aal2" });
   await t.call("/api/challenge/consent", { method: "POST", token: owner.token, body: { version: "2026-11-10", accept: true } });
   const caseId = (await t.call("/api/challenge/cases", { method: "POST", token: owner.token })).json.view.case.id;
   const me = await t.call("/api/challenge/me", { token: owner.token });

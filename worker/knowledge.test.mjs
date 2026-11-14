@@ -91,7 +91,7 @@ test("review workflow: reviewers draft, approvers verify, users see only verifie
     return { status: response.status, json: await response.json() };
   };
   const owner = await supabase.issueToken({ email: "owner@example.com" });
-  const reviewer = await supabase.issueToken({ email: "reviewer@example.com" });
+  const reviewer = await supabase.issueToken({ email: "reviewer@example.com", aal: "aal2" });
 
   const before = await call("/api/challenge/knowledge?q=foreign+tax+credit", owner.token);
   assert.equal(before.status, 200);
@@ -110,8 +110,8 @@ test("review workflow: reviewers draft, approvers verify, users see only verifie
   const saved = await call("/api/challenge/review/knowledge", reviewer.token, { method: "POST", body: base });
   assert.equal(saved.status, 200, JSON.stringify(saved.json));
   // Phase 2b: verifying is PREPARED by any reviewer and DECIDED by a different legal approver.
-  const approver = await supabase.issueToken({ email: "approver@example.com" });
-  const third = await supabase.issueToken({ email: "third@example.com" });
+  const approver = await supabase.issueToken({ email: "approver@example.com", aal: "aal2" });
+  const third = await supabase.issueToken({ email: "third@example.com", aal: "aal2" });
   await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text), ($2, 'third@example.com', 1, now()::text)", [approver.userId, third.userId]);
   const decideAs = (token, requestId, decision = "approve") => call(`/api/challenge/review/register/requests/${requestId}/decision`, token, { method: "POST", body: { decision, note: "Checked the chapter reference." } });
 

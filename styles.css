@@ -3670,6 +3670,12 @@ td:first-child {
 .account-firm h4 { margin: 0; font: 700 18px/1.2 var(--serif); }
 .account-firm p { margin: 0; color: var(--muted); font-size: 13px; }
 .account-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; max-width: 72ch; }
+.account-security { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.account-security h4 { margin: 0; font: 700 18px/1.2 var(--serif); }
+.account-security p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.account-security button { justify-self: start; }
+.account-qr { width: 180px; height: 180px; padding: 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+.account-secret { overflow-wrap: anywhere; font-size: 13px; }
 .tax-chat-premium { margin: 10px 0 0; padding: 8px 12px; border-left: 3px solid var(--gold); background: #faf5e8; color: #4a3f22; font-size: 13px; }
 .tax-chat-premium a { color: var(--green-dark); font-weight: 700; }
 @media (max-width: 720px) {

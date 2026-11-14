@@ -82,8 +82,8 @@ export async function createBackup(query, { passphrase, now = new Date(), source
   const rowsByTable = {};
   for (const table of TABLE_ORDER) {
     if (!present.has(table)) continue;
-    // The legal audit log is hash-chained: rows must be restored in their original order.
-    const rows = await query(`SELECT * FROM taxcomp.${table}${table === "legal_audit_log" ? " ORDER BY seq" : ""}`);
+    // Hash-chained logs: rows must be restored in their original order.
+    const rows = await query(`SELECT * FROM taxcomp.${table}${["legal_audit_log", "launch_gate_events"].includes(table) ? " ORDER BY seq" : ""}`);
     rowsByTable[table] = rows.map((row) => Object.fromEntries(Object.entries(row).filter(([column]) => !generated.has(`${table}.${column}`))));
   }
   const { sql, summary } = buildImportSql(rowsByTable, { now, dropExpiredQuestions: false });

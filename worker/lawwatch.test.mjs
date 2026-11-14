@@ -147,7 +147,7 @@ test("reviewer API: list and mark changes; only approvers run it; owners see not
     return { status: response.status, json: await response.json() };
   };
   const owner = await supabase.issueToken({ email: "owner@example.com" });
-  const reviewer = await supabase.issueToken({ email: "reviewer@example.com" });
+  const reviewer = await supabase.issueToken({ email: "reviewer@example.com", aal: "aal2" });
   assert.equal((await call("/api/challenge/review/lawwatch", owner.token)).status, 403);
   await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, 'reviewer@example.com', now()::text)", [reviewer.userId]);
   assert.equal((await call("/api/challenge/review/lawwatch/run", reviewer.token, { method: "POST" })).status, 403, "running needs approver rights");

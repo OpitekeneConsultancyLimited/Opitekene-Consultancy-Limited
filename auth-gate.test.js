@@ -23,7 +23,8 @@ test("the site starts hidden and the sign-in screen is the first thing in the pa
 });
 
 test("account.js only reveals the site for a signed-in session", () => {
-  assert.match(accountJs, /const signedIn = Boolean\(supabase && session && !passwordSetup\);/);
+  // A password alone is not enough when the account has two-step sign-in (mfaPending).
+  assert.match(accountJs, /const signedIn = Boolean\(supabase && session && !passwordSetup && !mfaPending\);/);
   assert.match(accountJs, /document\.documentElement\.dataset\.auth = signedIn \? "in" : "out";/);
   assert.ok(!/dataset\.auth = "in"/.test(accountJs), "no other code path opens the site");
   assert.match(accountJs, /Sign-in is temporarily unavailable/, "fails closed when sign-in cannot load");

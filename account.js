@@ -30,6 +30,11 @@
   let messageKind = "notice";
   let mode = "signup";
   let passwordSetup = false;
+  // Two-step sign-in (TOTP, Supabase Auth MFA). mfaPending: signed in with a
+  // password but the account has a verified factor, so the code is still needed.
+  let mfaPending = false;
+  let factors = [];
+  let enrolling = null; // { factorId, qr, secret } while setting up
   const listeners = new Set();
 
   const api = {
@@ -83,10 +88,32 @@
     return data;
   }
 
+  const mfa = () => supabase?.auth?.mfa || null;
+
+  /** Works out whether this session still needs the two-step code. */
+  async function checkAssurance() {
+    mfaPending = false;
+    if (!session || !mfa()) return;
+    try {
+      const { data } = await mfa().getAuthenticatorAssuranceLevel();
+      mfaPending = Boolean(data && data.nextLevel === "aal2" && data.currentLevel !== "aal2");
+    } catch { mfaPending = false; }
+  }
+
+  async function loadFactors() {
+    factors = [];
+    if (!session || !mfa() || mfaPending) return;
+    try {
+      const { data } = await mfa().listFactors();
+      factors = (data?.all || []).filter((factor) => factor.factor_type === "totp");
+    } catch { factors = []; }
+  }
+
   async function loadAccount() {
     account = null;
-    if (session) {
+    if (session && !mfaPending) {
       try { account = await call("/api/account"); } catch (error) { setMessage(error.message, "error"); }
+      await loadFactors();
     }
     notify();
   }
@@ -152,9 +179,10 @@
         const { data: result, error } = await supabase.auth.signInWithPassword({
           email: String(data.get("account-signin-email")), password: String(data.get("account-signin-password")),
         });
-        if (error) throw new Error(/confirm/i.test(error.message) ? "Confirm your email first: open the link we sent you." : "Sign-in failed. Check your email and password.");
+        if (error) throw new Error(/confirm/i.test(error.message) ? "Confirm your email first: open the link we sent you." : /rate|too many/i.test(error.message) ? "Too many sign-in attempts. Wait a few minutes and try again." : "Sign-in failed. Check your email and password.");
         session = result.session;
         message = "";
+        await checkAssurance();
         await loadAccount();
         render();
         window.scrollTo(0, 0);
@@ -187,6 +215,124 @@
         setMessage("Password saved. You are signed in.", "success");
       }),
     ]);
+  }
+
+  /** Second step of sign-in: the 6-digit code from the authenticator app. */
+  function mfaView() {
+    return el("div", { className: "account-panel" }, [
+      el("h3", { text: "Enter your two-step code" }),
+      el("p", { text: "Open your authenticator app and enter the 6-digit code for TaxComp." }),
+      busyForm(el("form", { className: "phase6-form", id: "account-mfa-form" }, [
+        field("account-mfa-code", "6-digit code", "text", { inputmode: "numeric", autocomplete: "one-time-code", pattern: "[0-9]{6}", maxlength: "6" }),
+        el("div", { className: "phase6-actions" }, [
+          el("button", { type: "submit", className: "primary-button", text: "Continue" }),
+          el("button", { type: "button", className: "secondary-button", text: "Sign out", onclick: signOutHere }),
+        ]),
+      ]), async (data) => {
+        const code = String(data.get("account-mfa-code")).trim();
+        if (!/^\d{6}$/.test(code)) throw new Error("Enter the 6 digits shown in your authenticator app.");
+        const { data: list } = await mfa().listFactors();
+        const factor = (list?.totp || []).find((item) => item.status === "verified");
+        if (!factor) throw new Error("No authenticator is set up for this account. Sign out and sign in again.");
+        const { error } = await mfa().challengeAndVerify({ factorId: factor.id, code });
+        if (error) throw new Error("That code was not accepted. Check the time on your phone and try the next code.");
+        session = (await supabase.auth.getSession()).data.session;
+        mfaPending = false;
+        message = "";
+        await loadAccount();
+        render();
+        window.scrollTo(0, 0);
+      }),
+    ]);
+  }
+
+  async function signOutHere() {
+    await supabase.auth.signOut();
+    session = null; account = null; mfaPending = false; factors = []; enrolling = null; mode = "signin";
+    notify();
+    setMessage("Signed out.", "success");
+  }
+
+  function qrSource(qr) {
+    if (typeof qr !== "string") return "";
+    if (qr.startsWith("data:image/")) return qr;
+    if (qr.trim().startsWith("<svg")) return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qr)}`;
+    return "";
+  }
+
+  function twoStepSection() {
+    const verified = factors.find((factor) => factor.status === "verified");
+    const box = el("section", { className: "account-security", "aria-labelledby": "account-security-title" }, [
+      el("h4", { id: "account-security-title", text: "Two-step sign-in" }),
+    ]);
+    if (verified) {
+      box.append(
+        el("p", { text: "On. When you sign in, TaxComp also asks for a 6-digit code from your authenticator app." }),
+        el("p", { className: "account-note", text: "TaxComp staff and administrators must keep this on: without it, staff screens stay closed." }),
+        el("button", { type: "button", className: "secondary-button", text: "Turn off two-step sign-in", onclick: async () => {
+          if (!window.confirm("Turn off two-step sign-in? Anyone with your password could then sign in.")) return;
+          const { error } = await mfa().unenroll({ factorId: verified.id });
+          if (error) return setMessage("Could not turn it off. Sign out, sign in again with your code, then try again.", "error");
+          await supabase.auth.refreshSession().catch(() => null);
+          await loadFactors();
+          setMessage("Two-step sign-in is off.", "success");
+        } }),
+      );
+    } else if (enrolling) {
+      const src = qrSource(enrolling.qr);
+      box.append(
+        el("p", { text: "1. Open an authenticator app (for example Google Authenticator or Microsoft Authenticator) and scan this code." }),
+        src ? el("img", { className: "account-qr", src, alt: "QR code to add TaxComp to your authenticator app", width: "180", height: "180" }) : null,
+        el("p", {}, [el("span", { text: "Or type this key into the app: " }), el("code", { className: "account-secret", text: enrolling.secret || "" })]),
+        el("p", { text: "2. Enter the 6-digit code the app shows." }),
+        busyForm(el("form", { className: "phase6-form", id: "account-mfa-enrol-form" }, [
+          field("account-mfa-enrol-code", "6-digit code", "text", { inputmode: "numeric", autocomplete: "one-time-code", pattern: "[0-9]{6}", maxlength: "6" }),
+          el("div", { className: "phase6-actions" }, [
+            el("button", { type: "submit", className: "primary-button", text: "Turn on" }),
+            el("button", { type: "button", className: "secondary-button", text: "Cancel", onclick: async () => {
+              const pending = enrolling;
+              enrolling = null;
+              if (pending) await mfa().unenroll({ factorId: pending.factorId }).catch(() => null);
+              await loadFactors();
+              render();
+            } }),
+          ]),
+        ]), async (data) => {
+          const code = String(data.get("account-mfa-enrol-code")).trim();
+          if (!/^\d{6}$/.test(code)) throw new Error("Enter the 6 digits shown in your authenticator app.");
+          const { error } = await mfa().challengeAndVerify({ factorId: enrolling.factorId, code });
+          if (error) throw new Error("That code was not accepted. Check the time on your phone and try the next code.");
+          enrolling = null;
+          session = (await supabase.auth.getSession()).data.session;
+          await loadFactors();
+          setMessage("Two-step sign-in is on. Keep your phone safe: you need it to sign in.", "success");
+        }),
+      );
+    } else {
+      box.append(
+        el("p", { text: "Protect your account with a second step: a 6-digit code from an authenticator app on your phone. Required for TaxComp staff and administrators." }),
+        el("button", { type: "button", className: "secondary-button", text: "Set up two-step sign-in", onclick: async () => {
+          try {
+            // Clear any setup that was started and not finished.
+            for (const factor of factors.filter((item) => item.status !== "verified")) await mfa().unenroll({ factorId: factor.id }).catch(() => null);
+            const { data, error } = await mfa().enroll({ factorType: "totp", friendlyName: `TaxComp ${new Date().toISOString().slice(0, 10)}` });
+            if (error || !data?.id) throw new Error("Could not start the setup. Please try again.");
+            enrolling = { factorId: data.id, qr: data.totp?.qr_code, secret: data.totp?.secret };
+            render();
+          } catch (error) {
+            setMessage(error.message || "Could not start the setup. Please try again.", "error");
+          }
+        } }),
+      );
+    }
+    box.append(el("button", { type: "button", className: "secondary-button", text: "Sign out on all devices", onclick: async () => {
+      if (!window.confirm("Sign out of TaxComp on every device, including this one?")) return;
+      await supabase.auth.signOut({ scope: "global" });
+      session = null; account = null; mfaPending = false; factors = []; enrolling = null; mode = "signin";
+      notify();
+      setMessage("Signed out on all devices.", "success");
+    } }));
+    return box;
   }
 
   function planCard(plan, subscription) {
@@ -242,13 +388,9 @@
     const wrap = el("div", { className: "account-panel" });
     wrap.append(el("div", { className: "account-who" }, [
       el("p", {}, [el("span", { text: "Signed in as " }), el("strong", { text: session.user.email })]),
-      el("button", { type: "button", className: "secondary-button", text: "Sign out", onclick: async () => {
-        await supabase.auth.signOut();
-        session = null; account = null; mode = "signin";
-        notify();
-        setMessage("Signed out.", "success");
-      } }),
+      el("button", { type: "button", className: "secondary-button", text: "Sign out", onclick: signOutHere }),
     ]));
+    if (mfa()) wrap.append(twoStepSection());
     if (!account) return wrap;
     if (!account.paymentsEnabled) {
       wrap.append(el("p", { className: "phase6-alert", text: "Online payment is being set up. Until then, use the manual Mobile Money payment details under About Us." }));
@@ -272,7 +414,7 @@
   const gateRoot = document.querySelector("#auth-gate-root");
 
   function render() {
-    const signedIn = Boolean(supabase && session && !passwordSetup);
+    const signedIn = Boolean(supabase && session && !passwordSetup && !mfaPending);
     document.documentElement.dataset.auth = signedIn ? "in" : "out";
     const alertFor = () => message ? el("p", { className: "phase6-alert", "data-kind": messageKind, role: "status", text: message }) : null;
 
@@ -284,7 +426,8 @@
         if (!supabase) {
           gateRoot.append(el("p", { className: "phase6-alert", "data-kind": "error", text: "Sign-in is temporarily unavailable. Check your connection and reload the page." }));
         } else {
-          gateRoot.append(passwordSetup ? passwordView() : signedOutView());
+          // A password-reset link never skips the two-step code.
+          gateRoot.append(session && mfaPending ? mfaView() : passwordSetup ? passwordView() : signedOutView());
         }
       }
     }
@@ -348,18 +491,20 @@
       const wasSignedIn = Boolean(session);
       session = next;
       if (event === "PASSWORD_RECOVERY") passwordSetup = true;
-      if (event === "SIGNED_OUT") { account = null; notify(); }
+      if (event === "SIGNED_OUT") { account = null; mfaPending = false; factors = []; enrolling = null; notify(); }
       render();
       // Signed in from an email link or another tab: load plans, open the site at the top.
       if (event === "SIGNED_IN" && !wasSignedIn) {
         window.scrollTo(0, 0);
-        loadAccount().then(render);
+        // Callbacks must not await supabase calls directly (supabase-js lock), so defer.
+        setTimeout(() => { checkAssurance().then(loadAccount).then(render); }, 0);
       }
     });
     session = (await supabase.auth.getSession()).data.session;
+    await checkAssurance();
     await loadAccount();
     render();
-    if (session) await completeCheckout();
+    if (session && !mfaPending) await completeCheckout();
     if (linkType === "signup" && session) setMessage("Email confirmed. Welcome to TaxComp.", "success");
   }
 

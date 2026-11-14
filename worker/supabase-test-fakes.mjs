@@ -36,7 +36,9 @@ export async function createFakeSupabase(pg, { url = SUPABASE_TEST_URL, serviceK
   }
 
   /** Creates (or reuses) an auth.users row and returns a signed access token. */
-  async function issueToken({ email, userId, expiresInSeconds = 3600, overrides = {}, forgeWithOtherKey = false } = {}) {
+  // aal: like live Supabase, "aal1" after a password sign-in and "aal2" once the
+  // two-step (TOTP) code has been verified. Staff and admin routes need aal2.
+  async function issueToken({ email, userId, expiresInSeconds = 3600, overrides = {}, forgeWithOtherKey = false, aal = "aal1" } = {}) {
     const normalized = String(email).toLowerCase();
     let id = userId;
     if (!id) {
@@ -47,7 +49,7 @@ export async function createFakeSupabase(pg, { url = SUPABASE_TEST_URL, serviceK
     const now = Math.floor(Date.now() / 1000);
     const claims = {
       iss: `${url}/auth/v1`, aud: "authenticated", role: "authenticated",
-      sub: id, email: normalized, iat: now, exp: now + expiresInSeconds, ...overrides,
+      sub: id, email: normalized, iat: now, exp: now + expiresInSeconds, aal, amr: [{ method: "password", timestamp: now }, ...(aal === "aal2" ? [{ method: "totp", timestamp: now }] : [])], ...overrides,
     };
     const token = await sign({ alg: "ES256", kid: keyId, typ: "JWT" }, claims, forgeWithOtherKey ? otherPair.privateKey : pair.privateKey);
     return { token, userId: id };

@@ -39,8 +39,11 @@ const check = (name, ok, detail = "") => { results.push({ name, ok: Boolean(ok) 
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 const axeFindings = [];
 async function axeScan(page, label, scope = "#challenge-root") {
-  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.addScriptTag({ content: AXE_SOURCE });
+  // Injected through the DevTools protocol, not as an inline <script>, which the page's CSP rightly blocks.
+  if (!(await page.evaluate(() => Boolean(window.axe)))) await page.evaluate(AXE_SOURCE);
   const violations = await page.evaluate(async (selector) => (await window.axe.run(selector, {
+    // axe would otherwise fetch() cross-origin stylesheets (Google Fonts), which the page's CSP blocks.
+    preload: false,
     runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
   })).violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, nodes: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) })), scope);
   axeFindings.push({ screen: label, violations });
@@ -51,16 +54,29 @@ async function axeScan(page, label, scope = "#challenge-root") {
 clearSupabaseKeyCache();
 const { pg, db } = await createMigratedDatabase();
 const supabase = await createFakeSupabase(pg);
+// A stand-in for the ClamAV scanner (uploads are refused without one).
 const env = { UNANSWERED_QUESTIONS: db, DATABASE_PROVIDER: "supabase", ALLOWED_ORIGIN: SITE, SUPABASE_URL: supabase.url, SUPABASE_FETCH: supabase.fetch,
-  SUPABASE_SERVICE_ROLE_KEY: supabase.serviceKey, CHAT_LIMITER: { limit: async () => ({ success: true }) } };
-const { token, userId } = await supabase.issueToken({ email: "e2e-owner@example.com" });
+  SUPABASE_SERVICE_ROLE_KEY: supabase.serviceKey, SUPABASE_PUBLISHABLE_KEY: "sb_publishable_e2e_test_key_0000000000", CHAT_LIMITER: { limit: async () => ({ success: true }) },
+  PHASE6_MALWARE_SCANNER: { fetch: async () => Response.json({ clean: true }) } };
+// The e2e user later becomes a reviewer, so the session has passed two-step verification (aal2).
+const { token, userId } = await supabase.issueToken({ email: "e2e-owner@example.com", aal: "aal2" });
 
+// supabase-js stand-in, including the MFA calls account.js uses (code 123456 is accepted).
 const FAKE_SUPABASE_JS = `const session = { access_token: ${JSON.stringify(token)}, user: { id: ${JSON.stringify(userId)}, email: "e2e-owner@example.com" } };
+let factors = [];
 export function createClient() { return { auth: {
   getSession: async () => ({ data: { session } }),
+  refreshSession: async () => ({ data: { session } }),
   onAuthStateChange: (cb) => { setTimeout(() => cb("INITIAL_SESSION", session), 0); return { data: { subscription: { unsubscribe() {} } } }; },
   signOut: async () => ({ error: null }), signInWithPassword: async () => ({ data: { session }, error: null }), signUp: async () => ({ data: { session }, error: null }),
-  resetPasswordForEmail: async () => ({}), updateUser: async () => ({ error: null }) } }; }`;
+  resetPasswordForEmail: async () => ({}), updateUser: async () => ({ error: null }),
+  mfa: {
+    getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel: "aal2", nextLevel: "aal2" } }),
+    listFactors: async () => ({ data: { all: factors, totp: factors.filter((f) => f.status === "verified") } }),
+    enroll: async () => { factors = [{ id: "f-e2e", factor_type: "totp", status: "unverified" }]; return { data: { id: "f-e2e", totp: { qr_code: '<svg xmlns="http://www.w3.org/2000/svg" width="21" height="21"><rect width="21" height="21" fill="#000"/></svg>', secret: "JBSWY3DPEHPK3PXP" } } }; },
+    challengeAndVerify: async ({ code }) => { if (code !== "123456") return { error: { message: "invalid" } }; factors = factors.map((f) => ({ ...f, status: "verified" })); return { data: {}, error: null }; },
+    unenroll: async ({ factorId }) => { factors = factors.filter((f) => f.id !== factorId); return { data: {}, error: null }; },
+  } } }; }`;
 
 const NOTICE = `UGANDA REVENUE AUTHORITY
 NOTICE OF ADDITIONAL ASSESSMENT - INCOME TAX
@@ -77,6 +93,12 @@ Reasons: Expenses claimed were not supported by invoices.`;
 const browser = await chromium.launch({ channel: process.env.E2E_BROWSER_CHANNEL || "msedge", headless: true });
 const context = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, serviceWorkers: "block", acceptDownloads: true });
 let failNextApi = false;
+// L2: record every Content Security Policy violation on every page.
+await context.addInitScript(() => {
+  window.__cspViolations = [];
+  document.addEventListener("securitypolicyviolation", (e) => window.__cspViolations.push(`${e.effectiveDirective} ${e.blockedURI || "inline"} (${e.sourceFile || "page"}:${e.lineNumber})`));
+});
+const cspViolations = async (p) => p.evaluate(() => window.__cspViolations || []);
 await context.route("https://cdn.jsdelivr.net/npm/@supabase/**", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: FAKE_SUPABASE_JS }));
 await context.route("https://fonts.googleapis.com/**", (route) => route.fulfill({ status: 200, contentType: "text/css", body: "" }));
 await context.route(`${SITE}/**`, (route) => {
@@ -474,6 +496,8 @@ check("Clear removes the saved history from the device", await page.evaluate((id
   check("corporate: public page with the seven-item navigation and no sign-in wall", (await corp.$$eval(".pc-nav a", (n) => n.map((a) => a.textContent.trim()).join("|"))) === "Home|About Us|Services|Training|Insights|TaxComp|Contact Us" && !(await corp.$("#auth-gate")) && await corp.isVisible("#services"));
   check("corporate: the quick PAYE estimate uses the tax engine", ((await corp.textContent("#pc-result-amount")) || "").startsWith("UGX"));
   check("corporate: no horizontal scrolling on a phone", await corp.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  check("corporate: the CSP is enforced and nothing on the page breaks it",
+    Boolean(await corp.$('meta[http-equiv="Content-Security-Policy"]')) && (await cspViolations(corp)).length === 0, (await cspViolations(corp)).join("; "));
   await axeScan(corp, "corporate website", "body");
   await corp.close();
   const old = await context.newPage();
@@ -582,6 +606,75 @@ check("the profile can be changed later", Boolean(await page.$("#dashboard-root 
   await handleRequest(new Request(`${WORKER}/api/challenge/review/register/withdrawals`, { method: "POST", headers: { Origin: SITE, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ entityType: "section", entityId: "ug-rev-2024/vata/s16", reason: "E2E test: heading withdrawn." }) }), env);
   const afterStatus = await page.evaluate(async (worker) => (await fetch(`${worker}/api/legislation/vata/sections/16`, { cache: "no-store" })).status, WORKER);
   check("after withdrawal: the section is refused (410)", afterStatus === 410);
+}
+
+// Phase 2c (M4): two-step sign-in can be set up from Account.
+{
+  await page.evaluate(() => { location.hash = "account"; });
+  await page.waitForSelector("#account-root .account-security", { timeout: 8000 }).catch(() => {});
+  const acct = async () => (await page.textContent("#account-root .account-security").catch(() => "")) || "";
+  check("account: the two-step sign-in section is offered", (await acct()).includes("Required for TaxComp staff and administrators"));
+  await page.getByRole("button", { name: "Set up two-step sign-in" }).click();
+  await page.waitForSelector("#account-root img.account-qr", { timeout: 5000 }).catch(() => {});
+  check("account: setup shows a QR code and the typed key", Boolean(await page.$("#account-root img.account-qr")) && (await acct()).includes("JBSWY3DPEHPK3PXP"));
+  await axeScan(page, "two-step sign-in setup", "#account-root");
+  await page.fill("#account-mfa-enrol-code", "000000");
+  await page.getByRole("button", { name: "Turn on" }).click();
+  await page.waitForTimeout(300);
+  check("account: a wrong code is refused with a plain explanation", ((await page.textContent("#account-root")) || "").includes("That code was not accepted"));
+  await page.fill("#account-mfa-enrol-code", "123456");
+  await page.getByRole("button", { name: "Turn on" }).click();
+  await page.waitForFunction(() => document.querySelector("#account-root .account-security")?.textContent?.startsWith("Two-step sign-inOn."), null, { timeout: 5000 }).catch(() => {});
+  check("account: the right code turns two-step sign-in on", (await acct()).includes("On. When you sign in, TaxComp also asks for a 6-digit code"));
+}
+check("app: the CSP is enforced and nothing in the app breaks it",
+  Boolean(await page.$('meta[http-equiv="Content-Security-Policy"]')) && (await cspViolations(page)).length === 0, (await cspViolations(page)).join("; "));
+
+// Phase 2c (M2, N8): the launch-gate register, signed in in the browser with
+// email, password and the two-step code straight against (fake) Supabase Auth.
+{
+  await pg.query(`INSERT INTO taxcomp.admin_users (user_id, email, display_name, can_operate, can_manage_gates, can_approve_gates, added_by, added_at)
+    VALUES ($1, 'e2e-owner@example.com', 'E2E Admin', 1, 1, 0, 'e2e', now()::text)`, [userId]);
+  const weak = (await supabase.issueToken({ email: "e2e-owner@example.com", userId, aal: "aal1" })).token;
+  const authCalls = [];
+  await context.route(`${supabase.url}/auth/v1/**`, async (route) => {
+    const url = new URL(route.request().url());
+    authCalls.push(`${url.pathname}${url.search}`);
+    const reply = (body) => route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" }, body: JSON.stringify(body) });
+    if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "POST" } });
+    if (url.pathname.endsWith("/token")) return reply({ access_token: weak, user: { id: userId, factors: [{ id: "f-e2e", factor_type: "totp", status: "verified" }] } });
+    if (url.pathname.endsWith("/challenge")) return reply({ id: "challenge-e2e" });
+    if (url.pathname.endsWith("/verify")) return JSON.parse(route.request().postData() || "{}").code === "123456" ? reply({ access_token: token }) : route.fulfill({ status: 422, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"msg":"Invalid TOTP code"}' });
+    return route.fulfill({ status: 404, body: "{}" });
+  });
+  const admin = await context.newPage();
+  await admin.goto(`${WORKER}/admin/gates`);
+  check("gates page: asks for email, password and two-step code; no shared-token field", Boolean(await admin.$("#admin-code")) && !(await admin.$("#token")));
+  await admin.fill("#admin-email", "e2e-owner@example.com");
+  await admin.fill("#admin-password", "correct horse battery staple");
+  await admin.fill("#admin-code", "111111");
+  await admin.getByRole("button", { name: "Open the register" }).click();
+  await admin.waitForFunction(() => document.querySelector("#status")?.textContent?.length > 0, null, { timeout: 5000 }).catch(() => {});
+  check("gates page: a wrong two-step code does not sign in", (await admin.textContent("#status")).includes("That code was not accepted") && await admin.isHidden("#register"));
+  await admin.fill("#admin-password", "correct horse battery staple");
+  await admin.fill("#admin-code", "123456");
+  await admin.getByRole("button", { name: "Open the register" }).click();
+  await admin.waitForSelector("#register:not([hidden]) article.gate", { timeout: 8000 }).catch(() => {});
+  const reg = (await admin.textContent("#register")) || "";
+  check("gates page: eight gates, none approved, nobody named yet", (await admin.$$("article.gate")).length === 8 && !reg.includes("Approved by") && reg.includes("Responsible: not yet appointed"));
+  check("gates page: sign-in went password, then challenge, then verify", authCalls.join(" ").includes("grant_type=password") && authCalls.some((c) => c.endsWith("/challenge")) && authCalls.some((c) => c.endsWith("/verify")));
+  const support = admin.locator("article[data-gate='support']");
+  await support.locator("input[name=title]").fill("Support procedure (draft)");
+  await support.locator("input[name=reference]").fill("https://example.org/e2e-support.pdf");
+  await support.getByRole("button", { name: "Add evidence" }).click();
+  await admin.waitForFunction(() => document.querySelector("article[data-gate='support']")?.textContent?.includes("Support procedure (draft)"), null, { timeout: 5000 }).catch(() => {});
+  check("gates page: evidence can be recorded; the gate moves to collecting evidence", ((await support.textContent()) || "").includes("Collecting evidence"));
+  check("gates page: this admin cannot approve (no approver right)", (await support.getByRole("button", { name: "Record decision" }).count()) === 0);
+  await axeScan(admin, "launch-gate register", "main");
+  check("gates page: no sideways scroll at 360 px", await admin.evaluate(() => document.documentElement.scrollWidth <= 361));
+  check("gates page: the nonce CSP holds (no violations)", (await cspViolations(admin)).length === 0, (await cspViolations(admin)).join("; "));
+  await admin.screenshot({ path: path.join(shots, "8-launch-gates-360.png"), fullPage: false });
+  await admin.close();
 }
 
 check("no script errors", errors.length === 0, errors.join(" | "));

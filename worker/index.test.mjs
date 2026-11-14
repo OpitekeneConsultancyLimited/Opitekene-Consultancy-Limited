@@ -258,7 +258,7 @@ test("advisor route returns source-checked structured fallback and downloadable 
 
 test("legal-source ingestion is authenticated and forces pending-review before admin approval", async () => {
   const database = legalSourceDatabase();
-  const adminEnv = { ...env, UNANSWERED_QUESTIONS: database, ADMIN_DASHBOARD_TOKEN: testAdminToken };
+  const adminEnv = { ...env, UNANSWERED_QUESTIONS: database, ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken };
   const draftResponse = await handleRequest(request({
     record: sourceFixture(),
     submittedBy: "Admin reviewer",
@@ -1061,7 +1061,7 @@ test("records an unanswered question only after explicit user consent", async ()
       {
         ...env,
         GEMINI_API_KEY: "",
-        ADMIN_DASHBOARD_TOKEN: testAdminToken,
+        ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken,
         UNANSWERED_QUESTIONS: database,
       },
     );
@@ -1075,7 +1075,7 @@ test("records an unanswered question only after explicit user consent", async ()
       {
         ...env,
         GEMINI_API_KEY: "",
-        ADMIN_DASHBOARD_TOKEN: testAdminToken,
+        ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken,
         UNANSWERED_QUESTIONS: database,
       },
     );
@@ -1168,8 +1168,8 @@ test("does not store opted-in questions until the admin credential is configured
 
 test("rejects an administrator token shorter than 32 characters", async () => {
   const response = await handleRequest(
-    new Request("https://worker.example/admin/questions"),
-    { ...env, ADMIN_DASHBOARD_TOKEN: "short-admin-token" },
+    new Request("https://worker.example/admin/questions", { headers: { Authorization: "Bearer short-admin-token" } }),
+    { ...env, ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: "short-admin-token" },
   );
 
   assert.equal(response.status, 503);
@@ -1184,7 +1184,7 @@ test("rate limits admin API requests with a separate per-IP key", async () => {
     }),
     {
       ...env,
-      ADMIN_DASHBOARD_TOKEN: testAdminToken,
+      ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken,
       CHAT_LIMITER: {
         limit: async ({ key }) => {
           keys.push(key);
@@ -1223,7 +1223,7 @@ test("protects the unanswered-question dashboard and lists records after authent
   };
   const adminEnv = {
     ...env,
-    ADMIN_DASHBOARD_TOKEN: token,
+    ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: token,
     UNANSWERED_QUESTIONS: database,
   };
   const unauthorized = await handleRequest(
@@ -1267,12 +1267,15 @@ test("serves the EFRIS sign-in page without exposing records and protects its AP
   const html = await dashboard.text();
   assert.match(html, /not connected to URA EFRIS/i);
   assert.match(html, /never submitted or fiscalised/i);
-  assert.match(html, /Admin token/);
+  assert.match(html, /your own administrator account and two-step code/);
+  assert.doesNotMatch(html, /Shared admin token/, "the shared-token field is hidden unless ADMIN_SHARED_TOKEN_ENABLED is true");
   assert.doesNotMatch(html, /localStorage/);
+  assert.match(dashboard.headers.get("Content-Security-Policy"), /script-src 'nonce-[A-Za-z0-9]+'/);
+  assert.doesNotMatch(dashboard.headers.get("Content-Security-Policy"), /script-src[^;]*unsafe-inline/);
 
   const unauthorized = await handleRequest(
     new Request("https://worker.example/admin/efris/api"),
-    { ...env, ADMIN_DASHBOARD_TOKEN: testAdminToken },
+    { ...env, ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken },
   );
   assert.equal(unauthorized.status, 401);
   assert.match((await unauthorized.json()).error, /authentication is required/i);
@@ -1292,7 +1295,7 @@ test("loads the EFRIS workspace after authentication and requires JSON for write
   };
   const adminEnv = {
     ...env,
-    ADMIN_DASHBOARD_TOKEN: testAdminToken,
+    ADMIN_SHARED_TOKEN_ENABLED: "true", ADMIN_DASHBOARD_TOKEN: testAdminToken,
     UNANSWERED_QUESTIONS: database,
   };
   const authorized = await handleRequest(

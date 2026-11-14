@@ -21,6 +21,7 @@ import { createServer } from "node:http";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyPolicy, buildPolicy } from "./site-csp.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2);
@@ -206,11 +207,15 @@ function staticFile(urlPath, backend) {
   const ext = path.extname(file).toLowerCase();
   if (rel === "service-worker.js") return { body: SELF_REMOVING_SW, type: TYPES[".js"] };
   if (ext === ".html") {
-    return { type: TYPES[ext], body: readFileSync(file, "utf8")
+    const html = readFileSync(file, "utf8")
       .replace(/(<meta name="taxcomp-chat-endpoint" content=")[^"]*(")/, `$1${ORIGIN}/chat$2`)
       .replace(/(<meta name="taxcomp-supabase-url" content=")[^"]*(")/, `$1${backend.supabaseUrl}$2`)
       .replace(/(<meta name="taxcomp-supabase-anon-key" content=")[^"]*(")/, `$1${backend.anonKey}$2`)
-      .replace(/<title>/, "<title>[LOCAL] ") };
+      .replace(/<title>/, "<title>[LOCAL] ");
+    // Same policy as production, rebuilt for the local Worker and Supabase
+    // (supabase-js is served from this origin, so no CDN source is needed).
+    const csp = /<meta http-equiv="Content-Security-Policy"/.test(html) ? applyPolicy(html, buildPolicy(html, { localDev: true, supabaseJsSources: [] })) : html;
+    return { type: TYPES[ext], body: csp };
   }
   if (ext === ".js") return { type: TYPES[ext], body: readFileSync(file, "utf8").replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"'`]+/g, backend.supabaseJsUrl) };
   return { body: readFileSync(file), type: TYPES[ext] || "application/octet-stream" };

@@ -168,6 +168,10 @@
         h("p", { className: "ch-muted", text: "This is a preliminary position to help you prepare, not a decision on your case." }),
       ]),
     ];
+    // Staff without two-step sign-in: the staff screens stay closed until they turn it on.
+    if (me.staffMfaRequired) {
+      parts.push(h("p", { className: "ch-banner ch-warn", role: "status", text: me.staffMfaMessage || "Staff access needs two-step sign-in. Turn it on in Account, then sign in again." }));
+    }
     if (me.reviewer) {
       parts.push(h("div", { className: "ch-tabs", role: "tablist" }, [["cases", "My cases"], ["queue", "Review queue"], ["register", "Verification register"], ["law", "Law and cases admin"]].map(([key, text]) =>
         h("button", { type: "button", role: "tab", "aria-selected": String(state.panel === key), className: "chip", onclick: () => act(async () => { state.panel = key; if (key === "register") { state.register = await call("/api/challenge/review/register"); state.registerEntry = null; } if (key === "queue") state.queue = (await call("/api/challenge/review/queue")).cases; if (key === "law") { state.law = await call("/api/challenge/law"); state.lawwatch = await call("/api/challenge/review/lawwatch"); state.knowledge = await call("/api/challenge/review/knowledge"); state.legislation = await call("/api/challenge/review/legislation?flagged=1&pageSize=200"); } }), text }))));

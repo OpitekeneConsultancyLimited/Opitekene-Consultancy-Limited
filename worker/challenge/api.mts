@@ -5,6 +5,8 @@
 // are written to challenge_audit_log.
 import { createSupabaseTokenVerifier, normalizeSupabaseUrl, readBearerToken } from "../supabase-auth.mjs";
 import { createSupabaseStorageBucket, type StorageBucket } from "../supabase-storage.mjs";
+import { isStrongSession, logSecurityEvent, MFA_REQUIRED_MESSAGE, privilegedMfaRequired } from "../admin-access.mjs";
+import { scannerAvailable, scanUpload } from "../malware-scanner.mjs";
 import { readNotice, UnreadableNoticeError, type AiEnv } from "./ai.mts";
 import { isIsoDate, todayIso } from "./dates.mts";
 import { SEED_RULE_SET } from "./deadlines.mts";
@@ -60,6 +62,10 @@ export interface ChallengeEnv extends AiEnv, LawWatchEnv {
   FLW_SECRET_KEY?: string;
   /** Test seam: a function can only be injected by code, never by Worker vars. */
   CHALLENGE_CLOCK?: () => Date;
+  /** "false" switches off the two-step sign-in requirement for staff (tests only). */
+  PRIVILEGED_MFA_REQUIRED?: string;
+  /** Malware scanner (malware-scanner.mjs); uploads are refused without it. */
+  PHASE6_MALWARE_SCANNER?: { fetch(url: string, init?: RequestInit): Promise<Response> };
 }
 
 class HttpError extends Error {
@@ -207,6 +213,8 @@ interface Ctx {
   email: string;
   reviewer: boolean;
   canApproveLaw: boolean;
+  /** An active reviewer whose session lacks two-step verification: treated as an ordinary user. */
+  staffMfaMissing: boolean;
   calc: Calculator | null;
   now: Date;
   nowIso: string;
@@ -270,8 +278,10 @@ async function route(ctx: Ctx): Promise<Response> {
         paymentsEnabled: typeof ctx.env.FLW_SECRET_KEY === "string" && ctx.env.FLW_SECRET_KEY.length > 0,
       },
       consentVersion: CONSENT_VERSION, consented: Boolean(consent), reviewer: ctx.reviewer, canApproveLaw: ctx.canApproveLaw, userId: ctx.userId,
+      staffMfaRequired: ctx.staffMfaMissing, ...(ctx.staffMfaMissing ? { staffMfaMessage: MFA_REQUIRED_MESSAGE } : {}),
       cases: cases.map((row) => ({ id: row.id, taxHead: row.taxHead, periodStart: row.periodStart, periodEnd: row.periodEnd, principal: row.principal, status: row.status, reviewStatus: row.reviewStatus, updatedAt: row.updatedAt })),
-      uploadsEnabled: Boolean(storageFor(ctx.env)),
+      // Uploads need both private storage and the malware scanner (N17).
+      uploadsEnabled: Boolean(storageFor(ctx.env)) && scannerAvailable(ctx.env),
       questions: OWNER_QUESTIONS, lateReasons: LATE_OBJECTION_REASONS, outcomeLabels: OUTCOME_PROFESSIONAL_LABELS,
     }, 200, ctx.cors);
   }
@@ -442,6 +452,8 @@ async function route(ctx: Ctx): Promise<Response> {
     if (access.role !== "owner") throw new HttpError(403, "Only the case owner can upload documents.");
     const storage = storageFor(ctx.env);
     if (!storage) throw new HttpError(503, "Document uploads are not switched on yet. You can still type or paste the notice.");
+    // Fail safe (N17): no malware scanner, no uploads.
+    if (!scannerAvailable(ctx.env)) throw new HttpError(503, "Document uploads are paused until malware scanning is switched on. You can still type or paste the notice.");
     const contentType = (request.headers.get("Content-Type") ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
     const check = FILE_TYPES[contentType];
     if (!check) throw new HttpError(415, "Upload a PDF, a photo (JPEG, PNG or WebP), a Word document (.docx), a spreadsheet (.xlsx) or a text file.");
@@ -455,13 +467,21 @@ async function route(ctx: Ctx): Promise<Response> {
     if (!bytes.byteLength) throw new HttpError(400, "The file is empty.");
     if (bytes.byteLength > MAX_FILE_BYTES) throw new HttpError(413, "Files must be 10 MB or smaller.");
     if (!check(bytes)) throw new HttpError(415, "The file's contents do not match its type. Please upload the original file.");
+    // Scanned in memory before anything is stored; nothing unscanned reaches storage, reviewers or the AI.
+    const scan = await scanUpload(ctx.env, bytes, contentType);
+    if (!scan.clean) {
+      await audit(db, { actorUserId: ctx.userId, actorRole: "owner", action: "document.rejected", caseId, details: { docType, sizeBytes: bytes.byteLength, scan: scan.outcome }, at: ctx.nowIso }).run();
+      await logSecurityEvent(db, { type: "upload.scan", outcome: scan.outcome === "infected" ? "refused" : "error", userId: ctx.userId, route: "/api/challenge/cases/:id/documents", details: { outcome: scan.outcome, contentType, sizeBytes: bytes.byteLength, sha256: scan.sha256 }, at: ctx.nowIso });
+      if (scan.outcome === "infected") throw new HttpError(422, "This file failed the malware check and was not saved. If you think it is safe, scan your device and upload a fresh copy, or type the details instead.");
+      throw new HttpError(503, "The malware check is not available right now, so the file was not saved. Please try again in a few minutes, or type or paste the notice.");
+    }
     const docId = crypto.randomUUID();
     const storagePath = `${row.ownerUserId}/${caseId}/${docId}`;
     await storage.put(storagePath, bytes, { httpMetadata: { contentType } });
     await db.batch([
-      db.prepare(`INSERT INTO challenge_documents (id, case_id, owner_user_id, storage_path, doc_type, file_name, content_type, size_bytes, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(docId, caseId, row.ownerUserId, storagePath, docType, fileName, contentType, bytes.byteLength, ctx.nowIso),
-      audit(db, { actorUserId: ctx.userId, actorRole: "owner", action: "document.upload", caseId, documentId: docId, details: { docType, sizeBytes: bytes.byteLength }, at: ctx.nowIso }),
+      db.prepare(`INSERT INTO challenge_documents (id, case_id, owner_user_id, storage_path, doc_type, file_name, content_type, size_bytes, uploaded_at, scan_status, scanned_at, sha256) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'clean', ?, ?)`)
+        .bind(docId, caseId, row.ownerUserId, storagePath, docType, fileName, contentType, bytes.byteLength, ctx.nowIso, ctx.nowIso, scan.sha256),
+      audit(db, { actorUserId: ctx.userId, actorRole: "owner", action: "document.upload", caseId, documentId: docId, details: { docType, sizeBytes: bytes.byteLength, scan: "clean" }, at: ctx.nowIso }),
     ]);
     return json({ document: { id: docId, docType, fileName, sizeBytes: bytes.byteLength, uploadedAt: ctx.nowIso } }, 201, ctx.cors);
   }
@@ -472,6 +492,7 @@ async function route(ctx: Ctx): Promise<Response> {
     const { access } = await caseOr404(ctx, caseId);
     const doc = (await loadDocuments(db, caseId)).find((item) => item.id === documentId);
     if (!doc) throw new HttpError(404, "Document not found.");
+    if (!doc.scanned) throw new HttpError(409, "This file has not passed the malware check, so it cannot be downloaded.");
     const storage = storageFor(ctx.env);
     if (!storage) throw new HttpError(503, "Document storage is not configured.");
     const object = await storage.get(doc.storagePath);
@@ -491,6 +512,7 @@ async function route(ctx: Ctx): Promise<Response> {
     } else if (typeof body.documentId === "string") {
       const doc = (await loadDocuments(db, caseId)).find((item) => item.id === body.documentId);
       if (!doc) throw new HttpError(404, "Document not found.");
+      if (!doc.scanned) throw new HttpError(409, "This file has not passed the malware check, so it cannot be read.");
       const storage = storageFor(ctx.env);
       const object = storage ? await storage.get(doc.storagePath) : null;
       if (!object?.body) throw new HttpError(404, "Document not found.");
@@ -655,7 +677,10 @@ async function route(ctx: Ctx): Promise<Response> {
 
   // ------------------------------------------------------------ reviewers
   if (path.startsWith("/api/challenge/review")) {
-    if (!ctx.reviewer) throw new HttpError(403, "Reviewer access only.");
+    if (!ctx.reviewer) {
+      if (ctx.staffMfaMissing) throw new HttpError(403, MFA_REQUIRED_MESSAGE, { code: "mfa_required" });
+      throw new HttpError(403, "Reviewer access only.");
+    }
     // Phase 2b: the old one-step "verify"/"approve" actions now prepare a request
     // that a DIFFERENT legal approver must approve in the verification register.
     const sendForReview = async (input: RequestInput) => {
@@ -1074,9 +1099,17 @@ export async function handleChallengeRequest(request: Request, env: ChallengeEnv
 
   const now = env.CHALLENGE_CLOCK ? env.CHALLENGE_CLOCK() : new Date();
   try {
-    const { reviewer, canApproveLaw } = await isActiveReviewer(db, claims.sub);
+    const access = await isActiveReviewer(db, claims.sub);
+    // M4: staff see taxpayers' cases and approve legal records, so their
+    // session must have passed two-step verification. Without it a reviewer is
+    // treated as an ordinary user (their own cases only) and told why.
+    const staffMfaMissing = access.reviewer && privilegedMfaRequired(env) && !isStrongSession(claims);
+    if (staffMfaMissing && new URL(request.url).pathname.startsWith("/api/challenge/review")) {
+      await logSecurityEvent(db, { type: "staff.mfa", outcome: "refused", userId: claims.sub, email: typeof claims.email === "string" ? claims.email : null, route: "/api/challenge/review", details: { method: request.method }, at: now.toISOString() });
+    }
     return await route({
-      request, env, db, cors, userId: claims.sub, email: String(claims.email ?? ""), reviewer, canApproveLaw, calc,
+      request, env, db, cors, userId: claims.sub, email: String(claims.email ?? ""),
+      reviewer: access.reviewer && !staffMfaMissing, canApproveLaw: access.canApproveLaw && !staffMfaMissing, staffMfaMissing, calc,
       now, nowIso: now.toISOString(), today: todayIso(now),
     });
   } catch (error) {

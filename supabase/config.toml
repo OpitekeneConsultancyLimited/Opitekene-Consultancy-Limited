@@ -8,6 +8,27 @@ project_id = "taxcomp"
 # invitation links. Links to any other address are refused.
 site_url = "https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/"
 additional_redirect_urls = ["https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/"]
+# Phase 2c (M4) interim controls while leaked-password protection (HIBP) needs a
+# paid plan: the same rule account.js shows (12+ characters, a letter and a
+# number), now enforced by Supabase Auth itself for new and changed passwords.
+minimum_password_length = 12
+password_requirements = "letters_digits"
+
+# Brute-force protection: sign-in/sign-up and OTP/code checks per IP address,
+# per 5 minutes (Supabase's defaults, declared so they are reviewed and kept).
+[auth.rate_limit]
+sign_in_sign_ups = 30
+token_verifications = 30
+token_refresh = 150
+
+# Two-step sign-in with an authenticator app (TOTP). Required by the Worker for
+# staff (reviewers) and administrators; optional for everyone else.
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 # Custom SMTP for sign-up confirmations, password resets and invitations.
 # Supabase's built-in sender only allows a few emails per hour.
@@ -25,3 +46,41 @@ additional_redirect_urls = ["https://opitekeneconsultancylimited.github.io/Opite
 # pass = "env(SUPABASE_SMTP_PASS)"
 # admin_email = "opitekenecons@gmail.com"
 # sender_name = "Opitekene TaxComp"
+#
+# 4. With custom SMTP on, switch on the branded templates and the security
+#    notifications (M3; docs/remediation/TRANSACTIONAL_EMAIL.md). Check them
+#    first with `npx supabase@2.121.0 config diff`.
+# [auth.email.template.confirmation]
+# subject = "Confirm your TaxComp email address"
+# content_path = "./supabase/templates/confirmation.html"
+# [auth.email.template.invite]
+# subject = "You have been invited to TaxComp"
+# content_path = "./supabase/templates/invite.html"
+# [auth.email.template.recovery]
+# subject = "Reset your TaxComp password"
+# content_path = "./supabase/templates/recovery.html"
+# [auth.email.template.magic_link]
+# subject = "Your TaxComp sign-in link"
+# content_path = "./supabase/templates/magic_link.html"
+# [auth.email.template.email_change]
+# subject = "Confirm your new TaxComp email address"
+# content_path = "./supabase/templates/email_change.html"
+# [auth.email.template.reauthentication]
+# subject = "Your TaxComp confirmation code"
+# content_path = "./supabase/templates/reauthentication.html"
+# [auth.email.notification.password_changed]
+# enabled = true
+# subject = "Your TaxComp password was changed"
+# content_path = "./supabase/templates/notification_password_changed.html"
+# [auth.email.notification.email_changed]
+# enabled = true
+# subject = "Your TaxComp email address was changed"
+# content_path = "./supabase/templates/notification_email_changed.html"
+# [auth.email.notification.mfa_factor_enrolled]
+# enabled = true
+# subject = "Two-step sign-in was turned on for TaxComp"
+# content_path = "./supabase/templates/notification_mfa_factor_enrolled.html"
+# [auth.email.notification.mfa_factor_unenrolled]
+# enabled = true
+# subject = "Two-step sign-in was turned off for TaxComp"
+# content_path = "./supabase/templates/notification_mfa_factor_unenrolled.html"

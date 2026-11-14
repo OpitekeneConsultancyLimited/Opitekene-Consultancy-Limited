@@ -51,6 +51,9 @@ export const TABLE_ORDER = Object.freeze([
   // Phase 2b legal verification register: requests before the register and
   // withdrawals that reference them; the hash-chained audit log last, in order.
   "legal_verification_requests", "legal_register", "legal_withdrawals", "legal_audit_log",
+  // Phase 2c: named admins, security events, launch gates (seeded by the
+  // migration) and their hash-chained events, in order.
+  "admin_users", "security_events", "launch_gates", "launch_gate_events",
 ]);
 
 const IDENTIFIER = /^[a-z_][a-z0-9_]*$/;

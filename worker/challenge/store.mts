@@ -136,10 +136,12 @@ export async function loadItems(db: Database, caseId: string): Promise<DisputedI
 
 export async function loadDocuments(db: Database, caseId: string) {
   const { results } = await db.prepare(`SELECT id, doc_type AS "docType", file_name AS "fileName", size_bytes AS "sizeBytes", uploaded_at AS "uploadedAt",
-    storage_path AS "storagePath", content_type AS "contentType" FROM challenge_documents WHERE case_id = ? ORDER BY uploaded_at`).bind(caseId).all<Row>();
+    storage_path AS "storagePath", content_type AS "contentType", scan_status AS "scanStatus" FROM challenge_documents WHERE case_id = ? ORDER BY uploaded_at`).bind(caseId).all<Row>();
   return results.map((row) => ({
     id: String(row.id), docType: String(row.docType), fileName: String(row.fileName), sizeBytes: Number(row.sizeBytes),
     uploadedAt: String(row.uploadedAt), storagePath: String(row.storagePath), contentType: String(row.contentType),
+    // Only files that passed the malware scan may be downloaded or read by the AI.
+    scanned: String(row.scanStatus) === "clean",
   }));
 }
 
