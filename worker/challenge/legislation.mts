@@ -8,6 +8,13 @@
 // Nothing here writes or invents section wording. Every record carries its
 // verification status and edition, and answers say what is not known.
 import type { Database } from "./store.mts";
+import { CLASS_LABEL, legislationClass, publicWithdrawals, type ContentClass } from "./register.mts";
+
+/** Phase 2b: withdrawn records are never served publicly; a direct request gets 410 with the reason. */
+async function withdrawnReason(db: Database, type: string, id: string): Promise<string> {
+  const r = await db.prepare(`SELECT reason FROM legal_withdrawals WHERE entity_type = ? AND entity_id = ? AND lifted_at IS NULL`).bind(type, id).first<Row>();
+  return r ? String(r.reason) : "withdrawn for correction";
+}
 
 export const STATUSES = ["unverified", "under_review", "verified", "superseded", "requires_amendment_review"] as const;
 export type VerificationStatus = (typeof STATUSES)[number];
@@ -140,13 +147,16 @@ export interface LawSummary {
   lastUpdated: string;
   editionId: string;
   laterAmendments: LaterAmendment[];
+  /** Phase 2b legal class: verified law, pending verification, disputed, superseded, withdrawn... */
+  legalClass: ContentClass;
+  legalClassLabel: string;
 }
 
 const LAW_SELECT = `SELECT l.id, v.id AS "versionId", l.short_title AS "shortTitle", v.official_title AS "officialTitle", v.chapter, l.category, l.tax_category AS "taxCategory",
   l.jurisdiction, l.parent_law_id AS "parentLawId", l.statute_id AS "statuteId", v.commencement_date AS "commencementDate", v.enabling_provision AS "enablingProvision",
   v.statutory_instrument AS "statutoryInstrument", v.section_count AS "sectionCount", v.schedule_count AS "scheduleCount", v.source_reference AS "sourceReference",
   v.verification_status AS "verificationStatus", v.verification_note AS "verificationNote", v.official_source_url AS "officialSourceUrl", v.verified_at AS "verifiedAt",
-  v.updated_at AS "lastUpdated", v.edition_id AS "editionId"
+  v.updated_at AS "lastUpdated", v.edition_id AS "editionId", v.withdrawn, v.disputed
   FROM legislation_law_versions v JOIN legislation_laws l ON l.id = v.law_id`;
 
 function toLaw(r: Row, amendments: Map<string, LaterAmendment[]>): LawSummary {
@@ -161,7 +171,13 @@ function toLaw(r: Row, amendments: Map<string, LaterAmendment[]>): LawSummary {
     verificationStatus: status, verificationLabel: STATUS_LABEL[status], verificationNote: String(r.verificationNote ?? ""), officialSourceUrl: str(r.officialSourceUrl),
     verifiedAt: str(r.verifiedAt), lastUpdated: String(r.lastUpdated), editionId: String(r.editionId),
     laterAmendments: amendments.get(statuteId ?? "") ?? amendments.get(parentLawId ?? "") ?? [],
+    ...classOf(status, r),
   };
+}
+
+function classOf(status: string, r: Row, extra: { billOnly?: boolean; figuresDiffer?: boolean } = {}) {
+  const legalClass = legislationClass(status, { withdrawn: r.withdrawn, disputed: r.disputed, ...extra });
+  return { legalClass, legalClassLabel: CLASS_LABEL[legalClass] };
 }
 
 /**
@@ -195,8 +211,8 @@ export function paging(params: URLSearchParams, max = 200, fallback = 50): Pagin
   return { page, pageSize };
 }
 
-export async function listLaws(db: Database, edition: Edition, { category, taxCategory }: { category?: string | null; taxCategory?: string | null }, { page, pageSize }: Paging) {
-  const where = ["v.edition_id = ?"];
+export async function listLaws(db: Database, edition: Edition, { category, taxCategory, includeWithdrawn = false }: { category?: string | null; taxCategory?: string | null; includeWithdrawn?: boolean }, { page, pageSize }: Paging) {
+  const where = ["v.edition_id = ?", ...(includeWithdrawn ? [] : ["v.withdrawn = 0"])];
   const values: unknown[] = [edition.id];
   if (category) { where.push("l.category = ?"); values.push(category); }
   if (taxCategory) { where.push("l.tax_category = ?"); values.push(taxCategory); }
@@ -208,25 +224,28 @@ export async function listLaws(db: Database, edition: Edition, { category, taxCa
   return { total: Number(count?.n ?? 0), laws: results.map((r) => toLaw(r, amendments)) };
 }
 
-export async function getLaw(db: Database, edition: Edition, lawId: string): Promise<LawSummary> {
+export async function getLaw(db: Database, edition: Edition, lawId: string, { includeWithdrawn = false }: { includeWithdrawn?: boolean } = {}): Promise<LawSummary> {
   if (!LAW_ID.test(lawId)) throw new LegislationError(400, "Invalid law id.");
   const [row, amendments] = await Promise.all([
     db.prepare(`${LAW_SELECT} WHERE v.edition_id = ? AND l.id = ?`).bind(edition.id, lawId).first<Row>(),
     laterAmendments(db, edition),
   ]);
   if (!row) throw new LegislationError(404, "That law is not in this edition.");
+  if (Number(row.withdrawn) === 1 && !includeWithdrawn) {
+    throw new LegislationError(410, `TaxComp's legal reviewers have withdrawn this law from TaxComp: ${await withdrawnReason(db, "law_version", String(row.versionId))}`);
+  }
   return toLaw(row, amendments);
 }
 
 export async function lawParts(db: Database, versionId: string) {
   const { results } = await db.prepare(`SELECT part_number AS "partNumber", part_title AS "partTitle", count(*)::int AS "sectionCount", min(position) AS "firstPosition"
-    FROM legislation_sections WHERE law_version_id = ? GROUP BY part_number, part_title ORDER BY min(position)`).bind(versionId).all<Row>();
+    FROM legislation_sections WHERE law_version_id = ? AND withdrawn = 0 GROUP BY part_number, part_title ORDER BY min(position)`).bind(versionId).all<Row>();
   return results.map((r) => ({ number: str(r.partNumber), title: str(r.partTitle), sectionCount: Number(r.sectionCount) }));
 }
 
 export async function lawSchedules(db: Database, versionId: string) {
-  const { results } = await db.prepare(`SELECT id, label, title, position, verification_status AS "verificationStatus" FROM legislation_schedules WHERE law_version_id = ? ORDER BY position`).bind(versionId).all<Row>();
-  return results.map((r) => ({ id: String(r.id), label: String(r.label), title: str(r.title), position: Number(r.position), verificationStatus: String(r.verificationStatus), verificationLabel: STATUS_LABEL[String(r.verificationStatus) as VerificationStatus] }));
+  const { results } = await db.prepare(`SELECT id, label, title, position, verification_status AS "verificationStatus", withdrawn, disputed FROM legislation_schedules WHERE law_version_id = ? AND withdrawn = 0 ORDER BY position`).bind(versionId).all<Row>();
+  return results.map((r) => ({ id: String(r.id), label: String(r.label), title: str(r.title), position: Number(r.position), verificationStatus: String(r.verificationStatus), verificationLabel: STATUS_LABEL[String(r.verificationStatus) as VerificationStatus], ...classOf(String(r.verificationStatus), r) }));
 }
 
 export interface SectionRecord {
@@ -251,12 +270,18 @@ export interface SectionRecord {
   evidenceLabel: string;
   officialSourceUrl: string | null;
   verifiedAt: string | null;
+  legalClass: ContentClass;
+  legalClassLabel: string;
   rank?: number;
 }
 
+/** Public reads never include withdrawn sections, or sections of a withdrawn law. */
+const LIVE_SECTION = "s.withdrawn = 0 AND v.withdrawn = 0";
+
 const SECTION_SELECT = `SELECT s.id, v.law_id AS "lawId", v.official_title AS "lawTitle", v.chapter, l.category, v.edition_id AS "editionId", s.section_number AS "sectionNumber",
   s.heading, s.part_number AS "partNumber", s.part_title AS "partTitle", s.division, s.position, s.flags_json AS "flagsJson", s.wording, s.wording_status AS "wordingStatus",
-  s.verification_status AS "verificationStatus", s.official_source_url AS "officialSourceUrl", s.verified_at AS "verifiedAt"
+  s.verification_status AS "verificationStatus", s.official_source_url AS "officialSourceUrl", s.verified_at AS "verifiedAt",
+  greatest(s.withdrawn, v.withdrawn) AS withdrawn, s.disputed
   FROM legislation_sections s JOIN legislation_law_versions v ON v.id = s.law_version_id JOIN legislation_laws l ON l.id = v.law_id`;
 
 export function evidenceLevel(wordingStatus: string, status: string): EvidenceLevel {
@@ -281,25 +306,31 @@ function toSection(r: Row): SectionRecord {
     part: { number: str(r.partNumber), title: str(r.partTitle) }, division: str(r.division), position: Number(r.position), flags,
     wording: wordingStatus === "none" ? null : str(r.wording), wordingStatus, verificationStatus: status, verificationLabel: STATUS_LABEL[status],
     evidenceLevel: level, evidenceLabel: EVIDENCE_LABEL[level], officialSourceUrl: str(r.officialSourceUrl), verifiedAt: str(r.verifiedAt),
+    ...classOf(status, r),
     ...(r.rank !== undefined ? { rank: Number(r.rank) } : {}),
   };
 }
 
 export async function listSections(db: Database, versionId: string, { part }: { part?: string | null }, { page, pageSize }: Paging) {
   if (part && !/^[IVXLC]{1,8}$/.test(part)) throw new LegislationError(400, "part must be a Roman numeral such as IX.");
-  const where = ["s.law_version_id = ?", ...(part ? ["s.part_number = ?"] : [])];
+  const where = ["s.law_version_id = ?", "s.withdrawn = 0", ...(part ? ["s.part_number = ?"] : [])];
   const values = [versionId, ...(part ? [part] : [])];
   const [{ results }, count] = await Promise.all([
-    db.prepare(`${SECTION_SELECT} WHERE ${where.join(" AND ")} ORDER BY s.position LIMIT ? OFFSET ?`).bind(...values, pageSize, (page - 1) * pageSize).all<Row>(),
+    db.prepare(`${SECTION_SELECT} WHERE ${where.join(" AND ")} AND v.withdrawn = 0 ORDER BY s.position LIMIT ? OFFSET ?`).bind(...values, pageSize, (page - 1) * pageSize).all<Row>(),
     db.prepare(`SELECT count(*)::int AS n FROM legislation_sections s WHERE ${where.join(" AND ")}`).bind(...values).first<Row>(),
   ]);
   return { total: Number(count?.n ?? 0), sections: results.map(toSection) };
 }
 
-export async function getSection(db: Database, versionId: string, number: string): Promise<SectionRecord> {
+export async function getSection(db: Database, versionId: string, number: string, { includeWithdrawn = false }: { includeWithdrawn?: boolean } = {}): Promise<SectionRecord> {
   if (!SECTION_NO.test(number)) throw new LegislationError(400, "Invalid section number.");
   const row = await db.prepare(`${SECTION_SELECT} WHERE s.law_version_id = ? AND s.section_number = ?`).bind(versionId, number).first<Row>();
   if (!row) throw new LegislationError(404, "That section is not in this law and edition.");
+  if (Number(row.withdrawn) === 1 && !includeWithdrawn) {
+    const own = await db.prepare(`SELECT withdrawn FROM legislation_sections WHERE id = ?`).bind(String(row.id)).first<Row>();
+    const reason = Number(own?.withdrawn) === 1 ? await withdrawnReason(db, "section", String(row.id)) : await withdrawnReason(db, "law_version", versionId);
+    throw new LegislationError(410, `TaxComp's legal reviewers have withdrawn this provision from TaxComp: ${reason}`);
+  }
   return toSection(row);
 }
 
@@ -319,14 +350,14 @@ export async function searchSections(db: Database, edition: Edition, { q, lawId 
   if (number) {
     const n = (number[1] ?? number[2] ?? "").toUpperCase();
     const rest = query.replace(NUMBER_QUERY, " ").replace(/\b(?:of|the|act)\b/gi, " ").trim();
-    const { results } = await db.prepare(`${SECTION_SELECT} WHERE v.edition_id = ? AND upper(s.section_number) = ?${lawFilter}
+    const { results } = await db.prepare(`${SECTION_SELECT} WHERE v.edition_id = ? AND ${LIVE_SECTION} AND upper(s.section_number) = ?${lawFilter}
       ORDER BY ${rest ? "(to_tsvector('english', v.official_title) @@ plainto_tsquery('english', ?)) DESC," : ""} (l.category = 'act') DESC, v.law_id LIMIT ? OFFSET ?`)
       .bind(edition.id, n, ...lawValues, ...(rest ? [rest] : []), pageSize, (page - 1) * pageSize).all<Row>();
     return { mode: "number" as const, total: results.length, results: results.map(toSection) };
   }
   const run = (tsquery: string) => db.prepare(`WITH q AS (SELECT ${tsquery} AS query)
     ${SECTION_SELECT.replace("SELECT s.id,", "SELECT ts_rank(s.search_tsv, q.query) AS rank, count(*) OVER () AS total, s.id,")}, q
-    WHERE v.edition_id = ? AND s.search_tsv @@ q.query${lawFilter}
+    WHERE v.edition_id = ? AND ${LIVE_SECTION} AND s.search_tsv @@ q.query${lawFilter}
     ORDER BY rank DESC, (l.category = 'act') DESC, v.law_id, s.position LIMIT ? OFFSET ?`).bind(query, edition.id, ...lawValues, pageSize, (page - 1) * pageSize).all<Row>();
   let { results } = await run("plainto_tsquery('english', ?)");
   let mode: "all-words" | "any-word" = "all-words";
@@ -343,7 +374,8 @@ export async function relationsFor(db: Database, lawId: string, sectionId?: stri
     fl.category AS "fromCategory", tl.category AS "toCategory"
     FROM legislation_relations r JOIN legislation_laws fl ON fl.id = r.from_law_id JOIN legislation_laws tl ON tl.id = r.to_law_id
     LEFT JOIN legislation_sections fs ON fs.id = r.from_section_id LEFT JOIN legislation_sections ts ON ts.id = r.to_section_id
-    WHERE ${sectionId ? "r.from_section_id = ? OR r.to_section_id = ?" : "r.from_law_id = ? OR r.to_law_id = ?"} ORDER BY r.basis, r.id`).bind(sectionId ?? lawId, sectionId ?? lawId).all<Row>();
+    WHERE (${sectionId ? "r.from_section_id = ? OR r.to_section_id = ?" : "r.from_law_id = ? OR r.to_law_id = ?"})
+      AND coalesce(fs.withdrawn, 0) = 0 AND coalesce(ts.withdrawn, 0) = 0 ORDER BY r.basis, r.id`).bind(sectionId ?? lawId, sectionId ?? lawId).all<Row>();
   const end = (title: unknown, category: unknown, number: unknown, heading: unknown) => ({
     title: String(title), section: str(number), heading: str(heading), label: number ? `${String(title)}, ${category === "act" ? "s." : "reg. "}${String(number)} ${String(heading)}` : String(title),
   });
@@ -371,7 +403,8 @@ export interface LegislationEnv {
 function respond(data: unknown, status: number, headers: Record<string, string>): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Cache-Control": status === 200 ? "public, max-age=300" : "no-store", "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", ...headers },
+    // no-store: an emergency withdrawal must take effect at once, so no browser or proxy may keep a copy.
+    headers: { "Cache-Control": "no-store", "Content-Type": "application/json; charset=utf-8", "X-Content-Type-Options": "nosniff", ...headers },
   });
 }
 
@@ -415,6 +448,10 @@ export async function handleLegislationRequest(request: Request, env: Legislatio
         jurisdiction, total: amendments.length, acts: await amendingActs(db, jurisdiction), amendments, evidenceLabels: AMENDMENT_EVIDENCE_LABEL, statuses: STATUS_LABEL,
         note: "TaxComp's summaries of the 2026 changes, from the Bills as published by Parliament (Bills Supplement No. 2, 27 March 2026) and professional reports of the Acts as enacted. Not statutory wording. Unverified until checked against the enacted Acts.",
       }, 200, cors);
+    }
+    if (path === "/api/legislation/withdrawals") {
+      // Read by the app on every page load to block withdrawn calculators and mark withdrawn material.
+      return respond({ withdrawals: await publicWithdrawals(db), classes: CLASS_LABEL }, 200, cors);
     }
     if (path === "/api/legislation/editions") {
       return respond({ jurisdiction, editions, gaps: await coverageGaps(db, jurisdiction), statuses: STATUS_LABEL }, 200, cors);
@@ -479,11 +516,12 @@ export interface StatusChange {
 function checkChange(change: StatusChange, canApprove: boolean): { status: VerificationStatus; note: string; source: string | null } {
   const status = change.status as VerificationStatus;
   if (!(STATUSES as readonly string[]).includes(status)) throw new LegislationError(400, `Status must be one of: ${STATUSES.join(", ")}.`);
+  // Phase 2b: verifying or superseding needs two people, through the verification register.
+  if (status === "verified" || status === "superseded") throw new LegislationError(409, "Verifying or superseding legislation goes through the verification register (two-person review).");
   if (APPROVER_ONLY.has(status) && !canApprove) throw new LegislationError(403, "Only a legal approver can mark legislation verified or superseded.");
   const note = String(change.note ?? "").trim().slice(0, 2000);
   const source = change.officialSourceUrl ? String(change.officialSourceUrl).trim() : null;
   if (source && !/^https:\/\/\S{4,500}$/.test(source)) throw new LegislationError(400, "The official source must be an https:// link.");
-  if (status === "verified" && (!source || note.length < 10)) throw new LegislationError(400, "To verify, give the official source link and a note of what you checked.");
   return { status, note, source };
 }
 
@@ -590,13 +628,15 @@ export interface AmendmentRecord {
   verificationNote: string;
   officialSourceUrl: string | null;
   verifiedAt: string | null;
+  legalClass: ContentClass;
+  legalClassLabel: string;
 }
 
 const AMENDMENT_SELECT = `SELECT a.id, a.amending_statute_id AS "amendingStatuteId", s.title AS "amendingTitle", s.bill_status AS "billStatus", a.law_id AS "lawId",
   a.principal_act AS "principalAct", a.provision, a.section_number AS "sectionNumber", a.topic, a.summary, a.previous_figure AS "previousFigure", a.bill_figure AS "billFigure",
   a.reported_figure AS "reportedFigure", a.figures_differ AS "figuresDiffer", a.effective_from AS "effectiveFrom", a.evidence, a.bill_reference AS "billReference",
   a.bill_url AS "billUrl", a.secondary_sources AS "secondarySources", a.note, a.position, a.verification_status AS "verificationStatus",
-  a.verification_note AS "verificationNote", a.official_source_url AS "officialSourceUrl", a.verified_at AS "verifiedAt"
+  a.verification_note AS "verificationNote", a.official_source_url AS "officialSourceUrl", a.verified_at AS "verifiedAt", a.withdrawn, a.disputed
   FROM legislation_amendments a JOIN law_statutes s ON s.id = a.amending_statute_id`;
 
 function toAmendment(r: Row): AmendmentRecord {
@@ -609,15 +649,17 @@ function toAmendment(r: Row): AmendmentRecord {
     effectiveFrom: str(r.effectiveFrom), evidence, evidenceLabel: AMENDMENT_EVIDENCE_LABEL[evidence] ?? evidence, billReference: String(r.billReference), billUrl: str(r.billUrl),
     secondarySources: String(r.secondarySources ?? ""), note: String(r.note ?? ""), position: Number(r.position), verificationStatus: status, verificationLabel: STATUS_LABEL[status],
     verificationNote: String(r.verificationNote ?? ""), officialSourceUrl: str(r.officialSourceUrl), verifiedAt: str(r.verifiedAt),
+    // A Bill-only change is proposed legislation; a Bill/report conflict is a disputed position until verified.
+    ...classOf(status, r, { billOnly: evidence === "bill_only", figuresDiffer: r.figuresDiffer === true || r.figuresDiffer === 1 || r.figuresDiffer === "t" }),
   };
 }
 
 const STATUTE_ID = /^[a-z0-9-]{2,60}$/;
 
-export async function listAmendments(db: Database, { jurisdiction = "UG", lawId, statuteId, differ }: { jurisdiction?: string; lawId?: string | null; statuteId?: string | null; differ?: boolean } = {}): Promise<AmendmentRecord[]> {
+export async function listAmendments(db: Database, { jurisdiction = "UG", lawId, statuteId, differ, includeWithdrawn = false }: { jurisdiction?: string; lawId?: string | null; statuteId?: string | null; differ?: boolean; includeWithdrawn?: boolean } = {}): Promise<AmendmentRecord[]> {
   if (lawId && !LAW_ID.test(lawId)) throw new LegislationError(400, "Invalid law id.");
   if (statuteId && !STATUTE_ID.test(statuteId)) throw new LegislationError(400, "Invalid amending Act id.");
-  const where = ["a.jurisdiction = ?", ...(lawId ? ["a.law_id = ?"] : []), ...(statuteId ? ["a.amending_statute_id = ?"] : []), ...(differ ? ["a.figures_differ = 1"] : [])];
+  const where = ["a.jurisdiction = ?", ...(includeWithdrawn ? [] : ["a.withdrawn = 0"]), ...(lawId ? ["a.law_id = ?"] : []), ...(statuteId ? ["a.amending_statute_id = ?"] : []), ...(differ ? ["a.figures_differ = 1"] : [])];
   const values = [jurisdiction, ...(lawId ? [lawId] : []), ...(statuteId ? [statuteId] : [])];
   const { results } = await db.prepare(`${AMENDMENT_SELECT} WHERE ${where.join(" AND ")} ORDER BY a.position, a.id`).bind(...values).all<Row>();
   return results.map(toAmendment);
@@ -755,7 +797,7 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
   let found: SectionRecord[] = [];
   // Sections a guided answer or impact scenario rests on come first (resolved by heading, never by number).
   for (const ref of preferred.slice(0, limit)) {
-    const row = await db.prepare(`${SECTION_SELECT} WHERE v.edition_id = ? AND v.law_id = ? AND lower(s.heading) = lower(?) ORDER BY s.position LIMIT 1`).bind(edition.id, ref.law, ref.heading).first<Row>();
+    const row = await db.prepare(`${SECTION_SELECT} WHERE v.edition_id = ? AND ${LIVE_SECTION} AND v.law_id = ? AND lower(s.heading) = lower(?) ORDER BY s.position LIMIT 1`).bind(edition.id, ref.law, ref.heading).first<Row>();
     if (row && !found.some((s) => s.id === String(row.id))) found.push(toSection(row));
   }
   const preferredCount = found.length;
@@ -781,7 +823,7 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
     for (const r of relations.slice(0, 3)) {
       const other = r.from.sectionId === provisions[0].id ? r.to : r.from;
       if (!other.sectionId || provisions.some((p) => p.id === other.sectionId)) continue;
-      const row = await db.prepare(`${SECTION_SELECT} WHERE s.id = ?`).bind(other.sectionId).first<Row>();
+      const row = await db.prepare(`${SECTION_SELECT} WHERE s.id = ? AND ${LIVE_SECTION}`).bind(other.sectionId).first<Row>();
       if (row) provisions.push({ ...toSection(row), ref: `L${provisions.length + 1}`, relatedTo: provisions[0].ref, relationBasis: r.basis });
     }
   }
@@ -799,14 +841,14 @@ export async function retrieveLegislation(db: Database, question: string, { onDa
 }
 
 function amendmentLine(a: AmendmentRecord & { ref: string }): string {
-  return `[${a.ref}] 2026 change: ${a.principalAct}, ${a.provision} (${a.amendingTitle}). ${a.summary} ${amendmentFigures(a)}${a.effectiveFrom ? ` Applies from ${a.effectiveFrom}.` : ""} Evidence: ${a.evidenceLabel}. Status: ${a.verificationLabel}.${a.note ? ` Note: ${a.note}` : ""}`;
+  return `[${a.ref}] 2026 change: ${a.principalAct}, ${a.provision} (${a.amendingTitle}). ${a.summary} ${amendmentFigures(a)}${a.effectiveFrom ? ` Applies from ${a.effectiveFrom}.` : ""} Evidence: ${a.evidenceLabel}. Status: ${a.verificationLabel}. Legal status: ${a.legalClassLabel}.${a.note ? ` Note: ${a.note}` : ""}`;
 }
 
 function provisionLine(p: RetrievedProvision): string {
   const relation = p.relatedTo ? ` (related to [${p.relatedTo}]; relationship ${p.relationBasis})` : "";
   const flags = p.flags.includes("numbering-check") ? " Numbering to be checked against the official edition." : "";
   const wording = p.wording && p.wordingStatus !== "none" ? ` Wording (${p.wordingStatus}): "${p.wording.slice(0, 1500)}"` : " No wording held.";
-  return `[${p.ref}] ${p.citation} – ${p.heading}${p.part.number ? ` (Part ${p.part.number}${p.part.title ? ` – ${p.part.title}` : ""})` : ""}. Status: ${p.evidenceLabel}.${wording}${flags}${relation}`;
+  return `[${p.ref}] ${p.citation} – ${p.heading}${p.part.number ? ` (Part ${p.part.number}${p.part.title ? ` – ${p.part.title}` : ""})` : ""}. Status: ${p.evidenceLabel}. Legal status: ${p.legalClassLabel}.${wording}${flags}${relation}`;
 }
 
 /** The evidence block given to the model, with the rules for using it. */
@@ -819,6 +861,7 @@ export function legislationEvidence(r: LegislationRetrieval): string {
   if (r.amendments.length) lines.push("2026 changes from TaxComp's amendments register (TaxComp's summaries, not statutory wording):", ...r.amendments.map(amendmentLine));
   for (const g of r.gaps) lines.push(`Known gap: ${g.title}. ${g.note}`);
   lines.push("Rules for this legislation: cite Uganda legislation only as the [L#] entries above, and only those sections. A heading says what a section is about; it does not give its conditions, rates or effect, so do not state them from a heading. Never quote or paraphrase statutory wording unless an entry includes wording, and say whether that wording is verified. Say that the headings come from the stated edition, are unverified unless marked verified, and may have been changed by later amendments. Do not apply another country's legislation as Uganda law. If the user's facts matter, ask for them.");
+  lines.push("Legal status rules: call something verified law only when its legal status is 'Verified law'. Describe a 'Disputed legal position' as disputed and give each position; 'Proposed legislation' is not law; 'Pending verification' must be described as not yet verified. Material withdrawn by TaxComp's reviewers is never included here; do not rely on any you remember.");
   if (r.amendments.length) lines.push("Rules for the [A#] 2026 changes: cite them as [A#]. Say the law was changed in 2026 and give figures exactly as listed. Where the Bill and the reported enactment differ, give both and say the enacted Act must be checked; never pick one. A change marked 'In the published Bill only' may not be law: say so. Every [A#] entry is unverified unless its status says otherwise.");
   return lines.join("\n");
 }

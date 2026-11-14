@@ -55,10 +55,15 @@
   }
 
   const cache = new Map();
+  const cachedAt = new Map();
+  // Phase 2b: kept for 5 minutes only, so a withdrawn provision disappears without a reload.
+  const CACHE_MS = 5 * 60 * 1000;
   /** Sections of the given laws from the API, in the shape cite() expects. Null if unavailable. */
   async function load(ids = ["ita", "vata", "tpca", "ita-reg-transfer-pricing-2011"]) {
     const key = ids.join(",");
+    if (cache.has(key) && Date.now() - (cachedAt.get(key) || 0) > CACHE_MS) cache.delete(key);
     if (!cache.has(key)) {
+      cachedAt.set(key, Date.now());
       cache.set(key, Promise.all(ids.map(async (id) => {
         const data = await getJson(`/api/legislation/${encodeURIComponent(id)}/sections?pageSize=200`);
         return toInstrument(data.law, data.sections);

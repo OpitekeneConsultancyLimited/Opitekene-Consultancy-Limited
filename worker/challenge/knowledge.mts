@@ -248,8 +248,24 @@ const SELECT = `SELECT id, title, layer, country, tax_category AS "taxCategory",
   source_reference AS "sourceReference", source_url AS "sourceUrl", chapter_ref AS "chapterRef", statute_id AS "statuteId", applicable_from AS "applicableFrom",
   applicable_to AS "applicableTo", effective_date AS "effectiveDate", publication_date AS "publicationDate", content_kind AS "contentKind", licence,
   licence_note AS "licenceNote", body, ai_generated AS "aiGenerated", status, superseded_by AS "supersededBy", created_by AS "createdBy",
-  created_at AS "createdAt", updated_at AS "updatedAt", reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt", review_note AS "reviewNote"
+  created_at AS "createdAt", updated_at AS "updatedAt", reviewed_by AS "reviewedBy", reviewed_at AS "reviewedAt", review_note AS "reviewNote",
+  withdrawn, disputed
   FROM knowledge_records`;
+
+/**
+ * Phase 2b legal class of a knowledge record (same labels as register.mts, kept
+ * here to avoid a circular import). A verified note is commentary or URA
+ * guidance, never "verified law": it summarises the law, it is not the law.
+ */
+export function knowledgeClass(record: Pick<KnowledgeRecord, "status" | "sourceKind"> & { withdrawn?: unknown; disputed?: unknown }): { legalClass: string; legalClassLabel: string } {
+  const on = (v: unknown) => v === 1 || v === "1" || v === true;
+  const pick = (legalClass: string, legalClassLabel: string) => ({ legalClass, legalClassLabel });
+  if (on(record.withdrawn)) return pick("withdrawn", "Withdrawn");
+  if (on(record.disputed)) return pick("disputed", "Disputed legal position");
+  if (record.status === "outdated") return pick("superseded", "Superseded law");
+  if (record.status === "verified") return record.sourceKind === "official_guidance" ? pick("administrative_guidance", "Administrative guidance (URA)") : pick("professional_commentary", "Professional commentary");
+  return pick("pending_verification", "Pending verification");
+}
 
 type Row = Omit<KnowledgeRecord, "aiGenerated"> & { aiGenerated: number | boolean };
 
@@ -257,9 +273,9 @@ function toRecord(row: Row): KnowledgeRecord {
   return { ...row, aiGenerated: row.aiGenerated === true || Number(row.aiGenerated) === 1 };
 }
 
-/** Users see verified and outdated (marked) records; reviewers also see drafts and rejected ones. */
+/** Users see verified and outdated (marked) records, never withdrawn ones; reviewers also see drafts, rejected and withdrawn ones. */
 export async function loadKnowledge(db: Database, { staff = false } = {}): Promise<KnowledgeRecord[]> {
-  const where = staff ? "" : ` WHERE status IN ('verified', 'outdated')`;
+  const where = staff ? "" : ` WHERE status IN ('verified', 'outdated') AND withdrawn = 0`;
   const { results } = await db.prepare(`${SELECT}${where} ORDER BY id LIMIT 5000`).all<Row>();
   return results.map(toRecord);
 }
@@ -339,6 +355,7 @@ export function publicRecord(record: KnowledgeRecord, onDate?: string | null) {
     sourceReference: record.sourceReference, sourceUrl: record.sourceUrl, chapterRef: record.chapterRef, statuteId: record.statuteId,
     applicableFrom: record.applicableFrom, applicableTo: record.applicableTo, effectiveDate: record.effectiveDate, publicationDate: record.publicationDate,
     contentKind: record.contentKind, body: record.body, aiGenerated: record.aiGenerated, status: record.status, supersededBy: record.supersededBy,
-    lastReviewed: record.reviewedAt, current: record.status === "verified" && inPeriod(record, onDate),
+    lastReviewed: record.reviewedAt, current: record.status === "verified" && inPeriod(record, onDate) && !(record as { disputed?: unknown }).disputed,
+    ...knowledgeClass(record as KnowledgeRecord & { withdrawn?: unknown; disputed?: unknown }),
   };
 }

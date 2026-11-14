@@ -149,7 +149,27 @@ function countdown(item: ProcedureRule, ruleSet: RuleSet, key: Banner["key"], tr
   };
 }
 
+export const WITHDRAWN_LABEL = "Deadline rules withdrawn by TaxComp's legal reviewers";
+
+/** Phase 2b: rules withdrawn by a legal approver produce no dates at all, only a notice to get advice. */
+function withheldDeadlines(ruleSet: RuleSet, reason: string): DeadlineResult {
+  const message = `TaxComp's legal reviewers have withdrawn the deadline rules while they are corrected (${reason}). We cannot show your deadlines. The time limits still run: speak to a tax professional or URA today.`;
+  return {
+    ruleSetVersion: ruleSet.version, provisional: true, provisionalLabel: WITHDRAWN_LABEL,
+    objection: {
+      key: "objection", state: "unknown", title: "Deadline not available", message, dueDate: null, daysLeft: null, ruleKey: "objection",
+      ruleLabel: "Objection to URA", ruleSetVersion: ruleSet.version, sourceUrl: null, provisional: true, assumptions: [], closedDay: null,
+    },
+    lateObjection: { offered: false, reviewRequired: true, description: message, sourceUrl: null },
+    decision: null,
+    tatApplication: null,
+    tatPayment: { amount: null, basis: "Not available while the deadline rules are withdrawn.", description: message, sourceUrl: null, provisional: true },
+    adr: { description: "Alternative dispute resolution never replaces lodging on time.", sourceUrl: null },
+  };
+}
+
 export function computeDeadlines(input: DeadlineInput, ruleSet: RuleSet): DeadlineResult {
+  if (ruleSet.withdrawn) return withheldDeadlines(ruleSet, ruleSet.withdrawn.reason);
   const provisional = !ruleSet.approvedForComputation;
   const holidays = input.holidays ?? [];
   const objectionRule = rule(ruleSet, "objection");

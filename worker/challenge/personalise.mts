@@ -352,11 +352,11 @@ export async function resolveRefs(db: Database, refs: Ref[]): Promise<Map<string
     if (ref.heading) {
       const r = await db.prepare(`SELECT s.section_number AS n, s.heading AS h, s.verification_status AS st, v.official_title AS t, v.chapter AS c, l.category AS cat
         FROM legislation_sections s JOIN legislation_law_versions v ON v.id = s.law_version_id JOIN legislation_laws l ON l.id = v.law_id
-        WHERE v.edition_id = ? AND v.law_id = ? AND lower(s.heading) = lower(?) ORDER BY s.position LIMIT 1`).bind(edition.id, ref.law, ref.heading).first<Row>();
+        WHERE v.edition_id = ? AND v.law_id = ? AND s.withdrawn = 0 AND v.withdrawn = 0 AND lower(s.heading) = lower(?) ORDER BY s.position LIMIT 1`).bind(edition.id, ref.law, ref.heading).first<Row>();
       if (r) out.set(key, { citation: `${String(r.t)}${r.c ? ` (${String(r.c)})` : ""}, ${r.cat === "act" ? "s." : "reg. "}${String(r.n)}`, heading: String(r.h), lawId: ref.law, sectionNumber: String(r.n), verificationStatus: String(r.st), evidenceLabel: r.st === "verified" ? "Verified heading; no wording held" : "Unverified heading; no wording held", editionLabel: String(edition.label) });
     } else if (ref.schedule) {
       const r = await db.prepare(`SELECT sc.label AS lb, sc.title AS ti, sc.verification_status AS st, v.official_title AS t, v.chapter AS c FROM legislation_schedules sc JOIN legislation_law_versions v ON v.id = sc.law_version_id
-        WHERE v.edition_id = ? AND v.law_id = ? AND sc.label = ? LIMIT 1`).bind(edition.id, ref.law, ref.schedule).first<Row>();
+        WHERE v.edition_id = ? AND v.law_id = ? AND sc.withdrawn = 0 AND v.withdrawn = 0 AND sc.label = ? LIMIT 1`).bind(edition.id, ref.law, ref.schedule).first<Row>();
       if (r) out.set(key, { citation: `${String(r.t)}${r.c ? ` (${String(r.c)})` : ""}, ${String(r.lb)}`, heading: String(r.ti ?? ""), lawId: ref.law, sectionNumber: null, verificationStatus: String(r.st), evidenceLabel: r.st === "verified" ? "Verified heading; no wording held" : "Unverified heading; no wording held", editionLabel: String(edition.label) });
     }
   }

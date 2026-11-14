@@ -57,7 +57,8 @@ test("integrity: duplicates and orphans are refused; re-import is idempotent and
   const { pg } = await createMigratedDatabase();
   await assert.rejects(pg.query(`INSERT INTO taxcomp.legislation_sections (id, law_version_id, section_number, heading, position, updated_at) VALUES ('dup', 'ug-rev-2024/ita', '80', 'Copy', 999, 'now')`), /unique|duplicate/i);
   await assert.rejects(pg.query(`INSERT INTO taxcomp.legislation_sections (id, law_version_id, section_number, heading, position, updated_at) VALUES ('orphan', 'no-edition/ita', '1', 'X', 1, 'now')`), /foreign key/i);
-  await assert.rejects(pg.query(`UPDATE taxcomp.legislation_sections SET verification_status = 'verified' WHERE id = 'ug-rev-2024/ita/s80'`), /check/i, "verified needs who, when and the official source");
+  await assert.rejects(pg.query(`UPDATE taxcomp.legislation_sections SET verification_status = 'verified' WHERE id = 'ug-rev-2024/ita/s80'`), /legal_two_person_required/, "verified needs an approved two-person request");
+  await assert.rejects(pg.query(`UPDATE taxcomp.legislation_sections SET verification_status = 'verified', verified_by = 'x', verified_at = 'now', official_source_url = 'https://ulrc.go.ug/x' WHERE id = 'ug-rev-2024/ita/s80'`), /legal_two_person_required/, "even with who, when and a source");
   await assert.rejects(pg.query(`UPDATE taxcomp.legislation_sections SET wording = 'some words' WHERE id = 'ug-rev-2024/ita/s80'`), /check/i, "wording needs a wording status");
   // A reviewer has worked on s.80; a later import with a different heading must not overwrite it.
   await pg.query(`UPDATE taxcomp.legislation_sections SET verification_status = 'under_review', verification_note = 'checking', updated_by = 'reviewer-1', updated_at = '2026-11-12T03:00:00Z' WHERE id = 'ug-rev-2024/ita/s80'`);
@@ -167,29 +168,42 @@ test("verification workflow: owners cannot; reviewers mark under review; only ap
   assert.deepEqual(queue.json.sections.map((s) => s.id), ["ug-rev-2024/ita/s118I", "ug-rev-2024/tpca/s40E"]);
   assert.equal(queue.json.laws.length, 18);
   assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "under_review", note: "Comparing with ULRC 2024." } })).status, 200);
-  assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "Checked.", officialSourceUrl: "https://ulrc.go.ug/" } })).status, 403);
+  // Phase 2b: any reviewer PREPARES a verification (202); it takes effect only when a different legal approver approves it.
+  assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "Checked.", officialSourceUrl: "https://ulrc.go.ug/" } })).status, 400, "the evidence must say what was checked");
   assert.equal((await call(`${law}/sections/118I/status`, reviewer.token, { method: "POST", body: { status: "requires_amendment_review", note: "Pre-revision numbering." } })).status, 200);
   assert.equal((await call(`${law}/sections/80/status`, reviewer.token, { method: "POST", body: { status: "under_review", heading: "Changed" } })).status, 403, "headings: approvers only");
 
   await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  const approver = await supabase.issueToken({ email: "approver@example.com" });
+  await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text)", [approver.userId]);
+  const decide = (token, id) => call(`/api/challenge/review/register/requests/${id}/decision`, token, { method: "POST", body: { decision: "approve", note: "Checked the source myself." } });
   assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "ok" } })).status, 400, "verifying needs the source and a note");
   assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "Chapter and arrangement checked against ULRC 2024 edition.", officialSourceUrl: "https://ulrc.go.ug/principal-laws", chapter: "Cap 338" } })).status, 400, "chapter format");
+  assert.equal((await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "Checked against the 2026 Bill.", officialSourceUrl: "https://ulrc.go.ug/principal-laws", legalCategory: "bill" } })).status, 400, "a Bill never verifies law");
   const ok = await call(`${law}/status`, reviewer.token, { method: "POST", body: { status: "verified", note: "Chapter and arrangement checked against ULRC 2024 edition.", officialSourceUrl: "https://ulrc.go.ug/principal-laws", chapter: "Cap. 338", commencementDate: "1997-07-01" } });
-  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.equal(ok.status, 202, JSON.stringify(ok.json));
+  assert.equal((await one(pg, "SELECT verification_status FROM taxcomp.legislation_law_versions WHERE id = 'ug-rev-2024/ita'")).verification_status, "under_review", "not verified yet");
+  assert.equal((await decide(reviewer.token, ok.json.request.id)).status, 403, "the preparer cannot approve");
+  assert.equal((await decide(approver.token, ok.json.request.id)).status, 200);
   const s16 = await call("/api/challenge/review/legislation/ug-rev-2024/vata/sections/16/status", reviewer.token, { method: "POST", body: { status: "verified", note: "Heading checked against the official text.", officialSourceUrl: "https://ulrc.go.ug/vat",
     wording: "Official wording pasted here for the test.", wordingSourceUrl: "https://ulrc.go.ug/vat#s16", wordingVerified: true } });
-  assert.equal(s16.status, 200);
+  assert.equal(s16.status, 202);
+  assert.equal((await decide(approver.token, s16.json.request.id)).status, 200);
   const row = await one(pg, "SELECT verification_status, verified_by, wording_status FROM taxcomp.legislation_sections WHERE id = 'ug-rev-2024/vata/s16'");
-  assert.deepEqual([row.verification_status, row.verified_by, row.wording_status], ["verified", reviewer.userId, "verified"]);
+  assert.deepEqual([row.verification_status, row.verified_by, row.wording_status], ["verified", approver.userId, "verified"], "the approver is recorded as the verifier");
   const pub = await get(env, "/api/legislation/vata/sections/16");
   assert.equal(pub.json.section.evidenceLevel, "verified_wording");
+  assert.equal(pub.json.section.legalClass, "verified_law");
 
   const history = await call("/api/challenge/review/legislation/history?id=ug-rev-2024/ita", reviewer.token);
   // imported; flagged by the 2026 amendments migration; under review; verified.
   assert.deepEqual(history.json.history.map((h) => h.action).sort(), ["imported", "status_changed", "status_changed", "status_changed"], "confirming the same chapter and date is not a content change");
-  assert.ok(history.json.history.some((h) => h.toStatus === "verified" && h.actor === reviewer.userId));
+  assert.ok(history.json.history.some((h) => h.toStatus === "verified" && h.actor === approver.userId));
   const audit = (await pg.query("SELECT action FROM taxcomp.challenge_audit_log WHERE action LIKE 'legislation.%'")).rows.length;
-  assert.equal(audit, 4);
+  assert.equal(audit, 2, "the two direct status changes; verifications are logged in the legal audit log");
+  const legal = (await pg.query("SELECT action, actor_user_id AS actor FROM taxcomp.legal_audit_log ORDER BY seq")).rows;
+  assert.deepEqual(legal.map((r) => r.action), ["request.submit", "request.approve", "request.submit", "request.approve"]);
+  assert.deepEqual(legal.map((r) => r.actor), [reviewer.userId, approver.userId, reviewer.userId, approver.userId]);
 
   // Edition comparison: a later edition (as an import would create) shows what changed.
   const next = structuredClone(index);
@@ -311,10 +325,14 @@ test("2026 amendments register: Bill and reported figures side by side, conflict
   };
   const path = "/api/challenge/review/legislation/amendments/vat-2026-s7-registration-threshold/status";
   assert.equal((await post(path, { status: "under_review", note: "Waiting for the gazetted Act." })).status, 200);
-  assert.equal((await post(path, { status: "verified", note: "Checked.", officialSourceUrl: "https://example.org/act" })).status, 403);
   assert.equal((await post("/api/challenge/review/legislation/amendments/no-such-change/status", { status: "under_review" })).status, 404);
-  await pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
-  assert.equal((await post(path, { status: "verified", note: "Section 7(2) as enacted reads 300 million; checked.", officialSourceUrl: "https://example.org/vat-amendment-act-2026" })).status, 200);
+  // Phase 2b: the reviewer prepares; a different legal approver decides. (Test figures only: not a finding about the enacted Act.)
+  const prepared = await post(path, { status: "verified", note: "Synthetic test: section 7(2) as enacted checked.", officialSourceUrl: "https://example.org/vat-amendment-act-2026" });
+  assert.equal(prepared.status, 202);
+  const approver = await supabase.issueToken({ email: "approver@example.com" });
+  await pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, 'approver@example.com', 1, now()::text)", [approver.userId]);
+  const decided = await handleRequest(new Request(`https://worker.example/api/challenge/review/register/requests/${prepared.json.request.id}/decision`, { method: "POST", headers: { Origin: origin, Authorization: `Bearer ${approver.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ decision: "approve", note: "Checked." }) }), renv);
+  assert.equal(decided.status, 200);
   const statuses = (await pg.query("SELECT to_status FROM taxcomp.legislation_history WHERE entity_id = 'vat-2026-s7-registration-threshold' AND action = 'status_changed' ORDER BY occurred_at, to_status")).rows.map((r) => r.to_status);
   assert.deepEqual(statuses.sort(), ["under_review", "verified"]);
   // A reviewed record is not overwritten by re-running the migration.

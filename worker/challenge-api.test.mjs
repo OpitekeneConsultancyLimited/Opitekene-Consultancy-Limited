@@ -267,19 +267,37 @@ test("REV-1: disputed principal above the threshold blocks the pack until a revi
   await t.pg.close();
 });
 
-test("reviewers cannot approve law or rules without approver rights; text must be real", async () => {
+test("approving law or rules needs two people: a reviewer prepares, a different approver decides; text must be real", async () => {
   const t = await setup();
   const reviewer = await t.user("reviewer@example.com");
+  const approver = await t.user("approver@example.com");
   await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, created_at) VALUES ($1, $2, $3)", [reviewer.userId, "reviewer@example.com", NOW.toISOString()]);
-  assert.equal((await t.call("/api/challenge/review/rules/objections-2026.v1/approve", { method: "POST", token: reviewer.token, body: {} })).status, 403);
-  assert.equal((await t.call("/api/challenge/review/law/tpca.interest.2026/approve", { method: "POST", token: reviewer.token, body: {} })).status, 403);
+  const decide = (who, id, decision = "approve") => t.call(`/api/challenge/review/register/requests/${id}/decision`, { method: "POST", token: who.token, body: { decision, note: "Checked against the Act." } });
+  // Rules: prepared by the reviewer (202), never applied by them.
+  const rules = await t.call("/api/challenge/review/rules/objections-2026.v1/approve", { method: "POST", token: reviewer.token, body: {} });
+  assert.equal(rules.status, 202, JSON.stringify(rules.body));
+  assert.equal((await decide(reviewer, rules.body.request.id)).status, 403, "a reviewer without approver rights cannot decide");
   assert.equal((await t.call("/api/challenge/review/law/tpca.interest.2026", { method: "POST", token: reviewer.token, body: { text: "TODO_VERIFY: paste" } })).status, 400);
-  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
   assert.equal((await t.call("/api/challenge/review/law/tpca.interest.2026/approve", { method: "POST", token: reviewer.token, body: {} })).status, 409, "text must be verified first");
   assert.equal((await t.call("/api/challenge/review/law/tpca.interest.2026", { method: "POST", token: reviewer.token, body: { text: "Official text pasted from ULII by the reviewer (synthetic test text)." } })).status, 200);
-  assert.equal((await t.call("/api/challenge/review/law/tpca.interest.2026/approve", { method: "POST", token: reviewer.token, body: { computation: { kind: "simple-monthly", ratePercentPerMonth: 1 } } })).status, 200);
+  const law = await t.call("/api/challenge/review/law/tpca.interest.2026/approve", { method: "POST", token: reviewer.token, body: { computation: { kind: "simple-monthly", ratePercentPerMonth: 1 } } });
+  assert.equal(law.status, 202);
+  // The reviewer becomes an approver: still cannot approve what they prepared, or the text they entered.
+  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  assert.equal((await decide(reviewer, law.body.request.id)).status, 403, "the preparer cannot approve");
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, $2, 1, $3)", [approver.userId, "approver@example.com", NOW.toISOString()]);
+  assert.equal((await decide(approver, law.body.request.id)).status, 200);
+  assert.equal((await decide(approver, rules.body.request.id)).status, 200);
   const row = await t.pg.query("SELECT approved_for_computation AS a, approved_by AS b FROM taxcomp.law_provision_versions WHERE id = 'tpca.interest.2026'");
-  assert.deepEqual(row.rows[0], { a: 1, b: reviewer.userId });
+  assert.deepEqual(row.rows[0], { a: 1, b: approver.userId }, "the independent approver is recorded");
+  assert.equal((await t.pg.query("SELECT approved_by AS b FROM taxcomp.procedure_rule_sets WHERE version = 'objections-2026.v1'")).rows[0].b, approver.userId);
+  // The approver cannot approve a provision whose text they entered.
+  assert.equal((await t.call("/api/challenge/review/law/ita.deductions.pre-2026", { method: "POST", token: approver.token, body: { text: "Official text pasted by the approver (synthetic test text)." } })).status, 200);
+  const deductions = await t.call("/api/challenge/review/law/ita.deductions.pre-2026/approve", { method: "POST", token: reviewer.token, body: {} });
+  assert.equal(deductions.status, 202, JSON.stringify(deductions.body));
+  const byAuthor = await decide(approver, deductions.body.request.id);
+  assert.equal(byAuthor.status, 403, "the author of the text cannot be its approver");
+  assert.match(byAuthor.body.error, /wrote or entered this content/);
   await t.pg.close();
 });
 
@@ -367,16 +385,22 @@ test("A3: seeded holidays start unverified; reviewers add them, only approvers c
   assert.equal((await t.call("/api/challenge/review/holidays", { method: "POST", token: reviewer.token, body: { date: "2027-3-10", name: "Eid al-Fitr" } })).status, 400);
   assert.equal((await t.call("/api/challenge/review/holidays", { method: "POST", token: reviewer.token, body: { date: "2027-03-10", name: "Eid al-Fitr" } })).status, 200);
   const verify = (body) => t.call("/api/challenge/review/holidays/verify", { method: "POST", token: reviewer.token, body });
-  assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 403, "confirming needs approver rights");
-  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
   assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr" })).status, 400, "a source link is required");
   assert.equal((await verify({ date: "2027-03-11", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 404);
-  assert.equal((await verify({ date: "2027-03-10", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" })).status, 200);
+  const prepared = await verify({ date: "2027-03-10", name: "Eid al-Fitr", sourceUrl: "https://example.org/gazette" });
+  assert.equal(prepared.status, 202, "prepared; a different legal approver must confirm it");
+  // The reviewer who ADDED the holiday cannot confirm it, even as an approver.
+  await t.pg.query("UPDATE taxcomp.challenge_reviewers SET can_approve_law = 1");
+  const decide = (who) => t.call(`/api/challenge/review/register/requests/${prepared.body.request.id}/decision`, { method: "POST", token: who.token, body: { decision: "approve", note: "Gazette checked." } });
+  assert.equal((await decide(reviewer)).status, 403);
+  const approver = await t.user("approver@example.com");
+  await t.pg.query("INSERT INTO taxcomp.challenge_reviewers (user_id, email, can_approve_law, created_at) VALUES ($1, $2, 1, $3)", [approver.userId, "approver@example.com", NOW.toISOString()]);
+  assert.equal((await decide(approver)).status, 200);
 
   const row = await t.pg.query("SELECT verified_by AS v, source_url AS s, added_by AS a FROM taxcomp.public_holidays WHERE holiday_date = '2027-03-10'");
-  assert.deepEqual(row.rows[0], { v: reviewer.userId, s: "https://example.org/gazette", a: reviewer.userId });
+  assert.deepEqual(row.rows[0], { v: approver.userId, s: "https://example.org/gazette", a: reviewer.userId });
   const actions = await t.pg.query("SELECT action FROM taxcomp.challenge_audit_log WHERE action LIKE 'holiday.%' ORDER BY occurred_at, action");
-  assert.deepEqual(actions.rows.map((r) => r.action).sort(), ["holiday.add", "holiday.verify"]);
+  assert.deepEqual(actions.rows.map((r) => r.action).sort(), ["holiday.add", "holiday.verify.request"]);
   await t.pg.close();
 });
 

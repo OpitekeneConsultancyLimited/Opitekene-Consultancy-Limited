@@ -33,6 +33,10 @@ import {
   recommendations, saveProfile, type Profile,
 } from "./personalise.mts";
 import { assessImpact, ImpactError, readImpactInput, type Calculator, type ImpactInput, type ImpactResult } from "./impact.mts";
+import {
+  cancelRequest, decideRequest, disputeEntity, entryHistory, getRequest, RegisterError, registerOverview, submitRequest, verifyAuditChain, withdrawEntity,
+  type RequestInput,
+} from "./register.mts";
 import { ITEM_CATEGORIES, TAX_HEADS, type CaseRow, type ConfirmableField, type ItemCategory, type Outcome } from "./types.mts";
 import { LATE_OBJECTION_REASONS, OUTCOME_PROFESSIONAL_LABELS, OWNER_QUESTIONS } from "./wording.mts";
 
@@ -265,7 +269,7 @@ async function route(ctx: Ctx): Promise<Response> {
         reviewed: reviewedPlan ? { planId: String(reviewedPlan.id), amount: Number(reviewedPlan.amount), currency: String(reviewedPlan.currency) } : null,
         paymentsEnabled: typeof ctx.env.FLW_SECRET_KEY === "string" && ctx.env.FLW_SECRET_KEY.length > 0,
       },
-      consentVersion: CONSENT_VERSION, consented: Boolean(consent), reviewer: ctx.reviewer, canApproveLaw: ctx.canApproveLaw,
+      consentVersion: CONSENT_VERSION, consented: Boolean(consent), reviewer: ctx.reviewer, canApproveLaw: ctx.canApproveLaw, userId: ctx.userId,
       cases: cases.map((row) => ({ id: row.id, taxHead: row.taxHead, periodStart: row.periodStart, periodEnd: row.periodEnd, principal: row.principal, status: row.status, reviewStatus: row.reviewStatus, updatedAt: row.updatedAt })),
       uploadsEnabled: Boolean(storageFor(ctx.env)),
       questions: OWNER_QUESTIONS, lateReasons: LATE_OBJECTION_REASONS, outcomeLabels: OUTCOME_PROFESSIONAL_LABELS,
@@ -652,6 +656,62 @@ async function route(ctx: Ctx): Promise<Response> {
   // ------------------------------------------------------------ reviewers
   if (path.startsWith("/api/challenge/review")) {
     if (!ctx.reviewer) throw new HttpError(403, "Reviewer access only.");
+    // Phase 2b: the old one-step "verify"/"approve" actions now prepare a request
+    // that a DIFFERENT legal approver must approve in the verification register.
+    const sendForReview = async (input: RequestInput) => {
+      try {
+        const pending = await submitRequest(db, input, ctx.userId, ctx.nowIso);
+        return json({
+          pending: true, request: pending,
+          message: "Sent for independent review. A different legal approver must approve it in the verification register before it takes effect.",
+        }, 202, ctx.cors);
+      } catch (error) {
+        if (error instanceof RegisterError) throw new HttpError(error.status, error.message);
+        throw error;
+      }
+    };
+    const registerFields = (body: Record<string, unknown>) => ({
+      instrumentTitle: body.instrumentTitle, instrumentNumber: body.instrumentNumber, legalCategory: body.legalCategory, provision: body.provision,
+      publicationDate: body.publicationDate, assentDate: body.assentDate, gazetteDate: body.gazetteDate, commencementDate: body.commencementDate,
+      effectiveFrom: body.effectiveFrom, effectiveTo: body.effectiveTo, applicableTaxYear: body.applicableTaxYear, documentReference: body.documentReference,
+    });
+    // ---------------------------------------------- Phase 2b: verification register
+    if (path.startsWith("/api/challenge/review/register")) {
+      try {
+        if (path === "/api/challenge/review/register" && method === "GET") {
+          return json(await registerOverview(db, ctx.userId, ctx.canApproveLaw), 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/register/entry" && method === "GET") {
+          return json(await entryHistory(db, url.searchParams.get("type") ?? "", url.searchParams.get("id") ?? ""), 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/register/audit" && method === "GET") {
+          return json(await verifyAuditChain(db), 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/register/requests" && method === "POST") {
+          return json({ request: await submitRequest(db, (await readJson(request)) as unknown as RequestInput, ctx.userId, ctx.nowIso) }, 201, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/register\/requests\/([0-9a-f-]{36})$/)) && method === "GET") {
+          return json({ request: await getRequest(db, m[1] as string) }, 200, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/register\/requests\/([0-9a-f-]{36})\/decision$/)) && method === "POST") {
+          const body = await readJson(request);
+          return json(await decideRequest(db, m[1] as string, String(body.decision ?? ""), body.note, ctx.userId, ctx.canApproveLaw, ctx.nowIso), 200, ctx.cors);
+        }
+        if ((m = path.match(/^\/api\/challenge\/review\/register\/requests\/([0-9a-f-]{36})\/cancel$/)) && method === "POST") {
+          return json(await cancelRequest(db, m[1] as string, ctx.userId, ctx.nowIso), 200, ctx.cors);
+        }
+        if (path === "/api/challenge/review/register/withdrawals" && method === "POST") {
+          return json(await withdrawEntity(db, await readJson(request), ctx.userId, ctx.canApproveLaw, ctx.nowIso), 201, ctx.cors);
+        }
+        if (path === "/api/challenge/review/register/disputes" && method === "POST") {
+          return json(await disputeEntity(db, await readJson(request), ctx.userId, ctx.nowIso), 201, ctx.cors);
+        }
+        throw new HttpError(404, "Not found.");
+      } catch (error) {
+        if (error instanceof RegisterError) throw new HttpError(error.status, error.message);
+        throw error;
+      }
+    }
     if (path === "/api/challenge/review/queue" && method === "GET") {
       const cases = await listAssignedCases(db, ctx.userId);
       return json({ cases: cases.map((row) => ({ id: row.id, taxHead: row.taxHead, principal: row.principal, taxAccepted: row.taxAccepted, periodStart: row.periodStart, periodEnd: row.periodEnd, reviewStatus: row.reviewStatus, reasons: row.reviewReasons, updatedAt: row.updatedAt, dateServed: row.dateServed })) }, 200, ctx.cors);
@@ -699,17 +759,19 @@ async function route(ctx: Ctx): Promise<Response> {
       return json({ updated: versionId }, 200, ctx.cors);
     }
     if ((m = path.match(/^\/api\/challenge\/review\/law\/([a-z0-9.-]{2,80})\/approve$/)) && method === "POST") {
-      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can approve law for computation.");
+      // Prepares approval for computation; a different legal approver decides it (two-person review).
       const versionId = m[1] as string;
       const body = await readJson(request);
       const computation = body.computation === undefined ? undefined : body.computation;
       if (computation !== undefined && (typeof computation !== "object" || computation === null || Array.isArray(computation))) throw new HttpError(400, "The formula must be an object.");
-      const result = await db.prepare(`UPDATE law_provision_versions SET approved_for_computation = 1, approved_by = ?, approved_at = ?, computation_json = COALESCE(?, computation_json), updated_at = ?
-        WHERE id = ? AND text_verified_by IS NOT NULL AND bill_status IN ('assented', 'in_force')`)
-        .bind(ctx.userId, ctx.nowIso, computation === undefined ? null : JSON.stringify(computation), ctx.nowIso, versionId).run();
-      if (!result.meta.changes) throw new HttpError(409, "Verify the provision's text before approving it.");
-      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "law.approve", details: { versionId }, at: ctx.nowIso }).run();
-      return json({ approved: versionId }, 200, ctx.cors);
+      const provision = await db.prepare(`SELECT text_verified_by AS "textBy", bill_status AS "billStatus", source_url AS "sourceUrl" FROM law_provision_versions WHERE id = ?`).bind(versionId).first<Record<string, unknown>>();
+      if (!provision) throw new HttpError(404, "Provision not found.");
+      if (!provision.textBy || !["assented", "in_force"].includes(String(provision.billStatus))) throw new HttpError(409, "Verify the provision's text before approving it.");
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "law.approve.request", details: { versionId }, at: ctx.nowIso }).run();
+      return sendForReview({
+        ...registerFields(body), entityType: "provision", entityId: versionId, action: "verify", change: computation === undefined ? {} : { computation: computation as Record<string, unknown> },
+        sourceUrl: body.sourceUrl ?? provision.sourceUrl, evidenceNote: cleanText(body.note, 4000) ?? "Submitted for approval for computation from the law admin screen. The approver must check the official text first.",
+      });
     }
     if (path === "/api/challenge/review/case-law" && method === "POST") {
       // Add or update one TAT decision from a reviewer's reading of ULII (metadata, link, tags).
@@ -726,9 +788,13 @@ async function route(ctx: Ctx): Promise<Response> {
       const summary = { legalQuestion: cleanText(body.legalQuestion, 2000) ?? null, decision: cleanText(body.decision, 4000) ?? null, principle: cleanText(body.principle, 2000) ?? null, background: cleanText(body.background, 4000) ?? null };
       for (const text of Object.values(summary)) if (text) assertSafe(text, "case summary");
       const hasSummary = Object.values(summary).some(Boolean);
-      const approve = body.approveSummary === true && hasSummary;
-      const appeal = ["final", "appealed", "overturned", "upheld"].includes(String(body.appealStatus)) ? String(body.appealStatus) : "unverified";
-      const verified = approve || appeal !== "unverified";
+      // Phase 2b: saving never approves. An approved summary or a confirmed appeal
+      // status is requested here and decided by a different legal approver.
+      const wantApprove = body.approveSummary === true && hasSummary;
+      const wantAppeal = ["final", "appealed", "overturned", "upheld"].includes(String(body.appealStatus)) ? String(body.appealStatus) : null;
+      const approve = false;
+      const appeal = "unverified";
+      const verified = false;
       await db.batch([
         db.prepare(`INSERT INTO tax_case_law (id, citation, parties, decision_date, forum, background, legal_question, decision, principle, summary_status, summary_source, issue_tags_json, search_terms, source_url, appeal_status, verified_by, verified_at, ingested_at)
           VALUES (?, ?, ?, ?, 'TAT', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -739,8 +805,15 @@ async function route(ctx: Ctx): Promise<Response> {
           .bind(id, citation, parties, decisionDate, summary.background, summary.legalQuestion, summary.decision, summary.principle,
             hasSummary ? (approve ? "approved" : "draft") : "none", hasSummary ? "staff" : null, JSON.stringify(tags), cleanText(body.searchTerms, 1000) ?? "",
             sourceUrl, appeal, verified ? ctx.userId : null, verified ? ctx.nowIso : null, ctx.nowIso),
-        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, approve, appeal }, at: ctx.nowIso }),
+        audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "caselaw.save", details: { id, requestedApproval: wantApprove, requestedAppeal: wantAppeal }, at: ctx.nowIso }),
       ]);
+      if (wantApprove || wantAppeal) {
+        return sendForReview({
+          ...registerFields(body), entityType: "case_law", entityId: id, action: "verify", legalCategory: "judgment", sourceUrl,
+          change: { approveSummary: wantApprove, ...(wantAppeal ? { appealStatus: wantAppeal } : {}) },
+          evidenceNote: cleanText(body.note, 4000) ?? `Summary and status read from the decision on ULII (${sourceUrl}).`,
+        });
+      }
       return json({ saved: id }, 200, ctx.cors);
     }
     // ---------------------------------------------- legislation verification
@@ -752,9 +825,9 @@ async function route(ctx: Ctx): Promise<Response> {
           if (!choice.edition) throw new HttpError(404, "No edition is available.");
           const pg = legislationPaging(url.searchParams, 200, 100);
           const [laws, sections, amendments] = await Promise.all([
-            listLaws(db, choice.edition, {}, { page: 1, pageSize: 100 }),
+            listLaws(db, choice.edition, { includeWithdrawn: true }, { page: 1, pageSize: 100 }),
             reviewList(db, choice.edition, { lawId: url.searchParams.get("law"), status: url.searchParams.get("status"), flagged: url.searchParams.get("flagged") === "1" }, pg),
-            listAmendments(db, {}),
+            listAmendments(db, { includeWithdrawn: true }),
           ]);
           return json({ editions, edition: choice.edition, laws: laws.laws, sections, amendments, statuses: LEGISLATION_STATUS_LABEL, canApprove: ctx.canApproveLaw }, 200, ctx.cors);
         }
@@ -766,8 +839,19 @@ async function route(ctx: Ctx): Promise<Response> {
           if (!/^[a-z0-9][a-z0-9/-]{2,160}[A-Za-z0-9]?$/.test(id)) throw new HttpError(400, "Give a record id.");
           return json({ id, history: await historyFor(db, id) }, 200, ctx.cors);
         }
+        // Verified and superseded need two people: they become verification requests.
+        const twoPerson = (status: unknown) => status === "verified" || status === "superseded";
+        const legislationRequest = (body: Record<string, unknown>, entityType: "law_version" | "section" | "amendment", entityId: string, change: Record<string, unknown>) => {
+          if (body.chapter !== undefined && body.chapter !== "" && !/^Cap\. \d{1,3}[A-Z]?$/.test(String(body.chapter))) throw new HttpError(400, "Chapter must look like Cap. 338.");
+          if (body.commencementDate !== undefined && body.commencementDate !== "" && !isIsoDate(body.commencementDate)) throw new HttpError(400, "Commencement date must be YYYY-MM-DD.");
+          return sendForReview({
+            ...registerFields(body), entityType, entityId, action: body.status === "verified" ? "verify" : "supersede", change,
+            sourceUrl: body.officialSourceUrl, evidenceNote: body.note,
+          });
+        };
         if ((m = path.match(/^\/api\/challenge\/review\/legislation\/amendments\/([a-z0-9][a-z0-9-]{2,79})\/status$/)) && method === "POST") {
           const body = await readJson(request);
+          if (twoPerson(body.status)) return legislationRequest(body, "amendment", m[1] as string, { note: body.note, officialSourceUrl: body.officialSourceUrl });
           const result = await setAmendmentStatus(db, m[1] as string, { status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl }, ctx.userId, ctx.nowIso, ctx.canApproveLaw);
           await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "legislation.amendment.status", details: { id: result.id, status: result.status }, at: ctx.nowIso }).run();
           return json(result, 200, ctx.cors);
@@ -775,13 +859,24 @@ async function route(ctx: Ctx): Promise<Response> {
         if ((m = path.match(/^\/api\/challenge\/review\/legislation\/([a-z0-9][a-z0-9-]{2,59})\/([a-z0-9][a-z0-9-]{1,59})\/status$/)) && method === "POST") {
           const versionId = `${m[1]}/${m[2]}`;
           const body = await readJson(request);
+          if (twoPerson(body.status)) {
+            return legislationRequest(body, "law_version", versionId, { note: body.note, officialSourceUrl: body.officialSourceUrl, chapter: body.chapter, commencementDate: body.commencementDate });
+          }
           const result = await setLawVersionStatus(db, versionId, { status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl, chapter: body.chapter, commencementDate: body.commencementDate }, ctx.userId, ctx.nowIso, ctx.canApproveLaw);
           await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "legislation.law.status", details: { versionId, status: result.status }, at: ctx.nowIso }).run();
           return json(result, 200, ctx.cors);
         }
         if ((m = path.match(/^\/api\/challenge\/review\/legislation\/([a-z0-9][a-z0-9-]{2,59})\/([a-z0-9][a-z0-9-]{1,59})\/sections\/(\d{1,3}[A-Za-z]{0,2})\/status$/)) && method === "POST") {
-          const section = await getLegislationSection(db, `${m[1]}/${m[2]}`, (m[3] as string).toUpperCase());
+          const section = await getLegislationSection(db, `${m[1]}/${m[2]}`, (m[3] as string).toUpperCase(), { includeWithdrawn: true });
           const body = await readJson(request);
+          if (twoPerson(body.status)) {
+            if (body.wording !== undefined && body.wording !== "" && (!body.wordingSourceUrl || !/^https:\/\/\S{4,500}$/.test(String(body.wordingSourceUrl)))) {
+              throw new HttpError(400, "Wording must come with the https:// link to the official text it was copied from (20,000 characters at most).");
+            }
+            return legislationRequest(body, "section", section.id, {
+              note: body.note, officialSourceUrl: body.officialSourceUrl, heading: body.heading, wording: body.wording, wordingSourceUrl: body.wordingSourceUrl, wordingVerified: body.wordingVerified,
+            });
+          }
           const result = await setSectionStatus(db, section.id, {
             status: String(body.status ?? ""), note: body.note, officialSourceUrl: body.officialSourceUrl, heading: body.heading, wording: body.wording,
             wordingSourceUrl: body.wordingSourceUrl, wordingVerified: body.wordingVerified,
@@ -817,7 +912,6 @@ async function route(ctx: Ctx): Promise<Response> {
       return json({ saved: input.id, status: "draft" }, 200, ctx.cors);
     }
     if ((m = path.match(/^\/api\/challenge\/review\/knowledge\/([a-z0-9][a-z0-9.-]{2,119})\/decision$/)) && method === "POST") {
-      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can verify, reject or retire knowledge records.");
       const id = m[1] as string;
       const record = await loadRecord(db, id);
       if (!record) throw new HttpError(404, "Record not found.");
@@ -828,7 +922,17 @@ async function route(ctx: Ctx): Promise<Response> {
       if (next === "verified" && record.aiGenerated && note.length < 10) throw new HttpError(400, "This note was written by AI. Say what you checked it against before verifying it.");
       const supersededBy = next === "outdated" ? cleanText(body.supersededBy, 120) ?? null : record.supersededBy;
       if (supersededBy && (supersededBy === id || !(await loadRecord(db, supersededBy)))) throw new HttpError(400, "The replacing record does not exist.");
-      const action = next === "verified" ? "verified" : next === "rejected" ? "rejected" : next === "outdated" ? "outdated" : "reopened";
+      // Verifying or retiring a record is a two-person decision (Phase 2b).
+      if (next === "verified" || next === "outdated") {
+        return sendForReview({
+          ...registerFields(body), entityType: "knowledge", entityId: id, action: next === "verified" ? "verify" : "supersede",
+          change: { note, ...(supersededBy ? { supersededBy } : {}) },
+          sourceUrl: body.sourceUrl ?? record.sourceUrl, documentReference: body.documentReference ?? (record.sourceReference && record.sourceReference.length >= 3 ? record.sourceReference : null),
+          evidenceNote: note.length >= 10 ? note : `Checked against ${record.sourceReference || record.sourceUrl || "the stated source"}.`,
+        });
+      }
+      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can reject or reopen knowledge records.");
+      const action = next === "rejected" ? "rejected" : "reopened";
       await db.batch([
         db.prepare(`UPDATE knowledge_records SET status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ?, superseded_by = ?, updated_at = ? WHERE id = ? AND status = ?`)
           .bind(next, next === "draft" ? null : ctx.userId, next === "draft" ? null : ctx.nowIso, note, supersededBy, ctx.nowIso, id, record.status),
@@ -907,27 +1011,36 @@ async function route(ctx: Ctx): Promise<Response> {
       return json({ added: { date, name } }, 200, ctx.cors);
     }
     if (path === "/api/challenge/review/holidays/verify" && method === "POST") {
-      // Verifying lets a holiday move a deadline LATER (under next_business_day), so legal approvers only, with a source.
-      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can confirm public holidays.");
+      // Verifying lets a holiday move a deadline LATER (under next_business_day), so it
+      // needs a source and two people: this prepares it; a different legal approver decides.
       const body = await readJson(request);
       const date = body.date;
       const name = cleanText(body.name, 80);
       const sourceUrl = String(body.sourceUrl ?? "");
       if (!isIsoDate(date) || !name) throw new HttpError(400, "Give the holiday's date and name.");
       if (!/^https:\/\/\S{4,500}$/.test(sourceUrl)) throw new HttpError(400, "Give the https:// link to the Gazette notice or Act that confirms it.");
-      const result = await db.prepare(`UPDATE public_holidays SET verified_by = ?, verified_at = ?, source_url = ? WHERE holiday_date = ? AND name = ?`)
-        .bind(ctx.userId, ctx.nowIso, sourceUrl, date, name).run();
-      if (!result.meta.changes) throw new HttpError(404, "Holiday not found.");
-      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "holiday.verify", details: { date, name, sourceUrl }, at: ctx.nowIso }).run();
-      return json({ verified: { date, name } }, 200, ctx.cors);
+      if (!(await db.prepare(`SELECT 1 AS ok FROM public_holidays WHERE holiday_date = ? AND name = ?`).bind(date, name).first())) throw new HttpError(404, "Holiday not found.");
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "holiday.verify.request", details: { date, name, sourceUrl }, at: ctx.nowIso }).run();
+      return sendForReview({
+        ...registerFields(body), entityType: "holiday", entityId: `${date}|${name}`, action: "verify", legalCategory: body.legalCategory ?? "gazette_notice", sourceUrl,
+        evidenceNote: cleanText(body.note, 4000) ?? `Holiday date confirmed against ${sourceUrl}.`,
+      });
     }
     if ((m = path.match(/^\/api\/challenge\/review\/rules\/([a-z0-9.-]{3,60})\/approve$/)) && method === "POST") {
-      if (!ctx.canApproveLaw) throw new HttpError(403, "Only a legal approver can approve the deadline rules.");
+      // Prepares approval of the deadline rules; a different legal approver decides it.
       const version = m[1] as string;
-      const result = await db.prepare(`UPDATE procedure_rule_sets SET approved_for_computation = 1, approved_by = ?, approved_at = ? WHERE version = ?`).bind(ctx.userId, ctx.nowIso, version).run();
-      if (!result.meta.changes) throw new HttpError(404, "Rule set not found.");
-      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "rules.approve", details: { version }, at: ctx.nowIso }).run();
-      return json({ approved: version }, 200, ctx.cors);
+      const set = await db.prepare(`SELECT sources_json AS "sourcesJson" FROM procedure_rule_sets WHERE version = ?`).bind(version).first<Record<string, unknown>>();
+      if (!set) throw new HttpError(404, "Rule set not found.");
+      const body = await readJson(request);
+      let sources: unknown[] = [];
+      try { sources = JSON.parse(String(set.sourcesJson ?? "[]")) as unknown[]; } catch { sources = []; }
+      const firstSource = sources.map(String).find((s) => /^https:\/\/\S{4,500}$/.test(s)) ?? null;
+      await audit(db, { actorUserId: ctx.userId, actorRole: "reviewer", action: "rules.approve.request", details: { version }, at: ctx.nowIso }).run();
+      return sendForReview({
+        ...registerFields(body), entityType: "rule_set", entityId: version, action: "verify", sourceUrl: body.sourceUrl ?? firstSource,
+        documentReference: body.documentReference ?? `Deadline rule set ${version} (sources listed in the rule set)`,
+        evidenceNote: cleanText(body.note, 4000) ?? "Submitted for approval of the objection and appeal deadline rules from the law admin screen. The approver must check each time limit against the Act.",
+      });
     }
   }
 
