@@ -7,8 +7,8 @@ Programme: TaxComp audit remediation and production readiness (master prompt and
 | Phase | Scope | Status | PR | Notes |
 |---|---|---|---|---|
 | 1 | Baseline: inventory, architecture, findings, security baseline | **Done** (14 Nov) | this PR | Revalidated live; 13 new findings (N1–N13) |
-| 2a | Quick technical fixes: L1, L3, M5, H2 prevention, H3 tooling, N1, N4, N10, N13 | **Implemented** (14 Nov) | this PR | Live once merged and deployed; see below |
-| 2b | H1 verification register, two-person review, withdrawal; conflict and deadline evidence packs | Next | — | Needs a lawyer to approve, not to build |
+| 2a | Quick technical fixes: L1, L3, M5, H2 prevention, H3 tooling, N1, N4, N10, N13 | **Live** (14 Nov) | #35 | M5 still needs the Cloudflare token secrets |
+| 2b | H1 verification register, two-person review, emergency withdrawal, legal classes, audit chain | **Live** (14 Nov) | #36 | [Completion report](PHASE_2B_COMPLETION_REPORT.md). Content verification awaits reviewers; conflict and deadline evidence packs are the next H1 task |
 | 2c | M2 launch-gate register; M3 email guide; M4 interim auth controls; L2 CSP; L4 infrastructure note; N8 admin auth | Planned | — | |
 | 3 | Privacy documents (G1); tenant-isolation tests (G4); API review; audit trail (G5); DR (G6, N6) | Planned | — | |
 | 4 | Tax calculation inventory and test register (G2) | Planned | — | Expected answers must come from the tax reviewer |
@@ -29,12 +29,25 @@ Programme: TaxComp audit remediation and production readiness (master prompt and
 | N10 | `scripts/dev.mjs` Windows path fix committed | none | none |
 | N13 | `lawwatch.mts` records every run, 20 s timeout | `worker/lawwatch.test.mjs` (6/6) | Worker deploy |
 
+## Phase 2b detail (PR #36)
+
+| Item | Evidence | Production |
+|---|---|---|
+| Migration `20261114000100` (4 tables, flags, two-person trigger on 9 tables, append-only, hash chain) | `legal-register.test.mjs` 6/6; `supabase-postgres.test.mjs` | Applied after backup and dry run; 70 tables, RLS everywhere, 9 triggers |
+| `register.mts` + `/api/challenge/review/register/*`; old routes return 202 | Reworked legislation, knowledge and challenge tests | Worker `64d54d96`; signed-out 401 |
+| Withdrawal propagation incl. calculators (`legal-status.js`) and no-store caching | Unit + e2e (PAYE blocked, 410) | `/api/legislation/withdrawals` live, no-store |
+| Legal classes | Unit | 40 pending / 8 proposed / 5 disputed amendments |
+| Reviewer UI: Verification register tab | e2e incl. axe and 360 px | Site cache v50 |
+| Full suite | 472/472 unit; e2e 138/138 (Edge locally, Chrome in CI) | — |
+
 ## Decisions and actions waiting on management
 
 1. Approve or decline the git history rewrite after the rights check (H2).
 2. Save the backup passphrase and the DB connection string in a password manager with MFA, name a second custodian, then delete the two plaintext files (H3, N7).
 3. Create the Cloudflare API token secrets and set the `production` environment reviewers (M5).
 4. Approve a second free Supabase project for staging (N5).
-5. Appoint a qualified Ugandan tax reviewer (H1, G2) and a privacy adviser (G1).
+5. Appoint qualified Ugandan tax reviewers, **at least two** with their own accounts, one of them a legal approver (H1, G2), and a privacy adviser (G1). Two-person review cannot work with the single reviewer account that exists today.
+5a. Obtain the gazetted 2026 amendment Acts and commencement instruments (needed to resolve the 5 conflicts).
+5b. Review the uncommitted local edit to `index.html` (N16) before it is published.
 6. Set RTO/RPO targets (G6).
 7. Decide on the Anthropic and Flutterwave activations (M1), only after Phases 5 and 6.
