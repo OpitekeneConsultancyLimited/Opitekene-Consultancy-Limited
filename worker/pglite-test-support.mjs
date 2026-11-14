@@ -36,7 +36,7 @@ export function createPgliteDriver(pg) {
 const numberParsers = { 20: (value) => Number(value), 1700: (value) => Number(value) };
 
 // Minimal stand-ins for the Supabase-managed schemas the migrations touch.
-const SUPABASE_STUBS = `
+export const SUPABASE_STUBS = `
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN CREATE ROLE anon NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;

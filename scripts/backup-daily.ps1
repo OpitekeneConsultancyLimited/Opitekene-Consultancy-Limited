@@ -15,9 +15,17 @@ New-Item -ItemType Directory -Force $backups | Out-Null
 function Write-Log($message) { Add-Content -Path $log -Value ("{0:o} {1}" -f (Get-Date), $message) -Encoding utf8 }
 
 try {
-  $line = Get-Content (Join-Path $secrets 'supabase-taxcomp-worker.txt') | Where-Object { $_ -like 'Connection string*' }
-  if (-not $line) { throw 'Worker connection string not found in TaxComp-secrets.' }
-  $env:DATABASE_URL = $line.Substring($line.IndexOf('postgresql://'))
+  # Prefer the DPAPI-protected copy (scripts\protect-local-secrets.ps1); the
+  # plaintext file is only a fallback until the owner deletes it.
+  $dpapiUrl = Join-Path $secrets 'supabase-taxcomp-worker.dpapi'
+  if (Test-Path $dpapiUrl) {
+    $protectedUrl = Get-Content $dpapiUrl | ConvertTo-SecureString
+    $env:DATABASE_URL = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($protectedUrl))
+  } else {
+    $line = Get-Content (Join-Path $secrets 'supabase-taxcomp-worker.txt') | Where-Object { $_ -like 'Connection string*' }
+    if (-not $line) { throw 'Worker connection string not found in TaxComp-secrets.' }
+    $env:DATABASE_URL = $line.Substring($line.IndexOf('postgresql://'))
+  }
   $protected = Get-Content (Join-Path $secrets 'backup-passphrase.dpapi') | ConvertTo-SecureString
   $env:BACKUP_PASSPHRASE = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($protected))
 

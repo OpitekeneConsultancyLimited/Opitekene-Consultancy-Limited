@@ -36,7 +36,8 @@ const SUPABASE_JS = "/npm/@supabase/supabase-js@2.118.0/+esm";
 const LOCAL_WORKER_PASSWORD = "taxcomp-local-dev"; // set by local/supabase/seed.sql; local only
 
 const npx = (cliArgs, { capture = false } = {}) => {
-  const result = spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", [...SUPABASE_CLI, ...cliArgs, "--workdir", LOCAL_WORKDIR],
+  // Relative workdir (cwd is the project root): on Windows the shell would split a path containing spaces ("TAX COMP").
+  const result = spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", [...SUPABASE_CLI, ...cliArgs, "--workdir", "local"],
     { cwd: root, encoding: "utf8", stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit", shell: process.platform === "win32" });
   if (result.status !== 0) throw new Error(`supabase ${cliArgs.join(" ")} failed${capture ? `: ${(result.stderr || result.stdout || "").trim().split("\n").slice(-3).join(" ")}` : ""}`);
   return result.stdout ?? "";

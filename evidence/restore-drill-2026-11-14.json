@@ -1,0 +1,17 @@
+{
+  "drill": "taxcomp-restore-drill-v1",
+  "ranAt": "2026-11-14T05:15:38.582Z",
+  "backupFile": "taxcomp-2026-11-14.tcbak",
+  "backupBytes": 92075,
+  "backupSha256": "1ce0bbfa8093c976f69dd93e1a70c4e39a760d6198337c03e20054108a73940f",
+  "backupCreatedAt": "2026-11-14T03:46:21.175Z",
+  "migrationsInBackup": 19,
+  "target": "empty in-memory PGlite (Postgres 17 engine) with Supabase role/schema stubs",
+  "tablesAfterRestore": 66,
+  "tablesWithRows": 27,
+  "rowsExpected": 1974,
+  "rowsRestored": 1974,
+  "mismatches": [],
+  "durationMs": 2065,
+  "result": "PASS"
+}

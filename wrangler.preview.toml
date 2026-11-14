@@ -1,0 +1,32 @@
+name = "taxcomp-prototype-preview-chat"
+main = "worker/index.mjs"
+compatibility_date = "2026-10-31"
+compatibility_flags = ["nodejs_compat"]
+
+# Supabase (shared with production). See SUPABASE_MIGRATION.md.
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "1ec8106d082a4e309115ab818454fc8b"
+
+[observability]
+enabled = true
+head_sampling_rate = 0.1
+
+[vars]
+ALLOWED_ORIGIN = "https://prototype-preview.taxcomp-prototype-preview.pages.dev"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
+SUPABASE_URL = "https://xbooviddjkikcbccfcnw.supabase.co"
+PHASE10_OPERATIONS_ANALYTICS_ENABLED = "false"
+PHASE11_LEGAL_REVIEW_APPROVED = "false"
+PHASE11_SECURITY_REVIEW_APPROVED = "false"
+PHASE11_PRIVACY_REVIEW_APPROVED = "false"
+PHASE11_OPERATIONS_READY = "false"
+PHASE11_BILLING_PROVIDER_CONFIGURED = "false"
+PHASE11_SUPPORT_PROCESS_READY = "false"
+PHASE11_PUBLIC_LAUNCH_APPROVED = "false"
+
+[[unsafe.bindings]]
+name = "CHAT_LIMITER"
+type = "ratelimit"
+namespace_id = "981734"
+simple = { limit = 8, period = 60 }

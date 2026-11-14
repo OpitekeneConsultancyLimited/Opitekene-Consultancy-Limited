@@ -1,0 +1,72 @@
+name: Scheduled audit
+
+# Audit finding L3: production monitoring runs in the cloud, twice a day,
+# independent of any PC. A failing run opens (or updates) one GitHub issue
+# labelled "audit", which GitHub emails to repository watchers.
+on:
+  schedule:
+    - cron: "30 4 * * *"   # 07:30 Kampala (UTC+3)
+    - cron: "30 16 * * *"  # 19:30 Kampala
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: read
+  issues: write
+
+concurrency:
+  group: scheduled-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Run the cloud audit (retries once after 2 minutes on failure)
+        id: audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if node scripts/cloud-audit.mjs audit-report.json; then exit 0; fi
+          echo "First attempt failed; retrying in 120 s to rule out a blip."
+          sleep 120
+          node scripts/cloud-audit.mjs audit-report.json
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report-${{ github.run_id }}
+          path: audit-report.json
+          retention-days: 90
+
+      - name: Alert on failure (open or update the audit issue)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create audit --color B60205 --description "Scheduled audit alerts" 2>/dev/null || true
+          body="The scheduled TaxComp audit failed at $(date -u +%FT%TZ). Details: $RUN_URL"
+          existing=$(gh issue list --label audit --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then gh issue comment "$existing" --body "$body";
+          else gh issue create --title "Scheduled audit failing" --label audit --body "$body"; fi
+
+      - name: Close the audit issue when checks pass again
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for n in $(gh issue list --label audit --state open --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "Scheduled audit passing again ($(date -u +%FT%TZ))."
+          done
