@@ -173,18 +173,39 @@ export interface RunResult { checked: number; taxBills: number; changes: number;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Per-request limit, so a tracker that stops answering cannot stall the nightly run. */
+const FETCH_TIMEOUT_MS = 20_000;
+
+/**
+ * One nightly run. Every run is recorded in law_watch_runs, including runs that
+ * were skipped (robots.txt) or failed (tracker down), so a reviewer can see when
+ * the watch stopped working. Until 14 Nov 2026 failed runs left no trace.
+ */
 export async function runLawWatch(db: Database, env: LawWatchEnv, now: Date = new Date()): Promise<RunResult> {
-  const fetchImpl = env.LAW_WATCH_FETCH ?? fetch;
+  const result: RunResult = { checked: 0, taxBills: 0, changes: 0, skippedByRobots: false, errors: [] };
+  try {
+    await crawl(db, env, now, result);
+  } catch (error) {
+    result.errors.unshift(`run failed: ${error instanceof Error ? error.message.slice(0, 160) : "unknown error"}`);
+  }
+  if (result.skippedByRobots) result.errors.unshift("run skipped: robots.txt disallows the tracker pages");
+  await db.prepare(`INSERT INTO law_watch_runs (id, ran_at, checked, tax_bills, changes, errors_json) VALUES (?, ?, ?, ?, ?, ?)`)
+    .bind(crypto.randomUUID(), now.toISOString(), result.checked, result.taxBills, result.changes, JSON.stringify(result.errors.slice(0, 20))).run();
+  return result;
+}
+
+async function crawl(db: Database, env: LawWatchEnv, now: Date, result: RunResult): Promise<void> {
+  const baseFetch = env.LAW_WATCH_FETCH ?? fetch;
+  const fetchImpl = (url: string, init: RequestInit) => baseFetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   const delay = env.LAW_WATCH_DELAY_MS ?? DELAY_MS;
   const headers = { "User-Agent": LAW_WATCH_USER_AGENT, Accept: "text/html" };
-  const result: RunResult = { checked: 0, taxBills: 0, changes: 0, skippedByRobots: false, errors: [] };
   const nowIso = now.toISOString();
 
   const robots = await fetchImpl(new URL("/robots.txt", TRACKER_BASE).toString(), { headers }).catch(() => null);
   const robotsText = robots && robots.ok ? await robots.text() : ""; // 404 or no file: no restrictions
   if (!robotsAllows(robotsText, "/") || !robotsAllows(robotsText, "/user_bill_stage.php")) {
     result.skippedByRobots = true;
-    return result;
+    return;
   }
 
   const index = await fetchImpl(TRACKER_BASE, { headers });
@@ -236,7 +257,4 @@ export async function runLawWatch(db: Database, env: LawWatchEnv, now: Date = ne
       result.errors.push(`bill ${bill.billId}: ${error instanceof Error ? error.message.slice(0, 160) : "failed"}`);
     }
   }
-  await db.prepare(`INSERT INTO law_watch_runs (id, ran_at, checked, tax_bills, changes, errors_json) VALUES (?, ?, ?, ?, ?, ?)`)
-    .bind(crypto.randomUUID(), nowIso, result.checked, result.taxBills, result.changes, JSON.stringify(result.errors.slice(0, 20))).run();
-  return result;
 }

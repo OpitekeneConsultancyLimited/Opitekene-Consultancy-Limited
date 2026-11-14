@@ -9,6 +9,13 @@ supabase/d1-data-import.sql
 supabase/.temp/
 .e2e-screens/
 
+# Third-party documents and backups must never be committed (audit finding H2;
+# enforced in CI by scripts/repo-content-guard.mjs).
+/*.pdf
+*Compendium*.pdf
+*.tcbak
+evidence/*.tcbak
+
 # Local offline development data (npm run dev)
 .local-data/
 # Local Supabase (npm run dev): private local signing key, CLI state, copied migrations

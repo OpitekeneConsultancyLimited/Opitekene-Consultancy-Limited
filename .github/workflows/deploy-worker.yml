@@ -1,0 +1,139 @@
+name: Deploy Worker
+
+# Audit finding M5: production is deployed from GitHub, not from a local folder.
+# main -> checks -> staging (preview Worker) -> production (needs approval in
+# the "production" environment) -> live verification -> release tag.
+# Needs repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts: Edit) and
+# CLOUDFLARE_ACCOUNT_ID. Until they exist the deploy jobs stop with a notice.
+# Rollback: run this workflow manually with "rollback_version".
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "worker/**"
+      - "prompts/**"
+      - "*.js"
+      - "*.mjs"
+      - "wrangler.toml"
+      - "wrangler.preview.toml"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+    inputs:
+      rollback_version:
+        description: "Roll production back to this Worker version id (leave empty to deploy main)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
+env:
+  WRANGLER: npx --yes wrangler@4.158.0
+  PROD_URL: https://taxcomp-uganda-chat.omaratomdenis1.workers.dev
+  SITE_ORIGIN: https://opitekeneconsultancylimited.github.io
+
+jobs:
+  verify:
+    if: inputs.rollback_version == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: node --test *.test.js worker/*.test.mjs
+      - run: npx tsc -p tsconfig.json
+      - run: $WRANGLER deploy --dry-run
+
+  staging:
+    needs: verify
+    runs-on: ubuntu-24.04
+    environment: staging
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Check Cloudflare credentials
+        id: creds
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::warning::CLOUDFLARE_API_TOKEN is not set; skipping deploy (see docs/remediation/DEPLOYMENT_POLICY.md)."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Deploy the preview Worker
+        if: steps.creds.outputs.ok == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: $WRANGLER deploy -c wrangler.preview.toml --message "staging ${GITHUB_SHA::8}"
+    outputs:
+      deployed: ${{ steps.creds.outputs.ok }}
+
+  production:
+    needs: staging
+    if: needs.staging.outputs.deployed == 'true'
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://taxcomp-uganda-chat.omaratomdenis1.workers.dev
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Record the version being replaced (rollback point)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: $WRANGLER deployments list --name taxcomp-uganda-chat | tail -n 12 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Deploy production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: $WRANGLER deploy --message "main ${GITHUB_SHA::8}" | tee deploy.log
+      - name: Verify the live Worker
+        run: |
+          sleep 10
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Origin: $SITE_ORIGIN" "$PROD_URL/chat")" = 405
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://example.invalid' -H 'Content-Type: application/json' -d '{}' "$PROD_URL/chat")" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Origin: $SITE_ORIGIN" "$PROD_URL/api/challenge/cases")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "Origin: $SITE_ORIGIN" "$PROD_URL/api/legislation/amendments")" = 200
+          echo "Live checks passed." | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Tag the release
+        run: |
+          version=$(grep -oE 'Current Version ID: [0-9a-f-]+' deploy.log | awk '{print $4}')
+          tag="worker-$(date -u +%Y%m%d-%H%M)-${GITHUB_SHA::8}"
+          git tag -a "$tag" -m "Production Worker ${version:-unknown} from ${GITHUB_SHA}"
+          git push origin "$tag"
+          echo "Released $tag (Worker version ${version:-unknown})." | tee -a "$GITHUB_STEP_SUMMARY"
+
+  rollback:
+    if: inputs.rollback_version != ''
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Roll back production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION: ${{ inputs.rollback_version }}
+        run: |
+          echo "$VERSION" | grep -Eq '^[0-9a-f-]{36}$' || { echo "Not a version id."; exit 1; }
+          $WRANGLER rollback "$VERSION" --name taxcomp-uganda-chat --message "rollback by ${GITHUB_ACTOR}" -y
+          echo "Rolled back to $VERSION." | tee -a "$GITHUB_STEP_SUMMARY"

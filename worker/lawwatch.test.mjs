@@ -120,6 +120,15 @@ test("daily run on Postgres: records tax Bills, logs each change once, and leave
   // robots.txt that forbids the pages stops the run before any Bill is read.
   const blocked = await runLawWatch(db, { LAW_WATCH_FETCH: async (url) => new URL(url).pathname === "/robots.txt" ? new Response("User-agent: *\nDisallow: /", { status: 200 }) : new Response("x"), LAW_WATCH_DELAY_MS: 0 });
   assert.equal(blocked.skippedByRobots, true);
+
+  // A tracker that is down still leaves a run record, so the failure is visible.
+  const runsBefore = (await pg.query("SELECT count(*)::int AS n FROM taxcomp.law_watch_runs")).rows[0].n;
+  const down = await runLawWatch(db, { LAW_WATCH_FETCH: async (url) => { if (new URL(url).pathname === "/robots.txt") return new Response("", { status: 404 }); throw new Error("The operation was aborted due to timeout"); }, LAW_WATCH_DELAY_MS: 0 }, new Date("2099-01-01T02:15:00Z"));
+  assert.match(down.errors[0], /^run failed: The operation was aborted/);
+  const runs = (await pg.query("SELECT ran_at, checked, errors_json FROM taxcomp.law_watch_runs ORDER BY ran_at")).rows;
+  assert.equal(runs.length, runsBefore + 1, "the failed run is recorded");
+  assert.match(runs.at(-1).errors_json, /run failed/);
+  assert.match(runs.find((r) => /robots/.test(r.errors_json))?.errors_json ?? "", /run skipped: robots\.txt/, "the skipped run is recorded too");
   await pg.close();
 });
 

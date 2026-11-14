@@ -1,0 +1,88 @@
+name: CI
+
+# Runs the full check suite on every pull request BEFORE merge (until 14 Nov
+# 2026 tests ran only after merging, in the Pages workflow).
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (full history, for the migration check)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Repository content guard (no third-party documents or large binaries)
+        run: node scripts/repo-content-guard.mjs
+
+      - name: Applied migrations are never edited or deleted (add new ones instead)
+        run: |
+          changed=$(git diff --name-status "origin/${{ github.base_ref || 'main' }}...HEAD" -- supabase/migrations | grep -v '^A' || true)
+          if [ -n "$changed" ]; then echo "Existing migrations were modified or removed:"; echo "$changed"; exit 1; fi
+          echo "Only new migration files added (or none)."
+
+      - name: Dependency vulnerabilities (production dependencies, high or worse)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Unit, Worker and PGlite (Postgres) suites
+        run: node --test *.test.js worker/*.test.mjs
+
+      - name: Type-check the TypeScript Worker modules (strict)
+        run: npx tsc -p tsconfig.json
+
+      - name: Python suites
+        run: python -m unittest discover -s . -q
+
+      - name: Publish allowlist
+        run: node scripts/build-pages.mjs --check
+
+      - name: Page DOM contract
+        run: node scripts/check-dom-contract.mjs
+
+      - name: Worker bundles (no deploy)
+        run: npx --yes wrangler@4.158.0 deploy --dry-run
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: End-to-end Challenge an Assessment (real Worker on PGlite, Chrome, axe)
+        env:
+          E2E_BROWSER_CHANNEL: chrome
+        run: node scripts/challenge-e2e.mjs "${{ runner.temp }}/e2e-screens"
