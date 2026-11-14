@@ -11,6 +11,8 @@ $project = Split-Path -Parent $PSScriptRoot
 Set-Location $project
 
 $site   = 'https://opitekeneconsultancylimited.github.io/Opitekene-Consultancy-Limited/'
+# Since PR #32 the root is the corporate site; the TaxComp app (sign-in gate) lives here.
+$app    = $site + 'taxcomp/'
 $worker = 'https://taxcomp-uganda-chat.omaratomdenis1.workers.dev'
 $repo   = 'OpitekeneConsultancyLimited/Opitekene-Consultancy-Limited'
 $workerName = 'taxcomp-uganda-chat'
@@ -47,8 +49,12 @@ if ($homePage.Code -eq 200) {
   else { Add-Result 'Live site' 'OK' "Up; $($files.Count) key files load." }
   $sw = (Get-Status ($site + 'service-worker.js')).Content
   $cache = [regex]::Match($sw, 'taxcomp-app-v\d+').Value
-  $design = if ($homePage.Content -match 'id="lp-features"|id="lp-signin"') { 'new landing page + redesign' } elseif ($homePage.Content -match 'site-router\.js') { 'redesign' } else { 'old design (redesign PR not merged)' }
-  Add-Result 'Site version' 'INFO' "$design; app cache $cache."
+  $appPage = Get-Status $app
+  if ($appPage.Code -ne 200) { Add-Result 'TaxComp app' 'FAIL' "$app returned $($appPage.Code)." }
+  elseif ($appPage.Content -notmatch 'auth-gate-root') { Add-Result 'TaxComp app' 'FAIL' 'App page has no sign-in gate.' }
+  else { Add-Result 'TaxComp app' 'OK' 'Up at /taxcomp/ with its sign-in gate.' }
+  $corp = if ($homePage.Content -match 'class="[^"]*\bcorp\b') { 'corporate site at /' } else { 'root page is NOT the corporate site' }
+  Add-Result 'Site version' 'INFO' "$corp; app cache $cache."
 } else {
   Add-Result 'Live site' 'FAIL' "Home page returned $($homePage.Code)."
 }
@@ -122,7 +128,7 @@ else {
 # ---- 6. browser check (optional: needs npm install in this folder) ----
 $checker = Join-Path $PSScriptRoot 'daily-audit-browser.mjs'
 if ((Test-Path $checker) -and (Test-Path (Join-Path $project 'node_modules\playwright-core'))) {
-  $browserOut = (& node $checker $site 2>&1) -join "`n"
+  $browserOut = (& node $checker $app 2>&1) -join "`n"
   if ($browserOut -match 'BROWSER OK') { Add-Result 'Browser check' 'OK' (($browserOut -split "`n" | Select-String 'BROWSER OK').Line -replace 'BROWSER OK:\s*', '') }
   else { Add-Result 'Browser check' 'FAIL' (($browserOut -split "`n" | Select-Object -Last 3) -join ' ') }
 }

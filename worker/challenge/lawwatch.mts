@@ -55,7 +55,8 @@ export function isTaxBill(title: string): boolean {
 }
 
 function decode(text: string): string {
-  return text.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  // &amp; last, so "&amp;lt;" becomes "&lt;" and not "<" (no double unescaping).
+  return text.replace(/&nbsp;/g, " ").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 }
 
 /** The page as text: tags become " | " separators, whitespace collapsed. */
