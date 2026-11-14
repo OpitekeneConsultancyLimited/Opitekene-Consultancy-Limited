@@ -228,7 +228,7 @@ test("admin pages: per-response script nonce, Supabase sign-in allowed by CSP, n
     const nonce = page.text.match(/<script nonce="([A-Za-z0-9]+)">/)?.[1];
     assert.ok(nonce, `${path} has a nonce`);
     assert.match(csp, new RegExp(`script-src 'nonce-${nonce}';`), path);
-    assert.match(csp, new RegExp(`connect-src 'self' ${t.env.SUPABASE_URL.replace(/[.:/]/g, "\\$&")}`), path);
+    assert.ok(csp.includes(`connect-src 'self' ${t.env.SUPABASE_URL}`), path);
     assert.match(csp, /frame-ancestors 'none'/);
     assert.match(page.text, /autocomplete="one-time-code"/, `${path} asks for the two-step code`);
     const start = page.text.indexOf(">", page.text.indexOf("<script nonce=")) + 1;
