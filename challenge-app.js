@@ -900,7 +900,7 @@
       h("h3", { text: "Verification register" }),
       h("p", { className: "ch-muted", text: "Draft, then research, then a reviewer submits it with the authoritative source, then a different legal approver reviews and approves it, and it is published at once. Nobody can approve their own submission or content they wrote. A Bill, budget speech or press report is never evidence of enacted law. TaxComp does not certify the law: this register records who checked what, against which source." }),
       h("p", { className: chain.intact ? "ch-muted" : "ch-message ch-error", role: chain.intact ? null : "alert", text: chain.intact ? `Audit trail: ${chain.entries} entries, hash chain intact.` : `Audit trail BROKEN at entry ${chain.brokenAt}. Report this to the owner now.` }),
-      h("div", { className: "ch-table-wrap" }, [h("table", { className: "ch-table" }, [
+      h("div", { className: "ch-table-wrap", tabindex: "0", role: "region", "aria-label": "Verification counts by record type" }, [h("table", { className: "ch-table" }, [
         h("thead", {}, [h("tr", {}, ["Record type", "Total", "Verified", "Disputed", "Withdrawn"].map((t) => h("th", { scope: "col", text: t })))]),
         h("tbody", {}, reg.counts.map((c) => h("tr", {}, [h("th", { scope: "row", text: c.label }), ...[c.total, c.verified, c.disputed, c.withdrawn].map((n) => h("td", { text: String(n) }))]))),
       ])]),
